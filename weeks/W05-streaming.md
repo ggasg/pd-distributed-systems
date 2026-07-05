@@ -1,3 +1,8 @@
+---
+week_number: 5
+status: not-started
+---
+
 # W05 — Stream Processing Primitives
 
 > **Arc:** Streaming and Dataflow · **Language:** Scala
@@ -37,6 +42,6 @@ Project: `code/streaming/` (Scala 3, sbt)
 
 **How would you handle late data without dropping it?**
 
-**How this connects to Materialize's approach to time:**
+**How this connects to my current role's approach to time:**
 
 **What I'd do differently:**

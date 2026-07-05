@@ -1,3 +1,8 @@
+---
+week_number: 6
+status: not-started
+---
+
 # W06 — Naiad and Timely Dataflow
 
 > **Arc:** Streaming and Dataflow · **Language:** Scala
@@ -37,6 +42,6 @@ Project: `code/timely-toy/` (Scala 3, sbt)
 
 **What would break if you removed the could-result-in check?**
 
-**How this directly maps to what Materialize does:**
+**How this directly maps to my current role:**
 
 **What I'd do differently:**

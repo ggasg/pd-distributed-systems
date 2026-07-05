@@ -1,6 +1,11 @@
+---
+week_number: 14
+status: not-started
+---
+
 # W14 — Capstone
 
-> **Arc:** Distributed ML & Compute · **Language:** Your choice
+> **Arc:** Distributed ML & Compute · **Language:** Go, Scala, or Python — your choice
 
 ## What you'll build
 One system that combines at least two concepts from this curriculum. It should be something you can explain end-to-end, from the data model to the failure behavior. No scaffolding provided — you design it.
@@ -9,38 +14,40 @@ One system that combines at least two concepts from this curriculum. It should b
 
 ## Choose One
 
-### Option A: Replicated Key-Value Store
-Combine W01 (LSM storage) + W03 (Raft consensus).
+### Option A: Distributed KV Store (Go)
+Combine W01 (LSM storage) + W04 (clocks/ordering).
 
-A KV store where writes go through Raft log replication before being applied to an LSM-tree. Reads from the leader. Supports `get`, `put`, `delete`. Handle leader failure: restart a node, verify it catches up via log replay.
+A 3-node key-value store in Go where writes are replicated via a simple primary-backup protocol (not Raft — keep it tractable). The primary assigns a logical timestamp to each write using a Lamport clock before forwarding to backups. Supports `get`, `put`, `delete`. Test: kill the primary, promote a backup, verify reads are consistent.
 
-**Minimum bar:** 3-node cluster, leader election works, put/get works, one node can crash and rejoin.
+**Why Go:** goroutines + channels make the node communication natural; Go's stdlib HTTP makes the client API trivial. This is the kind of tool engineers actually write in Go.
+
+**Minimum bar:** 3-node cluster, primary-backup replication works, one node can fail and the system continues.
 
 ---
 
-### Option B: Streaming Pipeline with Exactly-Once
+### Option B: Streaming Pipeline with Exactly-Once (Scala)
 Combine W05 (stream processing) + W13 (snapshots).
 
-A stateful streaming word count that periodically checkpoints using Chandy-Lamport snapshots. On simulated failure: restore from the latest snapshot, replay messages from that point, verify the final count matches a non-failing run.
+A stateful streaming word count in Scala that periodically checkpoints using Chandy-Lamport snapshots. On simulated failure: restore from the latest snapshot, replay messages from that point, verify the final word count matches a non-failing run.
 
 **Minimum bar:** windowed word count, periodic snapshots, crash-and-recover test passes.
 
 ---
 
-### Option C: Incremental Query Engine
+### Option C: Incremental Query Engine (Scala)
 Combine W07 (differential dataflow) + W08 (query execution).
 
-A query engine over a changing dataset: supports `SELECT ... WHERE ... JOIN ...` expressed as a DD dataflow graph. Insert/delete rows and observe the query result update incrementally without re-executing from scratch. Benchmark incremental update vs full re-execution.
+Extend your W07 DD engine with vectorized operator execution from W08: `filter` and `join` operate on batches of updates rather than one at a time. Benchmark: insert 10k rows, run a filter+join query, then update 100 rows and measure incremental re-evaluation vs full re-execution.
 
-**Minimum bar:** filter + join working incrementally, measurable speedup over re-execution on updates.
+**Minimum bar:** filter + join working incrementally, measurable speedup over full re-execution on updates.
 
 ---
 
 ## Deliverables
 
 - [ ] Working code in `code/capstone/`
-- [ ] `code/capstone/README.md` — explains: what it does, the design decisions you made, what you'd do differently, what breaks at scale
-- [ ] `posts/W14-capstone.md` — a technical post (500–1000 words) suitable for a dev blog or GitHub. Explain the system to a fellow engineer who hasn't done this curriculum. This is the artifact you'd share publicly.
+- [ ] `code/capstone/README.md` — explains: what it does, the design decisions, what you'd do differently, what breaks at scale
+- [ ] `posts/W14-capstone.md` — a technical post (500–1000 words) for a dev blog or GitHub. Explain the system to a fellow engineer who hasn't done this curriculum.
 
 ---
 

@@ -1,3 +1,8 @@
+---
+week_number: 9
+status: not-started
+---
+
 # W09 — ML Data Pipelines
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
@@ -45,6 +50,6 @@ Scenario: raw user activity events → session features → versioned feature st
 
 **What would break at scale that works fine here?**
 
-**How a streaming system (like Materialize) could replace the batch feature pipeline:**
+**How a streaming system could replace the batch feature pipeline:**
 
 **What I'd do differently:**

@@ -1,3 +1,8 @@
+---
+week_number: 13
+status: not-started
+---
+
 # W13 — Fault Tolerance and Snapshots
 
 > **Arc:** Distributed ML & Compute · **Language:** Java 21
@@ -28,6 +33,10 @@ Project: `code/snapshot/` (Java 21, virtual threads)
 - [ ] `Coordinator.java` — wires 3 nodes in a ring (0→1→2→0), starts virtual thread per node, injects a sequence of data messages, then triggers snapshot from node 0, waits for all nodes to report their recorded states
 - [ ] `SnapshotTest.java` — inject 10 data messages (total sum = 55), trigger snapshot mid-stream, assert: (1) sum of all recorded local states + sum of all in-flight channel states = total messages sent so far; (2) snapshot completes without deadlock
 
+**Go rewrite (optional stretch goal):**
+
+Once the Java version works, rewrite `Node` and `Coordinator` in Go using goroutines and channels instead of virtual threads and `LinkedBlockingQueue`. Go's `chan` is a natural fit for FIFO message channels. Compare the two implementations: which is more readable? Which makes the algorithm clearer? (~150 lines of Go total)
+
 ---
 
 ## Reflect
@@ -38,6 +47,6 @@ Project: `code/snapshot/` (Java 21, virtual threads)
 
 **What "consistent global state" actually means and why it's useful:**
 
-**How Materialize handles fault tolerance (checkpointing vs replay):**
+**How fault tolerance is handled in your current role (checkpointing vs replay):**
 
 **What I'd do differently:**

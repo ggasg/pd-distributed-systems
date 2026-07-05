@@ -1,3 +1,8 @@
+---
+week_number: 1
+status: not-started
+---
+
 # W01 — LSM-Trees and Storage Engines
 
 > **Arc:** Data Systems Internals · **Language:** Java 21
@@ -35,6 +40,6 @@ Project: `code/lsm/` (Java 21, Maven or Gradle)
 
 **What surprised me:**
 
-**How this connects to Materialize:**
+**How this connects to my current role:**
 
 **What I'd do differently:**

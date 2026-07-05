@@ -1,3 +1,8 @@
+---
+week_number: 10
+status: not-started
+---
+
 # W10 — Distributed Training
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
@@ -34,6 +39,12 @@ Model: 2-layer MLP on MNIST (784 → 128 → 10). Implemented in NumPy only.
 - [ ] `train.py` — launches 2 workers via `multiprocessing.Process`, assigns rank 0 and rank 1, waits for both to complete. Prints final train accuracy per worker (should be similar).
 
 **Constraints:** no `torch.nn`, no `torch.optim`, no `torch.distributed`. Use `multiprocessing` not threads (GIL). Sockets must be real TCP, not shared memory.
+
+**Go gradient server (secondary tool):**
+
+- [ ] `tools/grad_server/main.go` — replace the raw socket allreduce with a Go HTTP gradient aggregation server. Python workers POST their gradients as JSON arrays to `POST /gradients` (include `{"rank": 0, "gradients": [[...]]})`); once all workers have posted, the server averages them and returns the result. Python workers GET `/gradients/averaged` to fetch the result. Use `sync.WaitGroup` and a `Mutex`-protected map to collect worker submissions. Keep under 100 lines.
+
+This is a realistic pattern: Go handles the coordination service, Python handles the ML compute.
 
 ---
 

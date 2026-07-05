@@ -1,3 +1,8 @@
+---
+week_number: 4
+status: not-started
+---
+
 # W04 — Clocks, Causality, and Time
 
 > **Arc:** Data Systems Internals · **Language:** Java 21
@@ -37,6 +42,6 @@ Project: `code/clocks/` (Java 21)
 
 **What happens if a node crashes — does the vector clock approach break?**
 
-**How this connects to Materialize's timestamp system:**
+**How this connects to my current role's timestamp system:**
 
 **What I'd do differently:**
