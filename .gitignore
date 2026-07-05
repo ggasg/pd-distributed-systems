@@ -1,0 +1,12 @@
+# Obsidian workspace state (machine-specific)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.obsidian/plugins/*/data.json
+
+# macOS
+.DS_Store
+
+# Syncthing / other sync
+.stfolder
+.stignore
