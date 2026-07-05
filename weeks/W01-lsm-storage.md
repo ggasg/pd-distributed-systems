@@ -72,6 +72,6 @@ assert merge_sstables(a, b) == [("apple", 1), ("apple", 2), ("grape", 4), ("mang
 
 **What surprised me:**
 
-**How this connects to my current role:**
+**How this connects to a system you've worked with or currently build:**
 
 **What I'd do differently:**

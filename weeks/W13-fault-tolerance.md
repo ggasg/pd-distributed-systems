@@ -85,6 +85,6 @@ assert not all_nodes_recorded(ring, 0, {0, 1})  # node 2 missed
 
 **What "consistent global state" actually means and why it's useful:**
 
-**How fault tolerance is handled in your current role (checkpointing vs replay):**
+**How fault tolerance is handled in a system you know (checkpointing vs replay vs idempotency):**
 
 **What I'd do differently:**

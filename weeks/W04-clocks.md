@@ -83,6 +83,6 @@ assert merge(vc2, vc3) == {"A": 2, "B": 1}
 
 **What happens if a node crashes — does the vector clock approach break?**
 
-**How this connects to my current role's timestamp system:**
+**How a system you know handles ordering or timestamps (what clock does it use?):**
 
 **What I'd do differently:**

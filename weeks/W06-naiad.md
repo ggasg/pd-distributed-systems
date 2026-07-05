@@ -90,6 +90,6 @@ assert result.index("src") < result.index("B") < result.index("join")
 
 **What would break if you removed the could-result-in check?**
 
-**How this directly maps to my current role:**
+**How this maps to a dataflow or streaming system you've encountered:**
 
 **What I'd do differently:**

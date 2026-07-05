@@ -99,6 +99,6 @@ assert merge_updates([("a", 1), ("b", 1)], [("a", -1), ("c", 1)]) == [("b", 1), 
 
 **What your implementation is missing compared to the real DD (hint: arrangements):**
 
-**How this connects to my current role's query engine:**
+**How this connects to a query or computation engine you've worked with:**
 
 **What I'd do differently:**
