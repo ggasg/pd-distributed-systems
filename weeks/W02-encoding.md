@@ -1,3 +1,8 @@
+---
+week_number: 2
+status: not-started
+---
+
 # W02 — Encoding and Wire Formats
 
 > **Arc:** Data Systems Internals · **Language:** Java 21
@@ -40,6 +45,6 @@ Project: `code/encoding/` (Java 21)
 - Column store column scan: __ ms
 - Speedup: __x
 
-**How this connects to Materialize:**
+**How this connects to my current role:**
 
 **What I'd do differently:**

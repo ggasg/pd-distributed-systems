@@ -1,37 +1,54 @@
+---
+week_number: 7
+status: not-started
+---
+
 # W07 — Differential Dataflow
 
-> **Arc:** Streaming and Dataflow · **Language:** Rust
+> **Arc:** Streaming and Dataflow · **Language:** Scala
 
 ## What you'll build
-Two programs using the `differential-dataflow` Rust crate: (1) incremental word count — add a document, observe counts update; (2) incremental graph reachability — add an edge, observe which nodes become reachable.
+A simplified Differential Dataflow engine from scratch in Scala: the `(key, value, time, diff)` data model, `map`/`filter`/`count` operators that produce only deltas, and an input loop that demonstrates incremental word count and graph reachability — without touching any external library.
 
 ---
 
 ## Read
 - [ ] [Differential Dataflow](https://www.cidrdb.org/cidr2013/Papers/CIDR13_Paper111.pdf) (McSherry et al., CIDR 2013) — read Sections 1–3. Section 2 defines the data model (collections as functions from time to multisets of changes). Section 3 defines the operators.
-- [ ] DD Rust source — skim these two files to connect paper to code: [`src/collection.rs`](https://github.com/TimelyDataflow/differential-dataflow/blob/master/src/collection.rs) (the `Collection` type), [`src/operators/join.rs`](https://github.com/TimelyDataflow/differential-dataflow/blob/master/src/operators/join.rs) (how incremental join works)
+- [ ] DD Rust source — skim for design intuition only (not to write Rust): [`src/collection.rs`](https://github.com/TimelyDataflow/differential-dataflow/blob/master/src/collection.rs) (the `Collection` type), [`src/operators/join.rs`](https://github.com/TimelyDataflow/differential-dataflow/blob/master/src/operators/join.rs) (how incremental join works)
 
-**Key question:** What is a "difference" in DD? How does `(key, value, time, diff)` encode both additions and retractions?
+**Key question:** What is a "difference" in DD? How does `(key, value, time, diff)` encode both additions and retractions? Walk through what happens to the word count index when you retract a document.
 
 ---
 
 ## Code
 
-Project: `code/dd-examples/` (Rust, Cargo workspace)
+Project: `code/dd-scratch/` (Scala 3, sbt)
 
-**Program 1: `src/word_count.rs`**
-- [ ] Read words from a hardcoded vec of "documents" (each doc is a `&str`)
-- [ ] Use `flat_map` to split into words, `count()` to count occurrences
-- [ ] In the input loop: add a document at time 1, print counts; retract it at time 2, print updated counts; add a different document at time 3
-- [ ] Expected output shows only the delta each round, not a full recount
+**Core data model:**
 
-**Program 2: `src/reachability.rs`**
-- [ ] Input: a collection of directed edges `(u32, u32)`
-- [ ] Compute reachability: use `iterate` to propagate reachability transitively
-- [ ] Start from a fixed set of roots (e.g. node 0)
-- [ ] In the input loop: add edge (0→1) at t=1, add edge (1→2) at t=2, retract edge (0→1) at t=3; observe which nodes are reachable at each step
+- [ ] `Update.scala` — case class `Update[K, V](key: K, value: V, time: Int, diff: Int)` where `diff` is `+1` (addition) or `-1` (retraction)
+- [ ] `Collection.scala` — wraps a `List[Update[K, V]]`; implements:
+  - `map[K2, V2](f: (K, V) => (K2, V2)): Collection[K2, V2]` — transform each update, preserve diff
+  - `filter(p: (K, V) => Boolean): Collection[K, V]` — drop updates where predicate is false
+  - `consolidate: Collection[K, V]` — merge updates with the same (key, value, time), sum their diffs, drop zero-diff entries
 
-**Constraints:** use `differential_dataflow` 0.12+ and `timely` from crates.io. Single-threaded (`timely::execute_directly`). Print changes as they arrive, not final state.
+**Word count:**
+
+- [ ] `WordCount.scala` — given a `Collection[Int, String]` (document id → document text):
+  - `flatMap` each document into words: emit one `Update[String, Unit](word, (), time, diff)` per word
+  - `count` by key: consolidate, then group by key and sum diffs to get current count per word
+  - In a loop: add document at t=1 (diff=+1), print counts; retract it at t=2 (diff=-1), print updated counts; add a different document at t=3
+  - Only print the delta each round — what changed — not the full state
+
+**Graph reachability:**
+
+- [ ] `Reachability.scala` — given a `Collection[Int, Int]` of directed edges (src → dst):
+  - Start with a set of root nodes (e.g. `{0}`)
+  - One iteration: for each reachable node r, for each edge (r → dst), emit dst as reachable
+  - Run 3 iterations manually (no loop abstraction needed); print newly reachable nodes per iteration
+  - Then: add edge (0→1) at t=1, (1→2) at t=2, retract (0→1) at t=3; re-run and print which nodes are reachable after each change
+
+**Constraints:** no external libraries beyond sbt. All state is immutable (`List`, `Map`). No mutable vars outside the input loop.
 
 ---
 
@@ -41,10 +58,10 @@ Project: `code/dd-examples/` (Rust, Cargo workspace)
 
 **What surprised me:**
 
-**What happens inside DD when you retract a record?**
+**What happens inside your engine when you retract a record?**
 
-**How arrangements relate to what you built:**
+**What your implementation is missing compared to the real DD (hint: arrangements):**
 
-**How this connects to Materialize's query engine:**
+**How this connects to my current role's query engine:**
 
 **What I'd do differently:**

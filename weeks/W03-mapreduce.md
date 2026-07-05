@@ -1,3 +1,8 @@
+---
+week_number: 3
+status: not-started
+---
+
 # W03 — MapReduce and Its Limits
 
 > **Arc:** Data Systems Internals · **Language:** Java 21
@@ -41,6 +46,12 @@ Project: `code/mapreduce/` (Java 21, virtual threads)
 - [ ] `PageRankJob.java` — one MapReduce iteration of PageRank: map emits `(destination, rank/out_degree)` for each outgoing edge; reduce sums contributions + applies damping factor `0.85`
 - [ ] `PageRankRunner.java` — runs PageRankJob for 10 iterations over a hardcoded 1000-node graph (random edges, average degree 5). After each iteration, print: iteration number, sum of rank changes (convergence), **bytes written to disk for the shuffle file**.
 - [ ] In comments: calculate what the disk I/O would be at 1M nodes. This is the argument for keeping intermediate state in memory (Spark) or as a live dataflow (Naiad/DD).
+
+**Go automation tool:**
+
+- [ ] `tools/job_coordinator/main.go` — a Go HTTP server that accepts job submissions and tracks status. Endpoints: `POST /job` (accepts `{"type": "wordcount"|"pagerank", "input": "path"}`, returns `{"job_id": "..."}`), `GET /job/{id}` (returns status + result when done). The Java MR runner calls this server to report completion. Keep it under 100 lines — use only `net/http` and `encoding/json` from stdlib.
+
+This is your first Go program. Notice how little boilerplate HTTP serving requires in Go compared to Java.
 
 ---
 

@@ -1,9 +1,14 @@
+---
+week_number: 8
+status: not-started
+---
+
 # W08 — Query Execution
 
-> **Arc:** Streaming and Dataflow · **Language:** Rust
+> **Arc:** Streaming and Dataflow · **Language:** Scala
 
 ## What you'll build
-A vectorized query executor in Rust: columnar filter + hash join + projection over in-memory data. Benchmark it against a row-at-a-time version of the same pipeline.
+A vectorized query executor in Scala: columnar filter + hash join + projection over in-memory data. Benchmark it against a row-at-a-time version of the same pipeline and measure the speedup.
 
 ---
 
@@ -17,20 +22,22 @@ A vectorized query executor in Rust: columnar filter + hash join + projection ov
 
 ## Code
 
-Project: `code/query-exec/` (Rust, Cargo)
+Project: `code/query-exec/` (Scala 3, sbt)
 
-Data model: a table of `(id: u32, dept: u32, salary: u32)` rows, stored as three separate `Vec<u32>` (columnar).
+Data model: a table of 1M rows with columns `id: Array[Int]`, `dept: Array[Int]`, `salary: Array[Int]` stored separately (columnar).
 
 **Row-at-a-time executor (baseline):**
-- [ ] `row_executor.rs` — struct-of-arrays input; iterator that yields one `(id, dept, salary)` tuple at a time; apply filter `salary > threshold`, then project `(id, salary)`
+
+- [ ] `RowExecutor.scala` — case class `Row(id: Int, dept: Int, salary: Int)`; `Iterator[Row]` that zips the three arrays; apply `filter(_.salary > threshold)`, then `map(r => (r.id, r.salary))`; collect results
 
 **Vectorized executor:**
-- [ ] `column_filter.rs` — takes `&[u32]` slice, threshold, returns `Vec<bool>` selection mask (branchless: use `map(|v| (v > threshold) as u8)`)
-- [ ] `column_project.rs` — applies a selection mask to a column, returning only selected values
-- [ ] `hash_join.rs` — build hash table from left side `(key, value)` pairs; probe with right side; emit matching pairs. Both sides as `&[u32]` slices.
-- [ ] `bench.rs` — use `std::time::Instant` to benchmark filter + project pipeline on 1M rows, row-at-a-time vs vectorized. Print throughput (rows/sec).
 
-**Expected outcome:** vectorized should be at least 3–5x faster. If not, check if the compiler is auto-vectorizing the row version (add `#[no_vectorize]` or check assembly with `cargo asm`).
+- [ ] `ColumnFilter.scala` — `def filter(col: Array[Int], threshold: Int): Array[Boolean]` — branchless: `col.map(v => v > threshold)`
+- [ ] `ColumnProject.scala` — `def project(col: Array[Int], mask: Array[Boolean]): Array[Int]` — collect values where mask is true
+- [ ] `HashJoin.scala` — `def join(leftKey: Array[Int], leftVal: Array[Int], rightKey: Array[Int], rightVal: Array[Int]): Array[(Int, Int)]` — build `HashMap[Int, Int]` from left side, probe with right side, emit matching pairs
+- [ ] `Benchmark.scala` — generate 1M random rows; time filter + project pipeline 10 times each (warm up JVM first with 3 dry runs); print mean throughput in M rows/sec for both executors
+
+**Expected outcome:** vectorized should be 3–8x faster. If the gap is smaller, check whether the JIT is auto-vectorizing the iterator version (run with `-XX:+PrintCompilation` to inspect).
 
 ---
 
@@ -45,6 +52,6 @@ Data model: a table of `(id: u32, dept: u32, salary: u32)` rows, stored as three
 - Vectorized: __ M rows/sec
 - Speedup: __x
 
-**What does this tell you about how Materialize executes queries?**
+**What does this tell you about how query execution works in your current role?**
 
 **What I'd do differently:**
