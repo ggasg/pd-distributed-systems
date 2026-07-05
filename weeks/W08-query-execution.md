@@ -41,6 +41,46 @@ Data model: a table of 1M rows with columns `id: Array[Int]`, `dept: Array[Int]`
 
 ---
 
+## 🐍 Python DSA Review (optional)
+
+**Hash join + binary search on sorted arrays** — the two algorithms your Scala `HashJoin.scala` and `ColumnFilter.scala` implement. Python makes the probe/build logic easy to inspect.
+
+```python
+from collections import defaultdict
+from bisect import bisect_left
+
+# hash_join.py — classic hash join: build phase + probe phase
+def hash_join(left: list[dict], right: list[dict], key: str) -> list[dict]:
+    # Build: index left side by join key
+    ht: dict = defaultdict(list)
+    for row in left:
+        ht[row[key]].append(row)
+    # Probe: for each right row, look up in hash table
+    result = []
+    for row in right:
+        for match in ht.get(row[key], []):
+            result.append(match | row)  # merge dicts (Python 3.9+)
+    return result
+
+left  = [{"id": 1, "name": "alice"}, {"id": 2, "name": "bob"}]
+right = [{"id": 1, "score": 95},     {"id": 1, "score": 88}]
+joined = hash_join(left, right, "id")
+assert len(joined) == 2 and all(r["name"] == "alice" for r in joined)
+
+# binary_filter.py — binary search on a sorted column (like ColumnFilter.scala)
+def filter_sorted_col(col: list[int], predicate_min: int, predicate_max: int) -> list[int]:
+    lo = bisect_left(col, predicate_min)
+    hi = bisect_left(col, predicate_max + 1)
+    return col[lo:hi]  # slice is O(k) not O(n)
+
+col = sorted([5, 2, 8, 1, 9, 3, 7, 4, 6])
+assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
+```
+
+**Connection:** `HashJoin.scala` is the build+probe pattern in Scala with `Array[Int]` columns. `ColumnFilter.scala` can use `bisect_left` equivalent for range filters on sorted columns — 3–8x faster than scanning.
+
+---
+
 ## Reflect
 
 **What clicked:**

@@ -34,6 +34,54 @@ Project: `code/timely-toy/` (Scala 3, sbt)
 
 ---
 
+## 🐍 Python DSA Review (optional)
+
+**Topological sort (Kahn's algorithm)** — dataflow operator scheduling requires topological ordering. Naiad's progress tracking operates on a DAG of operators.
+
+```python
+from collections import defaultdict, deque
+
+# topo_sort.py — Kahn's algorithm: O(V + E)
+def topological_sort(nodes: list, edges: list[tuple]) -> list:
+    in_degree = defaultdict(int)
+    adj = defaultdict(list)
+    for u, v in edges:
+        adj[u].append(v)
+        in_degree[v] += 1
+
+    # Start with all nodes that have no incoming edges
+    q = deque(n for n in nodes if in_degree[n] == 0)
+    order = []
+    while q:
+        node = q.popleft()
+        order.append(node)
+        for neighbor in adj[node]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                q.append(neighbor)
+
+    if len(order) != len(nodes):
+        raise ValueError("Cycle detected — not a valid dataflow DAG")
+    return order
+
+# Test: simple 4-operator pipeline
+# input → filter → map → output
+nodes = ["input", "filter", "map", "output"]
+edges = [("input","filter"), ("filter","map"), ("map","output")]
+assert topological_sort(nodes, edges) == ["input", "filter", "map", "output"]
+
+# Test: two parallel branches merging
+nodes2 = ["src", "A", "B", "join"]
+edges2 = [("src","A"), ("src","B"), ("A","join"), ("B","join")]
+result = topological_sort(nodes2, edges2)
+assert result.index("src") < result.index("A") < result.index("join")
+assert result.index("src") < result.index("B") < result.index("join")
+```
+
+**Connection:** Naiad's `ProgressTracker` schedules operator notifications in an order consistent with the dataflow graph — that's topological ordering. Your Scala `Operator` trait assumes operators fire in a valid schedule; this is where that schedule comes from.
+
+---
+
 ## Reflect
 
 **What clicked:**

@@ -52,6 +52,43 @@ Project: `code/dd-scratch/` (Scala 3, sbt)
 
 ---
 
+## 🐍 Python DSA Review (optional)
+
+**defaultdict as a multiset + sorted consolidation** — a DD `Collection` is a map from keys to signed integer multiplicities. Consolidation collapses duplicates and drops zeros.
+
+```python
+from collections import defaultdict
+
+# consolidate.py — core operation in every DD collection
+def consolidate(updates: list[tuple]) -> dict:
+    """
+    updates: list of (key, diff) where diff is +1 (add) or -1 (retract)
+    Returns: dict of key → net_diff, with zeros removed
+    """
+    counts: dict = defaultdict(int)
+    for key, diff in updates:
+        counts[key] += diff
+    return {k: v for k, v in counts.items() if v != 0}
+
+# Test: add 3 "apple", retract 2 → net +1
+updates = [("apple", 1), ("apple", 1), ("apple", 1), ("apple", -1), ("apple", -1),
+           ("banana", 1), ("banana", -1)]  # banana nets to 0 → dropped
+result = consolidate(updates)
+assert result == {"apple": 1}
+
+# sorted_merge_dd.py — merge two sorted update streams (used in DD operator composition)
+def merge_updates(a: list[tuple], b: list[tuple]) -> list[tuple]:
+    """Merge two sorted (key, diff) streams, consolidating as we go."""
+    combined = sorted(a + b, key=lambda x: x[0])
+    return list(consolidate(combined).items())
+
+assert merge_updates([("a", 1), ("b", 1)], [("a", -1), ("c", 1)]) == [("b", 1), ("c", 1)]
+```
+
+**Connection:** `Collection.consolidate()` in your Scala DD engine does exactly this — the Python version makes the data model concrete before you reason about it across epochs and time lattices.
+
+---
+
 ## Reflect
 
 **What clicked:**
