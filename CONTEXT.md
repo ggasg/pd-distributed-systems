@@ -23,8 +23,13 @@ Become a pragmatic master of Distributed, Data-Intensive Systems. Focus areas:
 Vault structure:
 - `config.md` — set `start_date` here; all week dates recalculate in Home.md
 - `Home.md` — daily entry point; DataviewJS auto-detects current week and shows schedule
-- `weeks/W00-*.md` through `W16-*.md` — one file per week (task checklist + notes)
-- `tools/plan-dates.go` — `go run tools/plan-dates.go --start 2026-07-06` prints full schedule
+- `weeks/W00-*.md` through `W16-*.md` — one file per week; each has Read, Code, optional Python DSA Review, and Reflect sections
+- `tools/plan-dates.go` — `go run tools/plan-dates.go --start 2026-07-13` prints full schedule
+- `SETUP.md` — full environment setup (Java, Scala, Python, Go, Docker, Obsidian)
+- `RESOURCES.md` — all papers and books by week with free links
+- `Templates/week-template.md` — blank week file for adding custom weeks
+- `posts/TEMPLATE.md` — structured blog post format for weekly write-ups
+- `code/README.md` — expected directory tree and build commands for all weeks
 - `README.md` — public-facing GitHub description
 
 No Notion. No separate task tracker. Everything lives here.
@@ -80,14 +85,14 @@ No Notion. No separate task tracker. Everything lives here.
 
 ## Date Configuration
 
-Edit `start_date` in `config.md` to reschedule. With default `2026-07-06`:
-- W00: Jun 29 – Jul 5
-- W01: Jul 6 – Jul 12
-- W14: Oct 5 – Oct 11
-- W15: Oct 12 – Oct 18
-- W16: Oct 19 – Oct 25
+Edit `start_date` in `config.md` to reschedule. Current config (`2026-07-13`):
+- W00: Jul 6 – Jul 12
+- W01: Jul 13 – Jul 19
+- W14: Oct 12 – Oct 18
+- W15: Oct 19 – Oct 25
+- W16: Oct 26 – Nov 1
 
-`go run tools/plan-dates.go --start 2026-07-06` prints the full table.
+`go run tools/plan-dates.go --start 2026-07-13` prints the full table.
 
 ---
 
