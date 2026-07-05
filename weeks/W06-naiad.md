@@ -22,7 +22,7 @@ A toy timely dataflow graph in Scala: two operators connected by edges, timestam
 
 ## Code
 
-Project: `code/timely-toy/` (Scala 3, sbt)
+Project: `code/timely-toy/` (Scala 2.13, sbt)
 
 - [ ] `Timestamp.scala` — case class `Timestamp(epoch: Int, iteration: Int)` with a `happensBefore` relation: `(e1, i1) < (e2, i2)` iff `e1 < e2 || (e1 == e2 && i1 < i2)` (total order for this toy; Naiad uses partial order)
 - [ ] `Pointstamp.scala` — case class `Pointstamp(location: Int, timestamp: Timestamp)`. Implement `couldResultIn(other: Pointstamp, graph: Graph): Boolean` — conservative check based on graph paths

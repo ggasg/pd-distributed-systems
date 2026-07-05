@@ -22,7 +22,7 @@ Tumbling window aggregation from scratch in Scala. No Flink, no Spark. Input: a 
 
 ## Code
 
-Project: `code/streaming/` (Scala 3, sbt)
+Project: `code/streaming/` (Scala 2.13, sbt)
 
 - [ ] `Event.scala` — case class `Event(eventTime: Long, value: Int)`
 - [ ] `Watermark.scala` — case class `Watermark(timestamp: Long)` — represents the assertion "no events with eventTime < timestamp will arrive"

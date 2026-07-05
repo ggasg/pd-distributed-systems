@@ -25,7 +25,7 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 |-----|-------|-------|----------|
 | Setup | W00 | Local k8s, Prometheus, Grafana | Go |
 | Data Systems Internals | W01–W04 | Storage engines, encoding, MapReduce, causality | Java 21 |
-| Streaming and Dataflow | W05–W08 | Stream processing, Naiad, Differential Dataflow, query execution | Scala 3 |
+| Streaming and Dataflow | W05–W08 | Stream processing, Naiad, Differential Dataflow, query execution | Scala 2.13 |
 | Distributed ML & Compute | W09–W14 | ML pipelines, distributed training, GPU compute, transformers, fault tolerance | Python / Go secondary |
 | Infrastructure | W15–W16 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / Scala |
 
@@ -76,7 +76,7 @@ Every week has:
 |-------|----------|-----|
 | W00 | Go | Service + k8s deployment; Prometheus metrics |
 | W01–W04 | Java 21 | Virtual threads, records — modern concurrency primitives |
-| W05–W08 | Scala 3 | FP, algebraic types — natural for dataflow and incremental computation |
+| W05–W08 | Scala 2.13 | FP, algebraic types — natural for dataflow and incremental computation |
 | W09–W12 | Python | ML ecosystem, numerical computing, Numba for GPU |
 | W13–W14 | Java 21 / Scala / Python | Depends on capstone option |
 | W15 | Go | Operators are almost exclusively written in Go |

@@ -22,7 +22,7 @@ A vectorized query executor in Scala: columnar filter + hash join + projection o
 
 ## Code
 
-Project: `code/query-exec/` (Scala 3, sbt)
+Project: `code/query-exec/` (Scala 2.13, sbt)
 
 Data model: a table of 1M rows with columns `id: Array[Int]`, `dept: Array[Int]`, `salary: Array[Int]` stored separately (columnar).
 
