@@ -22,7 +22,7 @@ A simplified Differential Dataflow engine from scratch in Scala: the `(key, valu
 
 ## Code
 
-Project: `code/dd-scratch/` (Scala 3, sbt)
+Project: `code/dd-scratch/` (Scala 2.13, sbt)
 
 **Core data model:**
 

@@ -44,7 +44,7 @@ code/
 │   │   └── CausalDeliveryTest.java
 │   └── pom.xml
 │
-├── streaming/              # W05 — Scala 3
+├── streaming/              # W05 — Scala 2.13
 │   ├── src/main/scala/
 │   │   ├── Event.scala
 │   │   ├── Watermark.scala
@@ -52,7 +52,7 @@ code/
 │   │   └── StreamProcessor.scala
 │   └── build.sbt
 │
-├── timely-toy/             # W06 — Scala 3
+├── timely-toy/             # W06 — Scala 2.13
 │   ├── src/main/scala/
 │   │   ├── Timestamp.scala
 │   │   ├── Pointstamp.scala
@@ -61,7 +61,7 @@ code/
 │   │   └── DataflowTest.scala
 │   └── build.sbt
 │
-├── dd-scratch/             # W07 — Scala 3
+├── dd-scratch/             # W07 — Scala 2.13
 │   ├── src/main/scala/
 │   │   ├── Update.scala
 │   │   ├── Collection.scala
@@ -69,7 +69,7 @@ code/
 │   │   └── Reachability.scala
 │   └── build.sbt
 │
-├── query-exec/             # W08 — Scala 3
+├── query-exec/             # W08 — Scala 2.13
 │   ├── src/main/scala/
 │   │   ├── RowExecutor.scala
 │   │   ├── ColumnFilter.scala

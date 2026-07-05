@@ -45,25 +45,38 @@ sudo update-alternatives --config java   # pick java-21
 
 ---
 
-## Scala 3 + SBT
+## Scala 2.13 + SBT
 
 ```bash
-sdk install sbt                 # installs SBT, which pulls Scala 3 automatically
-sbt --version                   # should print sbt script version
-
-# Or via Homebrew (macOS):
+# macOS
 brew install sbt
+sbt --version   # should print sbt script version
+
+# Ubuntu / Debian
+echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add -
+sudo apt update && sudo apt install sbt
 ```
 
-Each Scala project (`code/streaming/`, `code/dd-scratch/`, etc.) has its own `build.sbt`. SBT downloads Scala 3 on first run.
+Each Scala project (`code/streaming/`, `code/dd-scratch/`, etc.) has its own `build.sbt`. SBT downloads Scala 2.13 on first run.
 
 Minimal `build.sbt` for any Arc 2 project:
 ```scala
-scalaVersion := "3.4.1"
-scalacOptions ++= Seq("-deprecation", "-feature")
+scalaVersion := "2.13.16"
+scalacOptions ++= Seq("-deprecation", "-feature", "-language:higherKinds")
 ```
 
-**W05–W08** use Scala 3. Recommended IDE: IntelliJ IDEA with the Scala plugin, or VS Code with Metals.
+**W05–W08** use Scala 2.13.16 — chosen for compatibility with Spark, Flink, and the broader JVM ecosystem. Recommended IDE: IntelliJ IDEA with the Scala plugin, or VS Code with Metals.
+
+**Scala 2 vs Scala 3 syntax differences** you'll encounter in examples online:
+
+| Concept | Scala 2.13 (use this) | Scala 3 equivalent |
+|---------|----------------------|-------------------|
+| ADTs | `sealed trait` + `case class` | `enum` |
+| Type classes | `implicit val` / `implicit def` | `given` / `using` |
+| Braces | always required | optional |
+
+The week files describe *what* to build, not exact syntax — either version works conceptually.
 
 ---
 
