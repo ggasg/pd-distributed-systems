@@ -92,6 +92,6 @@ assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
 - Vectorized: __ M rows/sec
 - Speedup: __x
 
-**What does this tell you about how query execution works in your current role?**
+**What does this tell you about how query execution works in a system you know?**
 
 **What I'd do differently:**

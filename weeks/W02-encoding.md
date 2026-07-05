@@ -80,6 +80,6 @@ for n in [0, 1, 127, 128, 300, 16383, 2**21 - 1]:
 - Column store column scan: __ ms
 - Speedup: __x
 
-**How this connects to my current role:**
+**How this connects to a system you've worked with:**
 
 **What I'd do differently:**

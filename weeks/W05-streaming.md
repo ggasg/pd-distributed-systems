@@ -82,6 +82,6 @@ assert sliding_max([1, 3, -1, -3, 5, 3, 6, 7], 3) == [3, 3, 5, 5, 6, 7]
 
 **How would you handle late data without dropping it?**
 
-**How this connects to my current role's approach to time:**
+**How a system you've worked with handles event time vs. processing time:**
 
 **What I'd do differently:**
