@@ -38,7 +38,7 @@ No Notion. No separate task tracker. Everything lives here.
 |------|-------|-----------|-------------|
 | W01 | LSM-Trees + Storage Engines | DDIA Ch.3; LevelDB source | `lsm/` Java project |
 | W02 | Encoding + Wire Formats | DDIA Ch.4; Protobuf encoding spec | `encoding/` benchmark |
-| W03 | Raft Consensus | Ongaro & Ousterhout (2014) | `raft/` Java — leader election + log replication |
+| W03 | MapReduce and Its Limits | Dean & Ghemawat (2004); Zaharia et al. (2012) | `mapreduce/` Java — MR framework + word count + iterative PageRank |
 | W04 | Clocks, Causality, Time | Lamport (1978); DDIA Ch.8; Spanner TrueTime | `clocks/` Java — vector clocks + causal delivery |
 
 ### Arc 2: Streaming and Dataflow (W05–W08) — Scala / Rust
