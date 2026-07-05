@@ -13,7 +13,7 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 
 | Arc | Weeks | Focus |
 |-----|-------|-------|
-| Data Systems Internals | W01–W04 | Storage engines, encoding, consensus, clocks |
+| Data Systems Internals | W01–W04 | Storage engines, encoding, MapReduce, clocks |
 | Streaming and Dataflow | W05–W08 | Stream processing, Naiad, Differential Dataflow, query execution |
 | Distributed ML & Compute | W09–W14 | ML pipelines, distributed training, GPU compute, transformers, fault tolerance |
 
@@ -39,7 +39,7 @@ Every week has:
 
 - [W01 — LSM-Trees and Storage Engines](weeks/W01-lsm-storage.md)
 - [W02 — Encoding and Wire Formats](weeks/W02-encoding.md)
-- [W03 — Raft Consensus](weeks/W03-raft.md)
+- [W03 — MapReduce and Its Limits](weeks/W03-mapreduce.md)
 - [W04 — Clocks, Causality, and Time](weeks/W04-clocks.md)
 - [W05 — Stream Processing Primitives](weeks/W05-streaming.md)
 - [W06 — Naiad and Timely Dataflow](weeks/W06-naiad.md)
