@@ -48,6 +48,57 @@ This is a realistic pattern: Go handles the coordination service, Python handles
 
 ---
 
+## 🐍 Python DSA Review (optional)
+
+**Ring buffer (circular array)** — ring-allreduce passes gradient chunks around a logical ring of workers. A ring buffer is the underlying data structure for any fixed-capacity FIFO queue without allocation.
+
+```python
+# ring_buffer.py
+class RingBuffer:
+    def __init__(self, capacity: int):
+        self._buf = [None] * capacity
+        self._cap = capacity
+        self._head = 0   # index of oldest item
+        self._size = 0
+
+    def push(self, item) -> None:
+        tail = (self._head + self._size) % self._cap
+        self._buf[tail] = item
+        if self._size < self._cap:
+            self._size += 1
+        else:
+            self._head = (self._head + 1) % self._cap  # overwrite oldest
+
+    def pop(self):
+        if self._size == 0:
+            raise IndexError("pop from empty RingBuffer")
+        item = self._buf[self._head]
+        self._head = (self._head + 1) % self._cap
+        self._size -= 1
+        return item
+
+    def __len__(self): return self._size
+
+# Test: capacity 3, push 4 items → oldest evicted
+rb = RingBuffer(3)
+for i in range(4): rb.push(i)
+assert len(rb) == 3
+assert rb.pop() == 1  # 0 was evicted
+
+# Ring-allreduce mental model: N workers in a ring, each holds one chunk
+# After N-1 scatter-reduce steps, every worker has partial sum of its chunk
+# After N-1 all-gather steps, every worker has full gradient
+def ring_indices(rank: int, n_workers: int, n_steps: int) -> list[int]:
+    """Which chunk indices does worker `rank` send at each step?"""
+    return [(rank - step) % n_workers for step in range(n_steps)]
+
+assert ring_indices(0, 4, 4) == [0, 3, 2, 1]
+```
+
+**Connection:** `ring_allreduce.py` sends gradient chunks in exactly this circular pattern. The ring buffer is also the right data structure for the log-aggregator sidecar in W16 — fixed memory, O(1) push/pop.
+
+---
+
 ## Reflect
 
 **What clicked:**

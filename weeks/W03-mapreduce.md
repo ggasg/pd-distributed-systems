@@ -55,6 +55,44 @@ This is your first Go program. Notice how little boilerplate HTTP serving requir
 
 ---
 
+## 🐍 Python DSA Review (optional)
+
+**Hash maps (groupBy) + adjacency list BFS** — the shuffle phase is a groupBy; PageRank needs a graph.
+
+```python
+from collections import defaultdict, deque
+
+# map_reduce.py — the shuffle phase in pure Python
+def group_by(pairs: list[tuple]) -> dict:
+    groups = defaultdict(list)
+    for k, v in pairs:
+        groups[k].append(v)
+    return dict(groups)
+
+# graph.py — adjacency list + BFS (PageRank iteration needs this)
+def bfs(graph: dict, start) -> set:
+    visited, q = {start}, deque([start])
+    while q:
+        node = q.popleft()
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                q.append(neighbor)
+    return visited
+
+# Test groupBy (the "shuffle" step)
+pairs = [("a", 1), ("b", 2), ("a", 3), ("b", 4)]
+assert group_by(pairs) == {"a": [1, 3], "b": [2, 4]}
+
+# Test BFS on a 4-node graph
+graph = {"A": ["B", "C"], "B": ["D"], "C": [], "D": []}
+assert bfs(graph, "A") == {"A", "B", "C", "D"}
+```
+
+**Connection:** the Java `MapReduceRunner` groups intermediate key-value pairs — that's `group_by`. `PageRank.java` iterates over a graph — that's the adjacency list pattern. Getting these right in Python first clarifies the algorithm before adding virtual threads and disk I/O.
+
+---
+
 ## Reflect
 
 **What clicked:**

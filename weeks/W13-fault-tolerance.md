@@ -39,6 +39,44 @@ Once the Java version works, rewrite `Node` and `Coordinator` in Go using gorout
 
 ---
 
+## 🐍 Python DSA Review (optional)
+
+**FIFO queue + BFS for snapshot reachability** — Chandy-Lamport requires FIFO channels; BFS verifies the snapshot is consistent (every in-flight message is accounted for).
+
+```python
+from collections import deque
+
+# fifo_channel.py — what Channel.java wraps: a FIFO queue with O(1) ops
+channel: deque = deque()
+channel.append("msg1")   # enqueue — O(1)
+channel.append("msg2")
+assert channel.popleft() == "msg1"  # dequeue — O(1), unlike list.pop(0) which is O(n)
+
+# snapshot_verify.py — after snapshot, BFS from initiator to confirm all reachable
+# nodes have recorded state (consistency check)
+def all_nodes_recorded(graph: dict, initiator: str, recorded: set) -> bool:
+    """BFS from initiator; every reachable node must be in `recorded`."""
+    visited, q = {initiator}, deque([initiator])
+    while q:
+        node = q.popleft()
+        if node not in recorded:
+            return False
+        for neighbor in graph.get(node, []):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                q.append(neighbor)
+    return True
+
+# 3-node ring: 0 → 1 → 2 → 0
+ring = {0: [1], 1: [2], 2: [0]}
+assert all_nodes_recorded(ring, 0, {0, 1, 2})
+assert not all_nodes_recorded(ring, 0, {0, 1})  # node 2 missed
+```
+
+**Connection:** `Channel.java` is a `LinkedBlockingQueue` — that's this `deque` with thread safety. The BFS is how you'd write `SnapshotTest.java`'s consistency assertion if you wanted to do it graph-theoretically rather than just summing integers.
+
+---
+
 ## Reflect
 
 **What clicked:**

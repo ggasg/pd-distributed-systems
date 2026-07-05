@@ -34,6 +34,41 @@ Project: `code/encoding/` (Java 21)
 
 ---
 
+## 🐍 Python DSA Review (optional)
+
+**Bit manipulation + byte packing** — implement varint in Python before doing it in Java. The bit ops are the same; Python makes them easy to inspect.
+
+```python
+# varint.py
+def encode_varint(n: int) -> bytes:
+    out = []
+    while n > 0x7F:
+        out.append((n & 0x7F) | 0x80)  # low 7 bits + continuation bit
+        n >>= 7
+    out.append(n)
+    return bytes(out)
+
+def decode_varint(data: bytes, pos: int = 0) -> tuple[int, int]:
+    result, shift = 0, 0
+    while True:
+        b = data[pos]; pos += 1
+        result |= (b & 0x7F) << shift
+        if not (b & 0x80):  # no continuation bit → done
+            return result, pos
+        shift += 7
+
+# Verify round-trip
+for n in [0, 1, 127, 128, 300, 16383, 2**21 - 1]:
+    encoded = encode_varint(n)
+    decoded, _ = decode_varint(encoded)
+    assert decoded == n, f"Failed for {n}"
+    print(f"{n:>8} → {list(encoded)} ({len(encoded)} bytes)")
+```
+
+**Connection:** this IS the week's core topic — but implementing it in Python first lets you verify the bit logic interactively before writing the Java version where compile-run cycles are slower.
+
+---
+
 ## Reflect
 
 **What clicked:**

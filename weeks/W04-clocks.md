@@ -34,6 +34,47 @@ Project: `code/clocks/` (Java 21)
 
 ---
 
+## 🐍 Python DSA Review (optional)
+
+**Dicts as vector clocks** — a vector clock is just a dict. Implement the three core operations in Python before building the immutable Java record.
+
+```python
+# vector_clock.py
+VClock = dict  # {node_id: int}
+
+def increment(vc: VClock, node: str) -> VClock:
+    result = dict(vc)
+    result[node] = result.get(node, 0) + 1
+    return result
+
+def merge(a: VClock, b: VClock) -> VClock:
+    keys = set(a) | set(b)
+    return {k: max(a.get(k, 0), b.get(k, 0)) for k in keys}
+
+def happens_before(a: VClock, b: VClock) -> bool:
+    keys = set(a) | set(b)
+    return (all(a.get(k, 0) <= b.get(k, 0) for k in keys)
+            and any(a.get(k, 0) < b.get(k, 0) for k in keys))
+
+def concurrent(a: VClock, b: VClock) -> bool:
+    return not happens_before(a, b) and not happens_before(b, a)
+
+# Tests
+vc0 = {}
+vc1 = increment(vc0, "A")        # {"A": 1}
+vc2 = increment(vc1, "A")        # {"A": 2}
+vc3 = increment(vc0, "B")        # {"B": 1}
+
+assert happens_before(vc1, vc2)
+assert not happens_before(vc2, vc1)
+assert concurrent(vc2, vc3)      # A and B are causally independent
+assert merge(vc2, vc3) == {"A": 2, "B": 1}
+```
+
+**Connection:** `VectorClock.java` is this dict, made immutable with a Java record. Writing it as a dict first shows you that the data structure is trivial — the subtlety is in `happensBefore` and `concurrent`.
+
+---
+
 ## Reflect
 
 **What clicked:**

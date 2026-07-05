@@ -33,6 +33,38 @@ Project: `code/lsm/` (Java 21, Maven or Gradle)
 
 ---
 
+## 🐍 Python DSA Review (optional)
+
+**Binary search + sorted k-way merge** — the two algorithms inside every SSTable read and compaction.
+
+```python
+# binary_search.py — implement bisect_left from scratch
+def bisect_left(arr, target):
+    lo, hi = 0, len(arr)
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if arr[mid] < target: lo = mid + 1
+        else: hi = mid
+    return lo
+
+# sorted_merge.py — merge two sorted lists of (key, value) pairs (SSTable compaction)
+def merge_sstables(a, b):
+    result, i, j = [], 0, 0
+    while i < len(a) and j < len(b):
+        if a[i][0] <= b[j][0]: result.append(a[i]); i += 1
+        else: result.append(b[j]); j += 1
+    return result + a[i:] + b[j:]
+
+# Test: merge two sorted sstables, later key wins on tie
+a = [("apple", 1), ("mango", 3)]
+b = [("apple", 2), ("grape", 4)]
+assert merge_sstables(a, b) == [("apple", 1), ("apple", 2), ("grape", 4), ("mango", 3)]
+```
+
+**Connection:** `bisect_left` is what an SSTable does on every point read. `merge_sstables` is what compaction does when collapsing multiple sorted runs — your Java `LSMTree` does this, but Python makes the algorithm visible in 10 lines.
+
+---
+
 ## Reflect
 <!-- Fill in at the end of the week -->
 
