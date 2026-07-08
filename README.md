@@ -19,7 +19,7 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 
 ## Structure
 
-17 weeks across 4 arcs (plus a W00 setup week). 2h/day, 5 days/week.
+17 weeks across 4 arcs (plus a W00 setup week), and an optional W17 grand capstone. 2h/day, 5 days/week.
 
 | Arc | Weeks | Focus | Language |
 |-----|-------|-------|----------|
@@ -28,6 +28,7 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 | Streaming and Dataflow | W05–W08 | Stream processing, Naiad, Differential Dataflow, query execution | Scala 2.13 |
 | Distributed ML & Compute | W09–W14 | ML pipelines, distributed training, GPU compute, transformers, fault tolerance | Python / Go secondary |
 | Infrastructure | W15–W16 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / Scala |
+| Capstone (optional) | W17 | Distributed training + serving platform, fully observed — synthesizes W09, W10, W12, W13, W15, W16 | Go / Python |
 
 ---
 
@@ -123,6 +124,7 @@ Every week has:
 - [W14 — Capstone](weeks/W14-capstone.md)
 - [W15 — Kubernetes and Operators](weeks/W15-kubernetes-operators.md)
 - [W16 — Observability: Metrics, Tracing, Logging](weeks/W16-observability.md)
+- [W17 — Grand Capstone: Distributed Training & Serving Platform (optional)](weeks/W17-capstone-platform.md)
 
 ---
 
