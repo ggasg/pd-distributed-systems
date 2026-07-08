@@ -130,11 +130,18 @@ code/
 │   ├── main.go
 │   └── go.mod
 │
-└── dd-scratch/             # W16 — extends W07
-    └── metrics/
-        ├── DDMetrics.scala
-        ├── tracing/DDTracer.scala
-        └── logging/Log.scala
+├── dd-scratch/             # W16 — extends W07
+│   └── metrics/
+│       ├── DDMetrics.scala
+│       ├── tracing/DDTracer.scala
+│       └── logging/Log.scala
+│
+└── capstone-platform/      # W17 (optional) — Go + Python, combines W09+W10+W12+W13+W15+W16
+    ├── train_worker.py
+    ├── checkpoint_coordinator.py
+    ├── serve.py
+    ├── operator/            # extends code/operator/ from W15
+    └── README.md            # required: design doc
 ```
 
 ---

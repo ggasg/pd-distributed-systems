@@ -24,6 +24,7 @@ Vault structure:
 - `config.md` — set `start_date` here; all week dates recalculate in Home.md
 - `Home.md` — daily entry point; DataviewJS auto-detects current week and shows schedule
 - `weeks/W00-*.md` through `W16-*.md` — one file per week; each has Read, Code, optional Python DSA Review, and Reflect sections
+- `weeks/W17-*.md` — optional grand capstone; synthesizes W09, W10, W12, W13, W15, W16 into one distributed training + serving platform
 - `tools/plan-dates.go` — `go run tools/plan-dates.go --start 2026-07-13` prints full schedule
 - `SETUP.md` — full environment setup (Java, Scala, Python, Go, Docker, Obsidian)
 - `RESOURCES.md` — all papers and books by week with free links
@@ -38,7 +39,7 @@ No Notion. No separate task tracker. Everything lives here.
 
 ## Curriculum
 
-17 weeks (W00 pre-week + W01–W16). 4 arcs.
+17 core weeks (W00 pre-week + W01–W16) across 4 arcs, plus an optional W17 grand capstone.
 
 ### W00: Infrastructure Setup (pre-week)
 | Week | Topic | Deliverable |
@@ -81,6 +82,12 @@ No Notion. No separate task tracker. Everything lives here.
 | W15 | Kubernetes Operators | `code/operator/` Go — custom DistributedJob CRD + reconciler |
 | W16 | Observability: Metrics, Tracing, Logging | Instrument W07 DD engine with Prometheus + OTel; Grafana dashboard |
 
+### Optional: W17 — Grand Capstone (stretch week)
+
+| Week | Topic | Deliverable |
+|------|-------|-------------|
+| W17 | Distributed training + serving platform | `code/capstone-platform/` — training across worker Pods (W10+W12), Chandy-Lamport-style checkpoint/restore (W13), operator-managed recovery (W15), fully observed in Grafana (W16) |
+
 ---
 
 ## Date Configuration
@@ -91,6 +98,7 @@ Edit `start_date` in `config.md` to reschedule. Current config (`2026-07-13`):
 - W14: Oct 12 – Oct 18
 - W15: Oct 19 – Oct 25
 - W16: Oct 26 – Nov 1
+- W17 (optional): Nov 2 – Nov 8
 
 `go run tools/plan-dates.go --start 2026-07-13` prints the full table.
 
@@ -117,6 +125,7 @@ Edit `start_date` in `config.md` to reschedule. Current config (`2026-07-13`):
 - [ ] W14
 - [ ] W15
 - [ ] W16
+- [ ] W17 (optional)
 
 ---
 

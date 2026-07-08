@@ -152,6 +152,12 @@ No required reading — you're synthesizing earlier weeks.
 
 ---
 
+## W17 — Grand Capstone (optional)
+
+No new required reading — this week synthesizes W09, W10, W12, W13, W15, and W16. Revisit those weeks' resources as needed.
+
+---
+
 ## What to Read If You Have Extra Time
 
 These aren't required but give you broader context:
