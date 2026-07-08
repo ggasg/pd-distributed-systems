@@ -18,7 +18,11 @@ Become a pragmatic master of Distributed, Data-Intensive Systems. Focus areas:
 
 ## Repo
 
-`~/dev/pd-distributed-systems` — Obsidian vault + GitHub repo.
+Two folders, same GitHub repo, checked out as separate `git worktree`s so neither tool has to switch branches:
+- `~/dev/pd-distributed-systems` (branch `main`) — the Cowork/CLI folder. Curriculum authoring happens here.
+- `~/dev/pd-distributed-systems-progress` (branch `progress`) — the Obsidian vault. Running the plan happens here.
+
+See Branch Workflow below for how these two stay in sync.
 
 Vault structure:
 - `config.md` — set `start_date` here; all week dates recalculate in Home.md
@@ -131,14 +135,23 @@ Edit `start_date` in `config.md` to reschedule. Current config (`2026-07-13`):
 
 ## Branch Workflow
 
-Two long-lived branches:
-- `main` — curriculum authoring. Structural edits to weeks, resources, and setup docs (what happens in a Cowork session when refining the plan).
-- `progress` — actually running the plan. Checked-off tasks, filled-in Reflect answers, `Current State` updates. Never merged back into `main` — it only receives.
+Two long-lived branches, each permanently checked out in its own folder via `git worktree` (not `git checkout`), so Obsidian and Cowork/CLI never touch each other's branch:
+- `main`, in `~/dev/pd-distributed-systems` — curriculum authoring. Structural edits to weeks, resources, and setup docs (what happens in a Cowork session when refining the plan).
+- `progress`, in `~/dev/pd-distributed-systems-progress` — actually running the plan. Checked-off tasks, filled-in Reflect answers, `Current State` updates. Never merged back into `main` — it only receives.
 
-To pull curriculum updates from `main` into `progress` without losing tracked progress:
+**One-time setup** (run once, from the `main` folder):
 
 ```bash
-git checkout progress
+cd ~/dev/pd-distributed-systems
+git worktree add ../pd-distributed-systems-progress progress
+```
+
+Then point Obsidian at `~/dev/pd-distributed-systems-progress` (File → Open folder as vault) and leave it there — Cowork/CLI keeps using `~/dev/pd-distributed-systems`. Neither tool needs `git checkout` again.
+
+**To pull curriculum updates from `main` into `progress`** without losing tracked progress, run from the `progress` folder:
+
+```bash
+cd ~/dev/pd-distributed-systems-progress
 git pull origin progress
 git fetch origin main
 git merge origin/main
@@ -151,8 +164,10 @@ This merges cleanly as long as answers always go on the blank line *below* each 
 
 ## Cowork Setup on a New Machine
 
-1. Clone repo: `git clone <repo-url> ~/dev/pd-distributed-systems`
-2. Open Cowork → Select folder → `~/dev/pd-distributed-systems`
-3. Create project "Professional Development" with instructions:
+1. Clone repo: `git clone <repo-url> ~/dev/pd-distributed-systems` (checks out `main`)
+2. Set up the `progress` worktree: `cd ~/dev/pd-distributed-systems && git worktree add ../pd-distributed-systems-progress progress` — see Branch Workflow above
+3. Open Cowork → Select folder → `~/dev/pd-distributed-systems` (the `main` folder — Cowork/CLI never touches `progress` directly)
+4. Open Obsidian → vault → `~/dev/pd-distributed-systems-progress`
+5. Create project "Professional Development" with instructions:
    > *"Be direct and concise with practical, action-oriented suggestions. My objective is to become a pragmatic master of Distributed, Data-Intensive Systems — not a theory know-it-all. I am a software engineer."*
-4. Paste contents of this file to restore context
+6. Paste contents of this file to restore context
