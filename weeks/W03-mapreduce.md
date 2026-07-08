@@ -27,10 +27,10 @@ Project: `code/mapreduce/` (Java 21, virtual threads)
 **The framework:**
 
 - [ ] `MapReduceJob.java` — generic class `MapReduceJob<K1,V1,K2,V2,V3>` with:
-  - `map(K1 key, V1 value, Emitter<K2,V2> emitter)` — override this
+  - `map(K1 key, V1 value) -> List<Pair<K2,V2>>` — override this. Return the output pairs directly instead of writing them into a passed-in "emitter" object. This is a small functional-programming habit: a function that takes some inputs and *returns* its results, rather than one that reaches out and mutates something else it was handed. Small payoff here: `map` is easier to test — call it once, check the list that comes back, no fake emitter to set up.
   - `reduce(K2 key, List<V2> values)` — override this, returns `V3`
 - [ ] `MapReduceRunner.java` — executes a job:
-  - Map phase: spawn one virtual thread per input split (use `List<String>` lines as splits, chunk into groups of 1000), collect `(K2, V2)` pairs
+  - Map phase: spawn one virtual thread per input split (use `List<String>` lines as splits, chunk into groups of 1000), call `map` on each and collect the `(K2, V2)` pairs it returns
   - Shuffle phase: group pairs by key into `Map<K2, List<V2>>`
   - Reduce phase: spawn one virtual thread per key, run reduce, collect results
   - Write intermediate shuffle data to a temp file between map and reduce (this is the point — make the I/O cost visible)
@@ -38,12 +38,12 @@ Project: `code/mapreduce/` (Java 21, virtual threads)
 
 **Job 1 — Word Count:**
 
-- [ ] `WordCountJob.java` — map: emit `(word, 1)` per word; reduce: sum the 1s
+- [ ] `WordCountJob.java` — map: return one `(word, 1)` pair per word; reduce: sum the 1s
 - [ ] Run on a large text file (download [Wikipedia dump excerpt](https://dumps.wikimedia.org/enwiki/latest/) or use any large `.txt`; aim for >10MB). Print top 20 words by frequency.
 
 **Job 2 — Iterative PageRank:**
 
-- [ ] `PageRankJob.java` — one MapReduce iteration of PageRank: map emits `(destination, rank/out_degree)` for each outgoing edge; reduce sums contributions + applies damping factor `0.85`
+- [ ] `PageRankJob.java` — one MapReduce iteration of PageRank: map returns `(destination, rank/out_degree)` for each outgoing edge; reduce sums contributions + applies damping factor `0.85`
 - [ ] `PageRankRunner.java` — runs PageRankJob for 10 iterations over a hardcoded 1000-node graph (random edges, average degree 5). After each iteration, print: iteration number, sum of rank changes (convergence), **bytes written to disk for the shuffle file**.
 - [ ] In comments: calculate what the disk I/O would be at 1M nodes. This is the argument for keeping intermediate state in memory (Spark) or as a live dataflow (Naiad/DD).
 

@@ -94,4 +94,6 @@ assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
 
 **What does this tell you about how query execution works in a system you know?**
 
+**Where did letting data change in place (mutation) buy you speed?** Your vectorized executor mutates arrays directly for performance. That's the opposite of the "never change data, always create a new copy" style (immutability) you leaned on in W05 and W07. Point to one specific place in `ColumnFilter.scala` or `HashJoin.scala` where mutation mattered, and estimate what it would've cost you in speed to keep that spot immutable instead.
+
 **What I'd do differently:**
