@@ -81,4 +81,4 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
 
 **What Helm does that raw kubectl apply doesn't:**
 
-**What metrics you'd expose on a real distributed system component (hint: think W07 and W10):**
+**What metrics you'd expose on a real distributed system component (you'll instrument one for real in W16):**
