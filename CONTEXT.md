@@ -18,7 +18,7 @@ Become a pragmatic master of Distributed, Data-Intensive Systems. Focus areas:
 
 ## Repo
 
-`/Users/gaston/dev/pd-distributed-systems` — Obsidian vault + GitHub repo.
+`~/dev/pd-distributed-systems` — Obsidian vault + GitHub repo.
 
 Vault structure:
 - `config.md` — set `start_date` here; all week dates recalculate in Home.md
@@ -129,10 +129,30 @@ Edit `start_date` in `config.md` to reschedule. Current config (`2026-07-13`):
 
 ---
 
+## Branch Workflow
+
+Two long-lived branches:
+- `main` — curriculum authoring. Structural edits to weeks, resources, and setup docs (what happens in a Cowork session when refining the plan).
+- `progress` — actually running the plan. Checked-off tasks, filled-in Reflect answers, `Current State` updates. Never merged back into `main` — it only receives.
+
+To pull curriculum updates from `main` into `progress` without losing tracked progress:
+
+```bash
+git checkout progress
+git pull origin progress
+git fetch origin main
+git merge origin/main
+git push origin progress
+```
+
+This merges cleanly as long as answers always go on the blank line *below* each Reflect question — never on the question line itself. That keeps curriculum edits (the question line) and progress edits (the answer line) on different lines, which is what avoids merge conflicts in Markdown.
+
+---
+
 ## Cowork Setup on a New Machine
 
-1. Clone repo: `git clone <repo-url> /Users/gaston/dev/pd-distributed-systems`
-2. Open Cowork → Select folder → `/Users/gaston/dev/pd-distributed-systems`
+1. Clone repo: `git clone <repo-url> ~/dev/pd-distributed-systems`
+2. Open Cowork → Select folder → `~/dev/pd-distributed-systems`
 3. Create project "Professional Development" with instructions:
    > *"Be direct and concise with practical, action-oriented suggestions. My objective is to become a pragmatic master of Distributed, Data-Intensive Systems — not a theory know-it-all. I am a software engineer."*
 4. Paste contents of this file to restore context

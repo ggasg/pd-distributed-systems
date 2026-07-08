@@ -136,6 +136,8 @@ Every week has:
 
 **Add your own week?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically.
 
+**Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers — see the Branch Workflow section in [CONTEXT.md](CONTEXT.md) for how to merge updates between them.
+
 **Different languages?** The algorithms are language-agnostic. The Java weeks could be Go; the Scala weeks could be Haskell or OCaml; the Python weeks could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
 
 ---
