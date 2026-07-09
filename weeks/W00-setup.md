@@ -46,8 +46,8 @@ Project: `code/hello-metrics/` (Go)
 A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every service you build from here on can follow.
 
 - [ ] `main.go` — Go HTTP server with two routes:
-  - `GET /` → responds `{"status":"ok"}` and increments `request_count_total`
-  - `GET /metrics` → served by `promhttp.Handler()`
+  - `GET /` → responds `{"status":"ok"}`, increments `request_count_total`, and times its own execution into `request_duration_seconds` (start a timer when the request comes in, call `.Observe(duration.Seconds())` right before responding)
+  - `GET /metrics` → served by `promhttp.Handler()`. This is the only route for metrics — both `request_count_total` and `request_duration_seconds` show up as more lines in this same response once you register them. There's no separate endpoint or field per metric.
   - Metrics: `request_count_total` (Counter), `request_duration_seconds` (Histogram with buckets 5ms–500ms)
   - Use `github.com/prometheus/client_golang/prometheus` and `promhttp`
 - [ ] `Dockerfile` — multi-stage build:
@@ -70,8 +70,8 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
   kind load docker-image hello-metrics:latest --name pd-systems
   kubectl apply -f k8s/
   ```
-- [ ] Verify: port-forward the service, send 20 requests with `curl`, query `request_count_total` in Prometheus — see the counter.
-- [ ] In Grafana, create a panel: `rate(request_count_total[1m])`. Save the dashboard.
+- [ ] Verify: port-forward the service, send 20 requests with `curl`, query `request_count_total` in Prometheus — see the counter. Also query `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))` — confirm it returns a real number, not an empty result. An empty result means `.Observe()` is never actually being called.
+- [ ] In Grafana, create two panels: `rate(request_count_total[1m])` and `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`. Save the dashboard.
 
 ---
 
