@@ -11,9 +11,10 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 
 1. Clone the repo and open it as an Obsidian vault
 2. Follow [SETUP.md](SETUP.md) to install Java, Scala, Python, Go, Docker, and Obsidian plugins
-3. Set `start_date` in [config.md](config.md) — all week dates recalculate automatically
-4. Open [Home.md](Home.md) as your daily entry point
-5. Start at W00 (infrastructure setup), then W01
+3. Skim [RESOURCES.md](RESOURCES.md) — most readings are free links, but a few (DDIA, the most-used book) are worth buying before you hit the week that needs them
+4. Set `start_date` in [config.md](config.md) — all week dates recalculate automatically
+5. Open [Home.md](Home.md) as your daily entry point
+6. Start at W00 (infrastructure setup), then W01
 
 ---
 

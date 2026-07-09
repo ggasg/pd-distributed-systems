@@ -13,7 +13,7 @@ A minimal LSM-tree: MemTable (in-memory sorted buffer) → SSTable (sorted file 
 ---
 
 ## Read
-- [ ] DDIA Ch.3, pp. 70–99 — focus on B-Trees vs LSM-Trees; understand SSTables, compaction strategies, and bloom filters
+- [ ] DDIA Ch.3, pp. 70–99 — focus on B-Trees vs LSM-Trees; understand SSTables, compaction strategies, and bloom filters. (DDIA is a book, not a free PDF — see [RESOURCES.md](../RESOURCES.md) if you don't have a copy yet; it's referenced again in W02, W04, and W05.)
 - [ ] LevelDB source (30 min skim): [`db/memtable.h`](https://github.com/google/leveldb/blob/main/db/memtable.h), [`db/version_set.cc`](https://github.com/google/leveldb/blob/main/db/version_set.cc) — read to see how it's actually done, not to understand every line
 
 **Key question to answer before coding:** Why does an LSM-tree have better write throughput than a B-tree, and what's the cost?
