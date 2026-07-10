@@ -3,12 +3,12 @@ week_number: 14
 status: not-started
 ---
 
-# W14 — Capstone
+# W14: Capstone
 
-> **Arc:** Distributed ML & Compute · **Language:** Go, Scala, or Python — your choice
+> **Arc:** Distributed ML & Compute · **Language:** Go, Scala, or Python, your choice
 
 ## What you'll build
-One system that combines at least two concepts from this curriculum. It should be something you can explain end-to-end, from the data model to the failure behavior. No scaffolding provided — you design it.
+One system that combines at least two concepts from this curriculum. It should be something you can explain end-to-end, from the data model to the failure behavior. No scaffolding provided; you design it.
 
 ---
 
@@ -17,7 +17,7 @@ One system that combines at least two concepts from this curriculum. It should b
 ### Option A: Distributed KV Store (Go)
 Combine W01 (LSM storage) + W04 (clocks/ordering).
 
-A 3-node key-value store in Go where writes are replicated via a simple primary-backup protocol (not Raft — keep it tractable). The primary assigns a logical timestamp to each write using a Lamport clock before forwarding to backups. Supports `get`, `put`, `delete`. Test: kill the primary, promote a backup, verify reads are consistent.
+A 3-node key-value store in Go where writes are replicated via a simple primary-backup protocol (not Raft, keep it tractable). The primary assigns a logical timestamp to each write using a Lamport clock before forwarding to backups. Supports `get`, `put`, `delete`. Test: kill the primary, promote a backup, verify reads are consistent.
 
 **Why Go:** goroutines + channels make the node communication natural; Go's stdlib HTTP makes the client API trivial. This is the kind of tool engineers actually write in Go.
 
@@ -46,8 +46,8 @@ Extend your W07 DD engine with vectorized operator execution from W08: `filter` 
 ## Deliverables
 
 - [ ] Working code in `code/capstone/`
-- [ ] `code/capstone/README.md` — explains: what it does, the design decisions, what you'd do differently, what breaks at scale
-- [ ] `posts/W14-capstone.md` — a technical post (500–1000 words) for a dev blog or GitHub. Explain the system to a fellow engineer who hasn't done this curriculum.
+- [ ] `code/capstone/README.md`: explains what it does, the design decisions, what you'd do differently, what breaks at scale
+- [ ] `posts/W14-capstone.md`: a technical post (500–1000 words) for a dev blog or GitHub. Explain the system to a fellow engineer who hasn't done this curriculum.
 
 ---
 

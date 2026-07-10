@@ -1,4 +1,4 @@
-# PD — Home
+# PD Home
 
 ## Schedule
 
@@ -7,7 +7,7 @@ const config = dv.page("config");
 if (!config || !config.start_date) {
   dv.paragraph("⚠️ config.md not found or missing start_date.");
 } else {
-  // config.start_date may be a Dataview date object or a string — handle both
+  // config.start_date may be a Dataview date object or a string; handle both
   const raw = config.start_date;
   const w01Start = typeof raw === "string"
     ? dv.luxon.DateTime.fromISO(raw)
@@ -31,10 +31,10 @@ if (!config || !config.start_date) {
 
     const completed = p.file.tasks.where(t => t.completed).length;
     const total     = p.file.tasks.length;
-    const progress  = total > 0 ? `${completed} / ${total}` : "—";
+    const progress  = total > 0 ? `${completed} / ${total}` : "-";
     const status    = isCurrent ? "👉 now"
                     : isPast    ? "✓ past"
-                    :             (p.status ?? "—");
+                    :             (p.status ?? "-");
 
     if (isCurrent) currentLink = p.file.link;
 
@@ -73,7 +73,7 @@ if (config && config.start_date) {
 
   if (current) {
     const open = current.file.tasks.where(t => !t.completed);
-    dv.paragraph("**" + current.file.name + "** — " + open.length + " open tasks");
+    dv.paragraph("**" + current.file.name + "**: " + open.length + " open tasks");
     dv.taskList(open, false);
   } else {
     dv.paragraph("No active week. Check `start_date` in [[config]].");
