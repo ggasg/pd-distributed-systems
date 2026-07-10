@@ -45,11 +45,23 @@ Project: `code/hello-metrics/` (Go)
 
 A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every service you build from here on can follow.
 
-- [ ] `main.go` — Go HTTP server with two routes:
-  - `GET /` → responds `{"status":"ok"}`, increments `request_count_total`, and times its own execution into `request_duration_seconds` (start a timer when the request comes in, call `.Observe(duration.Seconds())` right before responding)
-  - `GET /metrics` → served by `promhttp.Handler()`. This is the only route for metrics — both `request_count_total` and `request_duration_seconds` show up as more lines in this same response once you register them. There's no separate endpoint or field per metric.
-  - Metrics: `request_count_total` (Counter), `request_duration_seconds` (Histogram with buckets 5ms–500ms)
-  - Use `github.com/prometheus/client_golang/prometheus` and `promhttp`
+- [ ] `main.go` — Go HTTP server with two routes. **Both metrics are stateful: create each one exactly once at startup (package-level var, or a field on a struct — same pattern you'd use for a shared counter), register it with Prometheus once, and mutate that same object on every request. Never create a metric object inside a handler function — a fresh one on every request would reset to zero each time and nothing would ever accumulate.**
+  - `GET /` → responds `{"status":"ok"}`. Also increments the shared `request_count_total` Counter and observes its own response time into the shared `request_duration_seconds` Histogram, buckets 5ms–500ms (start a timer when the request comes in, call `.Observe(duration.Seconds())` right before responding).
+  - `GET /metrics` → served by `promhttp.Handler()`. **Response format: plain text, not JSON.** This is Prometheus's exposition format, and `promhttp.Handler()` generates it for you from whatever metrics you've registered — you never construct this response by hand. It looks like this:
+    ```
+    # TYPE request_count_total counter
+    request_count_total 42
+    # TYPE request_duration_seconds histogram
+    request_duration_seconds_bucket{le="0.005"} 10
+    request_duration_seconds_bucket{le="0.5"} 40
+    request_duration_seconds_bucket{le="+Inf"} 42
+    request_duration_seconds_sum 3.1
+    request_duration_seconds_count 42
+    ```
+    Notice the Histogram alone takes 5 lines (one per bucket boundary, plus `_sum` and `_count`) — there is no single field or single JSON value that represents it. This is the only place metrics live in your code. Nothing is sent to Grafana from Go, and Grafana never talks to your service directly.
+  - Register both metrics with `github.com/prometheus/client_golang/prometheus`; serve `/metrics` with `promhttp`
+
+**The full pipeline:** your Go code registers and updates the two metrics → they render as text at `/metrics` → the `ServiceMonitor` (below) tells Prometheus to scrape that text every 15s and store it as a time series → Grafana panels (later in this week) query Prometheus — never your Go service, never `/metrics` directly — to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
 - [ ] `Dockerfile` — multi-stage build:
   ```dockerfile
   FROM golang:1.22-alpine AS builder
