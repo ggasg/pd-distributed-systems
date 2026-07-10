@@ -9,9 +9,9 @@ Everything you need installed before starting W00. Set this up once; it covers t
 1. Download from [obsidian.md](https://obsidian.md) and install
 2. Open vault: **File → Open folder as vault** → select this repo directory
 3. Install required community plugins (Settings → Community plugins → Browse):
-   - **Dataview** — powers the Home.md dashboard (enable JavaScript queries)
-   - **Tasks** — optional; used for task filtering
-   - **Obsidian Git** — optional; auto-syncs vault to GitHub
+   - **Dataview**: powers the Home.md dashboard (enable JavaScript queries)
+   - **Tasks**: optional; used for task filtering
+   - **Obsidian Git**: optional; auto-syncs vault to GitHub
 4. Set `Home.md` as startup note: Settings → General → Default startup page → `Home`
 
 ---
@@ -41,7 +41,7 @@ export JAVA_HOME=$(brew --prefix)/opt/openjdk@21
 sudo update-alternatives --config java   # pick java-21
 ```
 
-**W01–W04, W13** use Java 21 with virtual threads (`Thread.ofVirtual()`) and records — both require Java 21+.
+**W01–W04, W13** use Java 21 with virtual threads (`Thread.ofVirtual()`) and records. Both require Java 21+.
 
 ---
 
@@ -66,7 +66,7 @@ scalaVersion := "2.13.16"
 scalacOptions ++= Seq("-deprecation", "-feature", "-language:higherKinds")
 ```
 
-**W05–W08** use Scala 2.13.16 — chosen for compatibility with Spark, Flink, and the broader JVM ecosystem. Recommended IDE: IntelliJ IDEA with the Scala plugin, or VS Code with Metals.
+**W05–W08** use Scala 2.13.16, chosen for compatibility with Spark, Flink, and the broader JVM ecosystem. Recommended IDE: IntelliJ IDEA with the Scala plugin, or VS Code with Metals.
 
 **Scala 2 vs Scala 3 syntax differences** you'll encounter in examples online:
 
@@ -76,7 +76,7 @@ scalacOptions ++= Seq("-deprecation", "-feature", "-language:higherKinds")
 | Type classes | `implicit val` / `implicit def` | `given` / `using` |
 | Braces | always required | optional |
 
-The week files describe *what* to build, not exact syntax — either version works conceptually.
+The week files describe *what* to build, not exact syntax. Either version works conceptually.
 
 ---
 
@@ -109,7 +109,7 @@ pip install duckdb pyarrow pandas
 pip install numpy torch           # torch for MNIST loading only
 ```
 
-**W11 (GPU compute) — requires NVIDIA GPU:**
+**W11 (GPU compute), requires NVIDIA GPU:**
 ```bash
 pip install numba cupy-cuda12x matplotlib
 ```
@@ -117,7 +117,7 @@ No GPU? The week includes a C fallback. Numba's CPU JIT still demonstrates the r
 
 **W12 (attention):**
 ```bash
-pip install numpy                 # NumPy only — no PyTorch for this week
+pip install numpy                 # NumPy only, no PyTorch for this week
 ```
 
 ---
@@ -132,7 +132,7 @@ go version   # go1.22.x
 # Or download from https://go.dev/dl/
 ```
 
-Go appears as a secondary/tooling language in W03, W10, W11, W13, W14, W15, W16. You don't need Go to complete any arc — it's always optional or a stretch goal except W15.
+Go appears as a secondary/tooling language in W03, W10, W11, W13, W14, W15, W16. You don't need Go to complete any arc; it's always optional or a stretch goal except W15.
 
 **W15 (Kubernetes Operators) requires Go.** Install `controller-runtime`:
 ```bash
@@ -158,7 +158,7 @@ kind delete cluster --name pd-systems
 
 ---
 
-## GPU Setup (W11 — optional)
+## GPU Setup (W11, optional)
 
 **NVIDIA GPU required.** If you don't have one, skip the Numba CUDA path and use the C fallback.
 

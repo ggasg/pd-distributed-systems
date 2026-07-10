@@ -1,9 +1,8 @@
-# Distributed, Data-Intensive Systems — Engineering Curriculum
+# Distributed, Data-Intensive Systems: Engineering Curriculum
 
 A self-directed curriculum for software engineers who want pragmatic mastery of distributed and data-intensive systems, with a focus on streaming, ML infrastructure, compute-intensive execution, and production observability. Every week has a specific paper to read, a concrete coding task, and a deliverable.
 
-**Not for:** people who want to pass system design interviews.
-**For:** engineers who want to build real distributed systems and understand them from the inside out.
+This isn't for people who want to pass system design interviews. It's for engineers who want to build real distributed systems and understand them from the inside out.
 
 ---
 
@@ -11,8 +10,8 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 
 1. Clone the repo and open it as an Obsidian vault
 2. Follow [SETUP.md](SETUP.md) to install Java, Scala, Python, Go, Docker, and Obsidian plugins
-3. Skim [RESOURCES.md](RESOURCES.md) — most readings are free links, but a few (DDIA, the most-used book) are worth buying before you hit the week that needs them
-4. Set `start_date` in [config.md](config.md) — all week dates recalculate automatically
+3. Skim [RESOURCES.md](RESOURCES.md): most readings are free links, but a few (DDIA, the most-used book) are worth buying before you hit the week that needs them
+4. Set `start_date` in [config.md](config.md), and all week dates recalculate automatically
 5. Open [Home.md](Home.md) as your daily entry point
 6. Start at W00 (infrastructure setup), then W01
 
@@ -29,7 +28,7 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 | Streaming and Dataflow | W05–W08 | Stream processing, Naiad, Differential Dataflow, query execution | Scala 2.13 |
 | Distributed ML & Compute | W09–W14 | ML pipelines, distributed training, GPU compute, transformers, fault tolerance | Python / Go secondary |
 | Infrastructure | W15–W16 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / Scala |
-| Capstone (optional) | W17 | Distributed training + serving platform, fully observed — synthesizes W09, W10, W12, W13, W15, W16 | Go / Python |
+| Capstone (optional) | W17 | Distributed training + serving platform, fully observed (synthesizes W09, W10, W12, W13, W15, W16) | Go / Python |
 
 ---
 
@@ -44,7 +43,7 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 **After Arc 2 (W05–W08):**
 - Build a streaming windowed aggregator with watermarks; explain what "late data" means
 - Implement Naiad's timestamp and progress-tracking model from the paper
-- Build a Differential Dataflow engine from scratch: incremental word count + reachability
+- Build a Differential Dataflow engine from scratch: incremental word count and reachability
 - Benchmark vectorized vs. row-at-a-time query execution; explain the 3–8x gap
 
 **After Arc 3 (W09–W14):**
@@ -57,7 +56,7 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 
 **After Arc 4 (W15–W16):**
 - Write a Kubernetes Operator in Go with a custom CRD and reconcile loop
-- Instrument a distributed system with Prometheus metrics + OpenTelemetry traces
+- Instrument a distributed system with Prometheus metrics and OpenTelemetry traces
 - Build a Grafana dashboard from scratch; explain the four golden signals
 
 ---
@@ -65,10 +64,10 @@ A self-directed curriculum for software engineers who want pragmatic mastery of 
 ## Each Week
 
 Every week has:
-- **Read** — one or two named papers or chapters, with specific sections called out
-- **Code** — a concrete implementation task with named files and a clear deliverable
-- **🐍 Python DSA Review** — optional; a short Python warmup of the underlying algorithm (W01–W08, W10, W13)
-- **Reflect** — what you built, what surprised you, what you'd do differently
+- **Read**: one or two named papers or chapters, with specific sections called out
+- **Code**: a concrete implementation task with named files and a clear deliverable
+- **🐍 Python DSA Review**: optional, a short Python warmup of the underlying algorithm (W01–W08, W10, W13)
+- **Reflect**: what you built, what surprised you, what you'd do differently
 
 ---
 
@@ -77,8 +76,8 @@ Every week has:
 | Weeks | Language | Why |
 |-------|----------|-----|
 | W00 | Go | Service + k8s deployment; Prometheus metrics |
-| W01–W04 | Java 21 | Virtual threads, records — modern concurrency primitives |
-| W05–W08 | Scala 2.13 | FP, algebraic types — natural for dataflow and incremental computation |
+| W01–W04 | Java 21 | Virtual threads, records: modern concurrency primitives |
+| W05–W08 | Scala 2.13 | FP, algebraic types: natural fit for dataflow and incremental computation |
 | W09–W12 | Python | ML ecosystem, numerical computing, Numba for GPU |
 | W13–W14 | Java 21 / Scala / Python | Depends on capstone option |
 | W15 | Go | Operators are almost exclusively written in Go |
@@ -91,15 +90,15 @@ Every week has:
 
 ```
 .
-├── Home.md               # Daily entry point — open this in Obsidian
+├── Home.md               # Daily entry point, open this in Obsidian
 ├── config.md             # Set start_date here
 ├── README.md             # This file
 ├── SETUP.md              # Environment setup (Java, Scala, Python, Go, Docker, Obsidian)
 ├── RESOURCES.md          # All papers and books, by week, with free links
 ├── CONTEXT.md            # Session context for AI-assisted study sessions
 ├── weeks/                # One .md file per week (W00–W16)
-├── code/                 # Your implementations — see code/README.md
-├── posts/                # Weekly blog posts — see posts/TEMPLATE.md
+├── code/                 # Your implementations, see code/README.md
+├── posts/                # Weekly blog posts, see posts/TEMPLATE.md
 ├── tools/                # Go automation tools (plan-dates, job_coordinator, grad_server)
 └── Templates/            # week-template.md for adding custom weeks
 ```
@@ -108,36 +107,36 @@ Every week has:
 
 ## Weeks
 
-- [W00 — Infrastructure Setup](weeks/W00-setup.md)
-- [W01 — LSM-Trees and Storage Engines](weeks/W01-lsm-storage.md)
-- [W02 — Encoding and Wire Formats](weeks/W02-encoding.md)
-- [W03 — MapReduce and Its Limits](weeks/W03-mapreduce.md)
-- [W04 — Clocks, Causality, and Time](weeks/W04-clocks.md)
-- [W05 — Stream Processing Primitives](weeks/W05-streaming.md)
-- [W06 — Naiad and Timely Dataflow](weeks/W06-naiad.md)
-- [W07 — Differential Dataflow](weeks/W07-differential-dataflow.md)
-- [W08 — Query Execution](weeks/W08-query-execution.md)
-- [W09 — ML Data Pipelines](weeks/W09-ml-pipelines.md)
-- [W10 — Distributed Training](weeks/W10-distributed-training.md)
-- [W11 — GPU Memory and Compute](weeks/W11-gpu-compute.md)
-- [W12 — Attention and KV Cache](weeks/W12-attention.md)
-- [W13 — Fault Tolerance and Snapshots](weeks/W13-fault-tolerance.md)
-- [W14 — Capstone](weeks/W14-capstone.md)
-- [W15 — Kubernetes and Operators](weeks/W15-kubernetes-operators.md)
-- [W16 — Observability: Metrics, Tracing, Logging](weeks/W16-observability.md)
-- [W17 — Grand Capstone: Distributed Training & Serving Platform (optional)](weeks/W17-capstone-platform.md)
+- [W00: Infrastructure Setup](weeks/W00-setup.md)
+- [W01: LSM-Trees and Storage Engines](weeks/W01-lsm-storage.md)
+- [W02: Encoding and Wire Formats](weeks/W02-encoding.md)
+- [W03: MapReduce and Its Limits](weeks/W03-mapreduce.md)
+- [W04: Clocks, Causality, and Time](weeks/W04-clocks.md)
+- [W05: Stream Processing Primitives](weeks/W05-streaming.md)
+- [W06: Naiad and Timely Dataflow](weeks/W06-naiad.md)
+- [W07: Differential Dataflow](weeks/W07-differential-dataflow.md)
+- [W08: Query Execution](weeks/W08-query-execution.md)
+- [W09: ML Data Pipelines](weeks/W09-ml-pipelines.md)
+- [W10: Distributed Training](weeks/W10-distributed-training.md)
+- [W11: GPU Memory and Compute](weeks/W11-gpu-compute.md)
+- [W12: Attention and KV Cache](weeks/W12-attention.md)
+- [W13: Fault Tolerance and Snapshots](weeks/W13-fault-tolerance.md)
+- [W14: Capstone](weeks/W14-capstone.md)
+- [W15: Kubernetes and Operators](weeks/W15-kubernetes-operators.md)
+- [W16: Observability: Metrics, Tracing, Logging](weeks/W16-observability.md)
+- [W17: Grand Capstone: Distributed Training & Serving Platform (optional)](weeks/W17-capstone-platform.md)
 
 ---
 
 ## Adapting This Curriculum
 
-**Only 1h/day?** Focus on Read + Reflect each week; treat Code as optional. Prioritize W01, W03, W05, W07, W12 — those give the most conceptual leverage.
+**Only 1h/day?** Focus on Read + Reflect each week; treat Code as optional. Prioritize W01, W03, W05, W07, W12; those give the most conceptual leverage.
 
-**Skip the infrastructure arc?** W00, W15, W16 are independent — you can complete W01–W14 without touching Kubernetes. Come back to Arc 4 when it's relevant to your work.
+**Skip the infrastructure arc?** W00, W15, W16 are independent. You can complete W01–W14 without touching Kubernetes, and come back to Arc 4 when it's relevant to your work.
 
 **Add your own week?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically.
 
-**Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers — see the Branch Workflow section in [CONTEXT.md](CONTEXT.md) for how to merge updates between them.
+**Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers. See the Branch Workflow section in [CONTEXT.md](CONTEXT.md) for how to merge updates between them.
 
 **Different languages?** The algorithms are language-agnostic. The Java weeks could be Go; the Scala weeks could be Haskell or OCaml; the Python weeks could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
 

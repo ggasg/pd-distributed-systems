@@ -3,7 +3,7 @@ week_number: 15
 status: not-started
 ---
 
-# W15 — Kubernetes Operators
+# W15: Kubernetes Operators
 
 > **Arc:** Infrastructure · **Language:** Go
 
@@ -15,9 +15,9 @@ A Kubernetes Operator in Go that manages a custom `DistributedJob` resource. Whe
 ---
 
 ## Read
-- [ ] [Kubernetes Operators](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/) — k8s docs. Read "Motivation" and "Deploying operators". (~10 min)
-- [ ] [controller-runtime pkg docs](https://pkg.go.dev/sigs.k8s.io/controller-runtime) — focus on `Reconciler` interface and `ctrl.Manager`. (~20 min)
-- [ ] [Kubebuilder Book](https://book.kubebuilder.io/), Chapters 1–3 — read for concepts, not the `kubebuilder generate` commands. Understand what the reconcile loop does and why it's level-triggered, not edge-triggered. (~45 min)
+- [ ] [Kubernetes Operators](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): k8s docs. Read "Motivation" and "Deploying operators". (~10 min)
+- [ ] [controller-runtime pkg docs](https://pkg.go.dev/sigs.k8s.io/controller-runtime): focus on `Reconciler` interface and `ctrl.Manager`. (~20 min)
+- [ ] [Kubebuilder Book](https://book.kubebuilder.io/), Chapters 1–3: read for concepts, not the `kubebuilder generate` commands. Understand what the reconcile loop does and why it's level-triggered, not edge-triggered. (~45 min)
 
 **Key question:** What does "level-triggered" mean for a Kubernetes controller, and why is it safer than edge-triggered for distributed systems correctness?
 
@@ -27,10 +27,10 @@ A Kubernetes Operator in Go that manages a custom `DistributedJob` resource. Whe
 
 Project: `code/operator/` (Go, `sigs.k8s.io/controller-runtime`)
 
-Write it from scratch — no `kubebuilder generate`. Every file is small and intentional.
+Write it from scratch, no `kubebuilder generate`. Every file is small and intentional.
 
-- [ ] `go.mod` — module `github.com/you/pd-operator`, dependencies: `sigs.k8s.io/controller-runtime`, `k8s.io/api`, `k8s.io/apimachinery`, `k8s.io/client-go`
-- [ ] `api/v1/types.go` — define CRD structs:
+- [ ] `go.mod`: module `github.com/you/pd-operator`, dependencies: `sigs.k8s.io/controller-runtime`, `k8s.io/api`, `k8s.io/apimachinery`, `k8s.io/client-go`
+- [ ] `api/v1/types.go`: define CRD structs:
   ```go
   type DistributedJobSpec struct {
       Workers int32  `json:"workers"`
@@ -48,19 +48,19 @@ Write it from scratch — no `kubebuilder generate`. Every file is small and int
       Status DistributedJobStatus `json:"status,omitempty"`
   }
   ```
-- [ ] `api/v1/register.go` — register the type with the scheme (`SchemeBuilder.Register`)
-- [ ] `config/crd.yaml` — hand-write the `CustomResourceDefinition` YAML:
+- [ ] `api/v1/register.go`: register the type with the scheme (`SchemeBuilder.Register`)
+- [ ] `config/crd.yaml`: hand-write the `CustomResourceDefinition` YAML:
   - group: `pd.systems`, version: `v1`, kind: `DistributedJob`, scope: `Namespaced`
   - Include `spec.versions[].schema.openAPIV3Schema` for basic field validation
-- [ ] `controllers/reconciler.go` — implement `Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error)`:
-  1. Fetch `DistributedJob` by name — return if not found (deleted)
+- [ ] `controllers/reconciler.go`: implement `Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error)`:
+  1. Fetch `DistributedJob` by name, return if not found (deleted)
   2. List existing worker Pods labelled `job-name=<name>`
   3. If len(pods) < spec.Workers: create the missing Pods (set owner reference to DistributedJob)
-  4. Count Ready pods → update `status.ReadyWorkers`
+  4. Count Ready pods, update `status.ReadyWorkers`
   5. If readyWorkers == spec.Workers: set `status.Phase = "Running"`; else `"Pending"`
   6. Patch status subresource
-- [ ] `main.go` — set up `ctrl.Manager`, register scheme, start `DistributedJobReconciler` with `ctrl.SetupWithManager`
-- [ ] `config/sample.yaml` — a `DistributedJob` with `workers: 3`, image `busybox:latest`, command `sleep 30`
+- [ ] `main.go`: set up `ctrl.Manager`, register scheme, start `DistributedJobReconciler` with `ctrl.SetupWithManager`
+- [ ] `config/sample.yaml`: a `DistributedJob` with `workers: 3`, image `busybox:latest`, command `sleep 30`
 - [ ] Deploy and test:
   ```bash
   kubectl apply -f config/crd.yaml
@@ -72,7 +72,7 @@ Write it from scratch — no `kubebuilder generate`. Every file is small and int
   kubectl delete distributedjob my-job         # pods should GC via owner refs
   ```
 
-**Minimum bar:** create event → 3 Pods created; delete event → Pods GC'd; status reflects ready count.
+**Minimum bar:** create event creates 3 Pods; delete event GCs the Pods; status reflects ready count.
 
 ---
 
