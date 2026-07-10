@@ -1,9 +1,9 @@
 ---
-week_number: 11
+week_number: 12
 status: not-started
 ---
 
-# W11: GPU Memory and Compute
+# W12: GPU Memory and Compute
 
 > **Arc:** Distributed ML & Compute · **Language:** Python (Numba) · **Fallback:** C
 

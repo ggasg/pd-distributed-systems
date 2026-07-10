@@ -9,9 +9,9 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 | Book | Author | Weeks | Notes |
 |------|--------|-------|-------|
 | [Designing Data-Intensive Applications (DDIA)](https://dataintensive.net) | Kleppmann (2017) | W01, W02, W04, W05 | The single most useful book for this curriculum. Buy it. |
-| [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W13 | For concurrency primitives and correctness |
-| [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W16 | O'Reilly; pairs well with the Google SRE chapter |
-| [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W16 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
+| [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W14 | For concurrency primitives and correctness |
+| [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W17 | O'Reilly; pairs well with the Google SRE chapter |
+| [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W17 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
 
 ---
 
@@ -104,7 +104,15 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W11: GPU Memory and Compute
+## W11: The Actor Model and Ray
+
+- [A Universal Modular ACTOR Formalism for Artificial Intelligence](https://www.ijcai.org/Proceedings/73/Papers/027B.pdf): Hewitt, Bishop, Steiger, IJCAI 1973 (**free PDF**), the original actor model paper
+- [Ray: A Distributed Framework for Emerging AI Applications](https://www.usenix.org/system/files/osdi18-moritz.pdf): Moritz et al., OSDI 2018 (**free PDF via USENIX**), Section 3 is the unified task/actor programming model
+- [Ray Core: Actors docs](https://docs.ray.io/en/latest/ray-core/actors.html): official Ray documentation on the actor API
+
+---
+
+## W12: GPU Memory and Compute
 
 - [CUDA C++ Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/): NVIDIA docs; read Chapters 1–3 (Architecture, Programming Model, Memory Hierarchy)
 - [Roofline: An Insightful Visual Performance Model](https://people.eecs.berkeley.edu/~kubitron/cs252/handouts/papers/RooflineVyNoYellow.pdf): Williams, Waterman, Patterson, CACM 2009 (**free PDF**)
@@ -112,7 +120,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W12: Attention and KV Cache
+## W13: Attention and KV Cache
 
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762): Vaswani et al. (2017) (**free on arXiv**), the transformer paper
 - [FlashAttention: Fast and Memory-Efficient Exact Attention](https://arxiv.org/abs/2205.14135): Dao et al. (2022) (**free on arXiv**), read the intro and Section 2
@@ -121,20 +129,20 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W13: Fault Tolerance and Snapshots
+## W14: Fault Tolerance and Snapshots
 
 - [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456): Chandy & Lamport (1985), 10 pages; read all of it
 - [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603): Carbone et al. (2015) (**free on arXiv**), Flink's ABS algorithm
 
 ---
 
-## W14: Capstone
+## W15: Capstone
 
 No required reading. You're synthesizing earlier weeks.
 
 ---
 
-## W15: Kubernetes Operators
+## W16: Kubernetes Operators
 
 - [Kubernetes Operators docs](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): official k8s docs
 - [controller-runtime](https://pkg.go.dev/sigs.k8s.io/controller-runtime): Go library for writing operators
@@ -143,7 +151,7 @@ No required reading. You're synthesizing earlier weeks.
 
 ---
 
-## W16: Observability: Metrics, Tracing, Logging
+## W17: Observability: Metrics, Tracing, Logging
 
 - [Prometheus data model](https://prometheus.io/docs/concepts/data_model/) + [metric types](https://prometheus.io/docs/concepts/metric_types/)
 - [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/)
@@ -152,9 +160,9 @@ No required reading. You're synthesizing earlier weeks.
 
 ---
 
-## W17: Grand Capstone (optional)
+## W18: Grand Capstone (optional)
 
-No new required reading. This week synthesizes W09, W10, W12, W13, W15, and W16. Revisit those weeks' resources as needed.
+No new required reading. This week synthesizes W09, W10, W13, W14, W16, and W17. Revisit those weeks' resources as needed.
 
 ---
 

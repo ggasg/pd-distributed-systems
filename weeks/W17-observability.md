@@ -1,9 +1,9 @@
 ---
-week_number: 16
+week_number: 17
 status: not-started
 ---
 
-# W16: Observability: Metrics, Tracing, Logging
+# W17: Observability: Metrics, Tracing, Logging
 
 > **Arc:** Infrastructure · **Language:** Scala + Go
 

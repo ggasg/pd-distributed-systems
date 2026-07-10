@@ -27,8 +27,8 @@ See Branch Workflow below for how these two stay in sync.
 Vault structure:
 - `config.md`: set `start_date` here; all week dates recalculate in Home.md
 - `Home.md`: daily entry point; DataviewJS auto-detects current week and shows schedule
-- `weeks/W00-*.md` through `W16-*.md`: one file per week; each has Read, Code, optional Python DSA Review, and Reflect sections
-- `weeks/W17-*.md`: optional grand capstone; synthesizes W09, W10, W12, W13, W15, W16 into one distributed training and serving platform
+- `weeks/W00-*.md` through `W17-*.md`: one file per week; each has Read, Code, optional Python DSA Review, and Reflect sections
+- `weeks/W18-*.md`: optional grand capstone; synthesizes W09, W10, W13, W14, W16, W17 into one distributed training and serving platform
 - `tools/plan-dates.go`: `go run tools/plan-dates.go --start 2026-07-13` prints full schedule
 - `SETUP.md`: full environment setup (Java, Scala, Python, Go, Docker, Obsidian)
 - `RESOURCES.md`: all papers and books by week with free links
@@ -43,7 +43,7 @@ No Notion. No separate task tracker. Everything lives here.
 
 ## Curriculum
 
-17 core weeks (W00 pre-week + W01–W16) across 4 arcs, plus an optional W17 grand capstone.
+18 core weeks (W00 pre-week + W01–W17) across 4 arcs, plus an optional W18 grand capstone.
 
 ### W00: Infrastructure Setup (pre-week)
 | Week | Topic | Deliverable |
@@ -68,29 +68,30 @@ No Notion. No separate task tracker. Everything lives here.
 | W07 | Differential Dataflow | DD paper (McSherry, 2013) | `dd-scratch/` Scala: DD engine from scratch, Update, Collection, WordCount, Reachability |
 | W08 | Query Execution | Volcano (1994); MonetDB/X100 (2005) | `query-exec/` Scala: RowExecutor, ColumnFilter, HashJoin, Benchmark (3–8x speedup) |
 
-### Arc 3: Distributed ML & Compute (W09–W14), Python / Go secondary
+### Arc 3: Distributed ML & Compute (W09–W15), Python / Go secondary
 
 | Week | Topic | Key Paper | Deliverable |
 |------|-------|-----------|-------------|
 | W09 | ML Data Pipelines | Hidden Tech Debt (2015); Delta Lake (2020) | `feature-pipeline/` Python: versioned features, Parquet + DuckDB |
 | W10 | Distributed Training | Horovod (2018); PyTorch DDP source | `distributed-training/` Python: ring-allreduce via sockets, 2-worker MLP; Go gradient server |
-| W11 | GPU Memory + Compute | CUDA Guide Ch.1-3; Roofline (2009) | `gpu-gemm/` Python/Numba: naive vs tiled CUDA matmul + roofline; Go bench runner |
-| W12 | Attention + KV Cache | Attention Is All You Need (2017); FlashAttention (2022); PagedAttention (2023) | `attention/` Python: MHA forward pass + KV cache, NumPy only |
-| W13 | Fault Tolerance | Chandy-Lamport (1985); Flink ABS (2015) | `snapshot/` Java: Chandy-Lamport 3-node simulation; Go rewrite optional |
-| W14 | Capstone | none | Go: replicated KV store / Scala: streaming pipeline / Scala: incremental query engine |
+| W11 | The Actor Model and Ray | Hewitt, Bishop, Steiger (1973); Ray (Moritz et al., OSDI 2018) | `actor-training/` Python: Ray actors (TrainerWorker + ParameterServer), PyTorch CNN on MNIST, benchmarked against W10 |
+| W12 | GPU Memory + Compute | CUDA Guide Ch.1-3; Roofline (2009) | `gpu-gemm/` Python/Numba: naive vs tiled CUDA matmul + roofline; Go bench runner |
+| W13 | Attention + KV Cache | Attention Is All You Need (2017); FlashAttention (2022); PagedAttention (2023) | `attention/` Python: MHA forward pass + KV cache, NumPy only |
+| W14 | Fault Tolerance | Chandy-Lamport (1985); Flink ABS (2015) | `snapshot/` Java: Chandy-Lamport 3-node simulation; Go rewrite optional |
+| W15 | Capstone | none | Go: replicated KV store / Scala: streaming pipeline / Scala: incremental query engine |
 
-### Arc 4: Infrastructure (W15–W16), Go / Scala
-
-| Week | Topic | Deliverable |
-|------|-------|-------------|
-| W15 | Kubernetes Operators | `code/operator/` Go: custom DistributedJob CRD + reconciler |
-| W16 | Observability: Metrics, Tracing, Logging | Instrument W07 DD engine with Prometheus + OTel; Grafana dashboard |
-
-### Optional: W17, Grand Capstone (stretch week)
+### Arc 4: Infrastructure (W16–W17), Go / Scala
 
 | Week | Topic | Deliverable |
 |------|-------|-------------|
-| W17 | Distributed training + serving platform | `code/capstone-platform/`: training across worker Pods (W10+W12), Chandy-Lamport-style checkpoint/restore (W13), operator-managed recovery (W15), fully observed in Grafana (W16) |
+| W16 | Kubernetes Operators | `code/operator/` Go: custom DistributedJob CRD + reconciler |
+| W17 | Observability: Metrics, Tracing, Logging | Instrument W07 DD engine with Prometheus + OTel; Grafana dashboard |
+
+### Optional: W18, Grand Capstone (stretch week)
+
+| Week | Topic | Deliverable |
+|------|-------|-------------|
+| W18 | Distributed training + serving platform | `code/capstone-platform/`: training across worker Pods (W10+W13), Chandy-Lamport-style checkpoint/restore (W14), operator-managed recovery (W16), fully observed in Grafana (W17) |
 
 ---
 
@@ -99,10 +100,11 @@ No Notion. No separate task tracker. Everything lives here.
 Edit `start_date` in `config.md` to reschedule. Current config (`2026-07-13`):
 - W00: Jul 6 to Jul 12
 - W01: Jul 13 to Jul 19
-- W14: Oct 12 to Oct 18
+- W11: Sep 21 to Sep 27
 - W15: Oct 19 to Oct 25
 - W16: Oct 26 to Nov 1
-- W17 (optional): Nov 2 to Nov 8
+- W17: Nov 2 to Nov 8
+- W18 (optional): Nov 9 to Nov 15
 
 `go run tools/plan-dates.go --start 2026-07-13` prints the full table.
 
@@ -129,7 +131,8 @@ Edit `start_date` in `config.md` to reschedule. Current config (`2026-07-13`):
 - [ ] W14
 - [ ] W15
 - [ ] W16
-- [ ] W17 (optional)
+- [ ] W17
+- [ ] W18 (optional)
 
 ---
 

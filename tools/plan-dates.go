@@ -33,12 +33,13 @@ var weeks = []week{
 	{8, "Arc 2", "Query Execution"},
 	{9, "Arc 3", "ML Data Pipelines"},
 	{10, "Arc 3", "Distributed Training"},
-	{11, "Arc 3", "GPU Memory and Compute"},
-	{12, "Arc 3", "Attention and KV Cache"},
-	{13, "Arc 3", "Fault Tolerance and Snapshots"},
-	{14, "Arc 3", "Capstone"},
-	{15, "Arc 4", "Kubernetes and Operators"},
-	{16, "Arc 4", "Observability: Metrics, Tracing, Logging"},
+	{11, "Arc 3", "The Actor Model and Ray"},
+	{12, "Arc 3", "GPU Memory and Compute"},
+	{13, "Arc 3", "Attention and KV Cache"},
+	{14, "Arc 3", "Fault Tolerance and Snapshots"},
+	{15, "Arc 3", "Capstone"},
+	{16, "Arc 4", "Kubernetes and Operators"},
+	{17, "Arc 4", "Observability: Metrics, Tracing, Logging"},
 }
 
 func main() {
@@ -85,9 +86,9 @@ func main() {
 		)
 	}
 
-	fmt.Printf("\nTotal: %d weeks  |  W01 starts %s  |  W16 ends %s\n",
+	fmt.Printf("\nTotal: %d weeks  |  W01 starts %s  |  W17 ends %s\n",
 		len(weeks),
 		w01Start.Format("Jan 02 2006"),
-		w01Start.AddDate(0, 0, 15*7+6).Format("Jan 02 2006"),
+		w01Start.AddDate(0, 0, 16*7+6).Format("Jan 02 2006"),
 	)
 }
