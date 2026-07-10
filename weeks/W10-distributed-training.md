@@ -95,7 +95,7 @@ def ring_indices(rank: int, n_workers: int, n_steps: int) -> list[int]:
 assert ring_indices(0, 4, 4) == [0, 3, 2, 1]
 ```
 
-**Connection:** `ring_allreduce.py` sends gradient chunks in exactly this circular pattern. The ring buffer is also the right data structure for the log-aggregator sidecar in W16: fixed memory, O(1) push/pop.
+**Connection:** `ring_allreduce.py` sends gradient chunks in exactly this circular pattern. The ring buffer is also the right data structure for the log-aggregator sidecar in W17: fixed memory, O(1) push/pop.
 
 ---
 

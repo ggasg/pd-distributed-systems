@@ -1,9 +1,9 @@
 ---
-week_number: 12
+week_number: 13
 status: not-started
 ---
 
-# W12: Attention and KV Cache
+# W13: Attention and KV Cache
 
 > **Arc:** Distributed ML & Compute · **Language:** Python (NumPy only)
 

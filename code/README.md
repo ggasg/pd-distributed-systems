@@ -91,7 +91,15 @@ code/
 │   └── requirements.txt
 │   # Go tool lives in tools/grad_server/
 │
-├── gpu-gemm/               # W11: Python/Numba + C fallback
+├── actor-training/         # W11: Python + Ray
+│   ├── model.py             # PyTorch CNN
+│   ├── worker_actor.py      # @ray.remote TrainerWorker
+│   ├── parameter_server_actor.py  # @ray.remote ParameterServer
+│   ├── train.py
+│   ├── compare.py           # sequential vs W10 ring-allreduce vs Ray actors
+│   └── requirements.txt
+│
+├── gpu-gemm/               # W12: Python/Numba + C fallback
 │   ├── naive_gemm.py
 │   ├── tiled_gemm.py
 │   ├── benchmark.py
@@ -99,13 +107,13 @@ code/
 │   ├── gemm_fallback.c     # no-GPU fallback
 │   └── requirements.txt
 │
-├── attention/              # W12: Python
+├── attention/              # W13: Python
 │   ├── attention.py        # MultiHeadAttention
 │   ├── kv_cache.py
 │   ├── benchmark.py
 │   └── requirements.txt
 │
-├── snapshot/                # W13: Java 21 (+ optional Go)
+├── snapshot/                # W14: Java 21 (+ optional Go)
 │   ├── src/main/java/
 │   │   ├── Channel.java
 │   │   ├── Message.java
@@ -114,11 +122,11 @@ code/
 │   │   └── SnapshotTest.java
 │   └── pom.xml
 │
-├── capstone/                # W14: your choice of language
+├── capstone/                # W15: your choice of language
 │   ├── README.md           # required: design doc
 │   └── ...
 │
-├── operator/                # W15: Go
+├── operator/                # W16: Go
 │   ├── api/v1/
 │   │   ├── types.go
 │   │   └── register.go
@@ -130,17 +138,17 @@ code/
 │   ├── main.go
 │   └── go.mod
 │
-├── dd-scratch/             # W16: extends W07
+├── dd-scratch/             # W17: extends W07
 │   └── metrics/
 │       ├── DDMetrics.scala
 │       ├── tracing/DDTracer.scala
 │       └── logging/Log.scala
 │
-└── capstone-platform/      # W17 (optional): Go + Python, combines W09+W10+W12+W13+W15+W16
+└── capstone-platform/      # W18 (optional): Go + Python, combines W09+W10+W13+W14+W16+W17
     ├── train_worker.py
     ├── checkpoint_coordinator.py
     ├── serve.py
-    ├── operator/            # extends code/operator/ from W15
+    ├── operator/            # extends code/operator/ from W16
     └── README.md            # required: design doc
 ```
 

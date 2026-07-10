@@ -19,16 +19,16 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 ## Structure
 
-17 weeks across 4 arcs (plus a W00 setup week), and an optional W17 grand capstone. 2h/day, 5 days/week.
+18 weeks across 4 arcs (plus a W00 setup week), and an optional W18 grand capstone. 2h/day, 5 days/week.
 
 | Arc | Weeks | Focus | Language |
 |-----|-------|-------|----------|
 | Setup | W00 | Local k8s, Prometheus, Grafana | Go |
 | Data Systems Internals | W01–W04 | Storage engines, encoding, MapReduce, causality | Java 21 |
 | Streaming and Dataflow | W05–W08 | Stream processing, Naiad, Differential Dataflow, query execution | Scala 2.13 |
-| Distributed ML & Compute | W09–W14 | ML pipelines, distributed training, GPU compute, transformers, fault tolerance | Python / Go secondary |
-| Infrastructure | W15–W16 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / Scala |
-| Capstone (optional) | W17 | Distributed training + serving platform, fully observed (synthesizes W09, W10, W12, W13, W15, W16) | Go / Python |
+| Distributed ML & Compute | W09–W15 | ML pipelines, distributed training, actor model (Ray), GPU compute, transformers, fault tolerance | Python / Go secondary |
+| Infrastructure | W16–W17 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / Scala |
+| Capstone (optional) | W18 | Distributed training + serving platform, fully observed (synthesizes W09, W10, W13, W14, W16, W17) | Go / Python |
 
 ---
 
@@ -46,9 +46,10 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Build a Differential Dataflow engine from scratch: incremental word count and reachability
 - Benchmark vectorized vs. row-at-a-time query execution; explain the 3–8x gap
 
-**After Arc 3 (W09–W14):**
+**After Arc 3 (W09–W15):**
 - Design and implement a versioned ML feature store with Parquet + DuckDB
 - Implement ring-allreduce over raw TCP sockets; explain the bandwidth math
+- Build a stateful actor system with Ray; explain why actors (not stateless tasks) are the right abstraction for coordinating training workers
 - Write a tiled CUDA matmul with Numba; read a roofline chart
 - Implement multi-head attention and KV cache from scratch in NumPy
 - Implement Chandy-Lamport distributed snapshots; explain what "consistent cut" means
@@ -78,11 +79,11 @@ Every week has:
 | W00 | Go | Service + k8s deployment; Prometheus metrics |
 | W01–W04 | Java 21 | Virtual threads, records: modern concurrency primitives |
 | W05–W08 | Scala 2.13 | FP, algebraic types: natural fit for dataflow and incremental computation |
-| W09–W12 | Python | ML ecosystem, numerical computing, Numba for GPU |
-| W13–W14 | Java 21 / Scala / Python | Depends on capstone option |
-| W15 | Go | Operators are almost exclusively written in Go |
-| W16 | Scala + Go | Instrument existing Scala code; Go sidecar optional |
-| W03, W10, W11, W13, W14 | Go (secondary) | Automation tools, coordination services |
+| W09–W13 | Python | ML ecosystem, numerical computing, Ray for distributed actors, Numba for GPU |
+| W14–W15 | Java 21 / Scala / Python | Depends on capstone option |
+| W16 | Go | Operators are almost exclusively written in Go |
+| W17 | Scala + Go | Instrument existing Scala code; Go sidecar optional |
+| W03, W10, W12, W14, W15 | Go (secondary) | Automation tools, coordination services |
 
 ---
 
@@ -96,7 +97,7 @@ Every week has:
 ├── SETUP.md              # Environment setup (Java, Scala, Python, Go, Docker, Obsidian)
 ├── RESOURCES.md          # All papers and books, by week, with free links
 ├── CONTEXT.md            # Session context for AI-assisted study sessions
-├── weeks/                # One .md file per week (W00–W16)
+├── weeks/                # One .md file per week (W00–W17)
 ├── code/                 # Your implementations, see code/README.md
 ├── posts/                # Weekly blog posts, see posts/TEMPLATE.md
 ├── tools/                # Go automation tools (plan-dates, job_coordinator, grad_server)
@@ -118,21 +119,22 @@ Every week has:
 - [W08: Query Execution](weeks/W08-query-execution.md)
 - [W09: ML Data Pipelines](weeks/W09-ml-pipelines.md)
 - [W10: Distributed Training](weeks/W10-distributed-training.md)
-- [W11: GPU Memory and Compute](weeks/W11-gpu-compute.md)
-- [W12: Attention and KV Cache](weeks/W12-attention.md)
-- [W13: Fault Tolerance and Snapshots](weeks/W13-fault-tolerance.md)
-- [W14: Capstone](weeks/W14-capstone.md)
-- [W15: Kubernetes and Operators](weeks/W15-kubernetes-operators.md)
-- [W16: Observability: Metrics, Tracing, Logging](weeks/W16-observability.md)
-- [W17: Grand Capstone: Distributed Training & Serving Platform (optional)](weeks/W17-capstone-platform.md)
+- [W11: The Actor Model and Ray](weeks/W11-actor-model-ray.md)
+- [W12: GPU Memory and Compute](weeks/W12-gpu-compute.md)
+- [W13: Attention and KV Cache](weeks/W13-attention.md)
+- [W14: Fault Tolerance and Snapshots](weeks/W14-fault-tolerance.md)
+- [W15: Capstone](weeks/W15-capstone.md)
+- [W16: Kubernetes and Operators](weeks/W16-kubernetes-operators.md)
+- [W17: Observability: Metrics, Tracing, Logging](weeks/W17-observability.md)
+- [W18: Grand Capstone: Distributed Training & Serving Platform (optional)](weeks/W18-capstone-platform.md)
 
 ---
 
 ## Adapting This Curriculum
 
-**Only 1h/day?** Focus on Read + Reflect each week; treat Code as optional. Prioritize W01, W03, W05, W07, W12; those give the most conceptual leverage.
+**Only 1h/day?** Focus on Read + Reflect each week; treat Code as optional. Prioritize W01, W03, W05, W07, W11, W13; those give the most conceptual leverage.
 
-**Skip the infrastructure arc?** W00, W15, W16 are independent. You can complete W01–W14 without touching Kubernetes, and come back to Arc 4 when it's relevant to your work.
+**Skip the infrastructure arc?** W00, W16, W17 are independent. You can complete W01–W15 without touching Kubernetes, and come back to Arc 4 when it's relevant to your work.
 
 **Add your own week?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically.
 

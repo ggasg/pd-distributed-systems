@@ -37,7 +37,7 @@
 
 ## How This Connects to Real Systems
 
-[Name a real system (Kafka, Flink, Postgres, DynamoDB, etc.) and explain concretely how what you built appears in it. "This is basically how Kafka's log compaction works" or "FlashAttention solves the same memory bandwidth problem I hit in W11."]
+[Name a real system (Kafka, Flink, Postgres, DynamoDB, etc.) and explain concretely how what you built appears in it. "This is basically how Kafka's log compaction works" or "FlashAttention solves the same memory bandwidth problem I hit in W12."]
 
 ---
 
@@ -47,4 +47,4 @@
 
 ---
 
-*This is week X of a [17]-week engineering curriculum on distributed systems. [Link to repo]*
+*This is week X of a [18]-week engineering curriculum on distributed systems. [Link to repo]*

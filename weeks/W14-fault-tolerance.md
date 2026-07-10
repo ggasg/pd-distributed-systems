@@ -1,9 +1,9 @@
 ---
-week_number: 13
+week_number: 14
 status: not-started
 ---
 
-# W13: Fault Tolerance and Snapshots
+# W14: Fault Tolerance and Snapshots
 
 > **Arc:** Distributed ML & Compute · **Language:** Java 21
 

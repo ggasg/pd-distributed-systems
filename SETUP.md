@@ -41,7 +41,7 @@ export JAVA_HOME=$(brew --prefix)/opt/openjdk@21
 sudo update-alternatives --config java   # pick java-21
 ```
 
-**W01–W04, W13** use Java 21 with virtual threads (`Thread.ofVirtual()`) and records. Both require Java 21+.
+**W01–W04, W14** use Java 21 with virtual threads (`Thread.ofVirtual()`) and records. Both require Java 21+.
 
 ---
 
@@ -94,9 +94,9 @@ python --version   # 3.11.x
 
 Install dependencies per arc:
 
-**Arc 3 base (W09–W12):**
+**Arc 3 base (W09–W13):**
 ```bash
-pip install numpy torch torchvision duckdb pyarrow pandas
+pip install numpy torch torchvision duckdb pyarrow pandas "ray[default]"
 ```
 
 **W09 (ML pipelines):**
@@ -109,13 +109,18 @@ pip install duckdb pyarrow pandas
 pip install numpy torch           # torch for MNIST loading only
 ```
 
-**W11 (GPU compute), requires NVIDIA GPU:**
+**W11 (actor model / Ray):**
+```bash
+pip install "ray[default]" torch  # torch for the CNN, Ray for actors
+```
+
+**W12 (GPU compute), requires NVIDIA GPU:**
 ```bash
 pip install numba cupy-cuda12x matplotlib
 ```
 No GPU? The week includes a C fallback. Numba's CPU JIT still demonstrates the roofline model.
 
-**W12 (attention):**
+**W13 (attention):**
 ```bash
 pip install numpy                 # NumPy only, no PyTorch for this week
 ```
@@ -132,16 +137,16 @@ go version   # go1.22.x
 # Or download from https://go.dev/dl/
 ```
 
-Go appears as a secondary/tooling language in W03, W10, W11, W13, W14, W15, W16. You don't need Go to complete any arc; it's always optional or a stretch goal except W15.
+Go appears as a secondary/tooling language in W03, W10, W12, W14, W15, W16, W17. You don't need Go to complete any arc; it's always optional or a stretch goal except W16.
 
-**W15 (Kubernetes Operators) requires Go.** Install `controller-runtime`:
+**W16 (Kubernetes Operators) requires Go.** Install `controller-runtime`:
 ```bash
 go get sigs.k8s.io/controller-runtime@v0.18.0
 ```
 
 ---
 
-## Docker + kind (W00, W15, W16)
+## Docker + kind (W00, W16, W17)
 
 ```bash
 # Docker Desktop: https://www.docker.com/products/docker-desktop/
@@ -158,7 +163,7 @@ kind delete cluster --name pd-systems
 
 ---
 
-## GPU Setup (W11, optional)
+## GPU Setup (W12, optional)
 
 **NVIDIA GPU required.** If you don't have one, skip the Numba CUDA path and use the C fallback.
 

@@ -1,9 +1,9 @@
 ---
-week_number: 15
+week_number: 16
 status: not-started
 ---
 
-# W15: Kubernetes Operators
+# W16: Kubernetes Operators
 
 > **Arc:** Infrastructure · **Language:** Go
 
