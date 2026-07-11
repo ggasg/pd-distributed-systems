@@ -5,10 +5,10 @@ status: not-started
 
 # W05: Stream Processing Primitives
 
-> **Arc:** Streaming and Dataflow · **Language:** Scala
+> **Arc:** Streaming and Dataflow · **Language:** Rust
 
 ## What you'll build
-Tumbling window aggregation from scratch in Scala. No Flink, no Spark. Input: a stream of `(eventTime: Long, value: Int)` tuples. Output: per-window sums, emitted when a watermark advances past the window boundary.
+Tumbling window aggregation from scratch in Rust. No Flink, no Spark. Input: a stream of `(event_time: i64, value: i32)` tuples. Output: per-window sums, emitted when a watermark advances past the window boundary.
 
 ---
 
@@ -22,15 +22,15 @@ Tumbling window aggregation from scratch in Scala. No Flink, no Spark. Input: a 
 
 ## Code
 
-Project: `code/streaming/` (Scala 2.13, sbt)
+Project: `code/streaming/` (Rust, cargo)
 
-- [ ] `Event.scala`: case class `Event(eventTime: Long, value: Int)`
-- [ ] `Watermark.scala`: case class `Watermark(timestamp: Long)`, represents the assertion "no events with eventTime < timestamp will arrive"
-- [ ] `TumblingWindowAggregator.scala`: maintains a `Map[WindowId, Int]` of partial sums; on `Event`: assign to window, add value; on `Watermark`: emit and evict all windows whose end time ≤ watermark timestamp
-- [ ] `StreamProcessor.scala`: processes a `Seq[Either[Event, Watermark]]` (mixed stream of events and watermarks) through the aggregator; returns `Seq[(WindowId, Int)]` of completed windows
-- [ ] `StreamProcessorTest.scala`: test 1: all events in order, watermarks advance correctly; test 2: out-of-order events arrive before the watermark; test 3: late event arrives after watermark (confirm it's dropped or handled)
+- [ ] `event.rs`: `struct Event { event_time: i64, value: i32 }`, `#[derive(Debug, Clone, Copy)]`
+- [ ] `watermark.rs`: `struct Watermark { timestamp: i64 }`, represents the assertion "no events with event_time < timestamp will arrive"
+- [ ] `aggregator.rs`: `TumblingWindowAggregator` holds a `HashMap<WindowId, i32>` of partial sums; `on_event(&mut self, e: Event)`: assign to window, add value; `on_watermark(&mut self, w: Watermark) -> Vec<(WindowId, i32)>`: emit and evict all windows whose end time ≤ watermark timestamp
+- [ ] `processor.rs`: `enum StreamItem { Event(Event), Watermark(Watermark) }`, representing a mixed stream of events and watermarks; `StreamProcessor::process(&mut self, items: &[StreamItem]) -> Vec<(WindowId, i32)>` runs the stream through the aggregator and returns completed windows
+- [ ] Tests, in `#[cfg(test)] mod tests` at the bottom of `processor.rs`: test 1: all events in order, watermarks advance correctly; test 2: out-of-order events arrive before the watermark; test 3: late event arrives after watermark (confirm it's dropped or handled)
 
-**Constraints:** purely functional where possible. No mutable state outside the aggregator class. Use `Long` timestamps (milliseconds).
+**Constraints:** state lives only inside `TumblingWindowAggregator` — no global mutable state, no `static mut`. Prefer iterator chains (`.iter().map()`, `.filter()`) over manual loops where they're at least as readable; the aggregator itself will need real `&mut self` mutation, and that's fine — the discipline here is *encapsulated* mutation, not zero mutation. Use `i64` timestamps (milliseconds).
 
 ---
 
@@ -70,7 +70,7 @@ def sliding_max(nums: list[int], k: int) -> list[int]:
 assert sliding_max([1, 3, -1, -3, 5, 3, 6, 7], 3) == [3, 3, 5, 5, 6, 7]
 ```
 
-**Connection:** `TumblingWindowAggregator` in Scala holds events in time order; a heap is exactly that priority queue. The monotone deque pattern is how you'd implement a sliding-window aggregate efficiently; your Scala version does this functionally, but the deque makes the O(n) trick explicit.
+**Connection:** `TumblingWindowAggregator` in Rust holds events in time order; a heap is exactly that priority queue. The monotone deque pattern is how you'd implement a sliding-window aggregate efficiently; your Rust version does this with an explicit `HashMap`, but the deque makes the O(n) trick explicit.
 
 ---
 

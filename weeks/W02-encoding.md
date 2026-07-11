@@ -5,7 +5,7 @@ status: not-started
 
 # W02: Encoding and Wire Formats
 
-> **Arc:** Data Systems Internals · **Language:** Java 21
+> **Arc:** Data Systems Internals · **Language:** Go
 
 ## What you'll build
 Varint encoding/decoding from scratch + a row vs columnar layout benchmark over 1M integer records. Numbers tell the story.
@@ -23,20 +23,20 @@ Varint encoding/decoding from scratch + a row vs columnar layout benchmark over 
 
 ## Code
 
-Project: `code/encoding/` (Java 21)
+Project: `code/encoding/` (Go, module)
 
-- [ ] `Varint.java`: implement protobuf-style variable-length integer encoding: `encode(long value) -> byte[]`, `decode(byte[] buf, int offset) -> long`. Handle sign extension for negative numbers (zigzag encoding).
-- [ ] `RowStore.java`: store 1M records of `int[10]` in row-major layout (one contiguous byte array). Implement `readColumn(int col) -> int[]`.
-- [ ] `ColumnStore.java`: store the same data in columnar layout (one array per column). Implement `readColumn(int col) -> int[]`.
-- [ ] `Benchmark.java`: use `System.nanoTime()` to measure: (1) full column scan in row store vs column store; (2) point lookup by row index in both layouts. Print results.
+- [ ] `varint.go`: implement protobuf-style variable-length integer encoding: `EncodeVarint(value int64) []byte`, `DecodeVarint(buf []byte, offset int) (int64, int)` (returns decoded value and new offset). Handle sign extension for negative numbers (zigzag encoding: `(n << 1) ^ (n >> 63)`)
+- [ ] `row_store.go`: store 1M records of `[10]int32` in row-major layout (one contiguous `[]int32` slice, stride 10). Implement `ReadColumn(col int) []int32`
+- [ ] `column_store.go`: store the same data in columnar layout (one `[]int32` per column). Implement `ReadColumn(col int) []int32`
+- [ ] `benchmark.go`, exposed as a `cmd/benchmark` binary: use `time.Now()`/`time.Since()` to measure: (1) full column scan in row store vs column store; (2) point lookup by row index in both layouts. Print results. Alternatively, write this as a proper Go benchmark using `testing.B` (`go test -bench=.`) instead of hand-rolled timing — either is fine, but if you go the `testing.B` route note that Go's benchmark framework already handles warm-up iterations for you
 
-**Expected outcome:** column scan should be ~5–10x faster in columnar layout. If it's not, investigate why (cache effects, JIT warmup).
+**Expected outcome:** column scan should be ~5–10x faster in columnar layout. If it's not, investigate why (cache effects, whether you accidentally allocated inside the hot loop).
 
 ---
 
 ## 🐍 Python DSA Review (optional)
 
-**Bit manipulation + byte packing**: implement varint in Python before doing it in Java. The bit ops are the same; Python makes them easy to inspect.
+**Bit manipulation + byte packing**: implement varint in Python before doing it in Go. The bit ops are the same; Python makes them easy to inspect.
 
 ```python
 # varint.py
@@ -65,7 +65,7 @@ for n in [0, 1, 127, 128, 300, 16383, 2**21 - 1]:
     print(f"{n:>8} → {list(encoded)} ({len(encoded)} bytes)")
 ```
 
-**Connection:** this IS the week's core topic, but implementing it in Python first lets you verify the bit logic interactively before writing the Java version where compile-run cycles are slower.
+**Connection:** this IS the week's core topic, but implementing it in Python first lets you verify the bit logic interactively before writing the Go version, where a wrong shift or mask is a silent correctness bug rather than a crash.
 
 ---
 

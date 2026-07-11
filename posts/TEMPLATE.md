@@ -7,7 +7,7 @@
 
 ## What I Built
 
-[2–3 sentences. Name the specific thing you built, not "I implemented a data structure" but "I built a 3-node simulated distributed snapshot using Chandy-Lamport markers over FIFO channels in Java." A fellow engineer should know exactly what this is after reading these sentences.]
+[2–3 sentences. Name the specific thing you built, not "I implemented a data structure" but "I built a 3-node simulated distributed snapshot using Chandy-Lamport markers over FIFO channels in Go." A fellow engineer should know exactly what this is after reading these sentences.]
 
 ---
 
