@@ -16,67 +16,42 @@ Everything you need installed before starting W00. Set this up once; it covers t
 
 ---
 
-## Java 21
+## Go 1.22+
 
-**macOS (Homebrew):**
-```bash
-brew install openjdk@21
-# Link it so the system sees it:
-sudo ln -sfn $(brew --prefix)/opt/openjdk@21/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk-21.jdk
-java --version   # should print "21.x.x"
-```
-
-**Ubuntu / Debian:**
-```bash
-sudo apt update
-sudo apt install openjdk-21-jdk
-java --version   # should print "21.x.x"
-```
-
-If you have multiple JDKs installed and need to switch:
 ```bash
 # macOS
-export JAVA_HOME=$(brew --prefix)/opt/openjdk@21
-# Ubuntu
-sudo update-alternatives --config java   # pick java-21
+brew install go
+go version   # go1.22.x
+
+# Or download from https://go.dev/dl/
 ```
 
-**W01–W04, W14** use Java 21 with virtual threads (`Thread.ofVirtual()`) and records. Both require Java 21+.
+**W00–W04, W14, W16, and secondary tooling in W03/W10/W12/W15/W17** use Go — this is the backbone language of the curriculum alongside Rust. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
+
+**W16 (Kubernetes Operators) requires Go** — this isn't optional the way secondary tooling elsewhere is. Install `controller-runtime`:
+```bash
+go get sigs.k8s.io/controller-runtime@v0.18.0
+```
+
+**New to Go?** Start here, not at W05. Go's learning curve is short by design — the language spec is deliberately small, there's no ownership model or macro system to internalize — but it's still worth a dedicated pass before W01 rather than learning it while also learning LSM-trees. Work through [A Tour of Go](https://go.dev/tour/) (free, interactive, ~2–3 hours) end to end, then read [Effective Go](https://go.dev/doc/effective_go)'s sections on goroutines, channels, and error handling (~1 hour). That's enough to be productive in W00–W04. The one habit worth building early: Go returns errors as values (`result, err := doThing()`) instead of throwing exceptions — get comfortable checking `err != nil` everywhere, it's idiomatic, not boilerplate to work around.
 
 ---
 
-## Scala 2.13 + SBT
+## Rust (stable, 2021 edition)
 
 ```bash
-# macOS
-brew install sbt
-sbt --version   # should print sbt script version
-
-# Ubuntu / Debian
-echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
-curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add -
-sudo apt update && sudo apt install sbt
+# macOS / Linux
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source "$HOME/.cargo/env"
+rustc --version   # rustc 1.8x.x or later
+cargo --version
 ```
 
-Each Scala project (`code/streaming/`, `code/dd-scratch/`, etc.) has its own `build.sbt`. SBT downloads Scala 2.13 on first run.
+Each Rust project (`code/streaming/`, `code/dd-scratch/`, etc.) is its own Cargo project. `cargo new --lib <name>` scaffolds it; `Cargo.toml` lists dependencies. `cargo build` fetches whatever the project declares, and most Arc 2 weeks declare zero external crates.
 
-Minimal `build.sbt` for any Arc 2 project:
-```scala
-scalaVersion := "2.13.16"
-scalacOptions ++= Seq("-deprecation", "-feature", "-language:higherKinds")
-```
+**W05–W08** use stable Rust, 2021 edition, no nightly features. Recommended IDE: VS Code with the rust-analyzer extension, or RustRover.
 
-**W05–W08** use Scala 2.13.16, chosen for compatibility with Spark, Flink, and the broader JVM ecosystem. Recommended IDE: IntelliJ IDEA with the Scala plugin, or VS Code with Metals.
-
-**Scala 2 vs Scala 3 syntax differences** you'll encounter in examples online:
-
-| Concept | Scala 2.13 (use this) | Scala 3 equivalent |
-|---------|----------------------|-------------------|
-| ADTs | `sealed trait` + `case class` | `enum` |
-| Type classes | `implicit val` / `implicit def` | `given` / `using` |
-| Braces | always required | optional |
-
-The week files describe *what* to build, not exact syntax. Either version works conceptually.
+**New to Rust?** This is the real ramp in the curriculum — Go doesn't prepare you for the borrow checker any more than any other language would, since ownership has no equivalent outside Rust (and a handful of niche languages). Don't expect W01–W04's Go to have softened this jump; budget it as a fresh investment. Before starting W05, work through [The Rust Book](https://doc.rust-lang.org/book/) (free) Chapters 4 (Ownership), 5 (Structs), 6 (Enums and Pattern Matching), 10 (Traits), and 13 (Closures and Iterators) — those five chapters map almost directly onto what W05–W08 need. Budget 6–8 hours if this is genuinely your first time past `borrow checker` errors — meaningfully longer than the Go ramp, and that asymmetry is real, not a formality.
 
 ---
 
@@ -127,25 +102,6 @@ pip install numpy                 # NumPy only, no PyTorch for this week
 
 ---
 
-## Go 1.22+
-
-```bash
-# macOS
-brew install go
-go version   # go1.22.x
-
-# Or download from https://go.dev/dl/
-```
-
-Go appears as a secondary/tooling language in W03, W10, W12, W14, W15, W16, W17. You don't need Go to complete any arc; it's always optional or a stretch goal except W16.
-
-**W16 (Kubernetes Operators) requires Go.** Install `controller-runtime`:
-```bash
-go get sigs.k8s.io/controller-runtime@v0.18.0
-```
-
----
-
 ## Docker + kind (W00, W16, W17)
 
 ```bash
@@ -177,10 +133,10 @@ kind delete cluster --name pd-systems
 ## Verify Everything
 
 ```bash
-java --version       # 21.x
-sbt --version        # 1.9.x or later
-python --version     # 3.11.x or 3.12.x
 go version           # 1.22.x
+rustc --version      # 1.8x.x or later
+cargo --version
+python --version     # 3.11.x or 3.12.x
 docker --version     # 25.x or later
 kind --version       # 0.22.x or later
 kubectl version      # 1.29.x or later
@@ -193,8 +149,7 @@ helm version         # 3.14.x or later
 
 | Language | IDE |
 |----------|-----|
-| Java | IntelliJ IDEA Community (free) |
-| Scala | IntelliJ IDEA + Scala plugin, or VS Code + Metals |
-| Python | VS Code + Pylance, or PyCharm Community |
 | Go | VS Code + Go extension, or GoLand |
+| Rust | VS Code + rust-analyzer, or RustRover |
+| Python | VS Code + Pylance, or PyCharm Community |
 | All | Neovim with LSP (if you're into that) |

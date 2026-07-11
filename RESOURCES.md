@@ -67,7 +67,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 ## W06: Naiad and Timely Dataflow
 
 - [Naiad: A Timely Dataflow System](https://dl.acm.org/doi/10.1145/2517349.2522738): Murray et al., SOSP 2013 (**ACM DL**; also [free via MSR](https://www.microsoft.com/en-us/research/wp-content/uploads/2013/11/naiad_sosp2013.pdf))
-- [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): source code, even if you don't use Rust
+- [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): this is what `timely-toy/` is a simplified version of, in the same language
 
 ---
 
@@ -75,7 +75,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 - [Differential Dataflow](https://github.com/frankmcsherry/blog/blob/master/posts/2015-09-29.md): McSherry (2013/2015), blog post (**free**), more accessible than the formal paper
 - [Differential Dataflow (formal paper)](https://dl.acm.org/doi/10.1145/2588555.2610364): McSherry, Murray et al., CIDR 2013
-- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): source reference, even if you implement in Scala
+- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): source reference — your `Update`/`Collection` types in `dd-scratch/` are simplified versions of `collection.rs`
 
 ---
 

@@ -30,7 +30,7 @@ Vault structure:
 - `weeks/W00-*.md` through `W17-*.md`: one file per week; each has Read, Code, optional Python DSA Review, and Reflect sections
 - `weeks/W18-*.md`: optional grand capstone; synthesizes W09, W10, W13, W14, W16, W17 into one distributed training and serving platform
 - `tools/plan-dates.go`: `go run tools/plan-dates.go --start 2026-07-13` prints full schedule
-- `SETUP.md`: full environment setup (Java, Scala, Python, Go, Docker, Obsidian)
+- `SETUP.md`: full environment setup (Go, Rust, Python, Docker, Obsidian)
 - `RESOURCES.md`: all papers and books by week with free links
 - `Templates/week-template.md`: blank week file for adding custom weeks
 - `posts/TEMPLATE.md`: structured blog post format for weekly write-ups
@@ -50,23 +50,23 @@ No Notion. No separate task tracker. Everything lives here.
 |------|-------|-------------|
 | W00 | Local k8s (kind) + Prometheus + Grafana | `code/hello-metrics/` Go service with Prometheus metrics, deployed to kind |
 
-### Arc 1: Data Systems Internals (W01–W04), Java 21
+### Arc 1: Data Systems Internals (W01–W04), Go
 
 | Week | Topic | Key Paper | Deliverable |
 |------|-------|-----------|-------------|
-| W01 | LSM-Trees + Storage Engines | DDIA Ch.3; LevelDB source | `lsm/` Java: MemTable, SSTable, LSMTree |
-| W02 | Encoding + Wire Formats | DDIA Ch.4; Protobuf encoding spec | `encoding/` Java: varint, row vs column store benchmark |
-| W03 | MapReduce and Its Limits | Dean & Ghemawat (2004); Zaharia et al. (2012) | `mapreduce/` Java: MR framework, word count, iterative PageRank; Go HTTP coordinator |
-| W04 | Clocks, Causality, Time | Lamport (1978); DDIA Ch.8 | `clocks/` Java: vector clocks + causal delivery |
+| W01 | LSM-Trees + Storage Engines | DDIA Ch.3; LevelDB source | `lsm/` Go: MemTable, SSTable, LSMTree |
+| W02 | Encoding + Wire Formats | DDIA Ch.4; Protobuf encoding spec | `encoding/` Go: varint, row vs column store benchmark |
+| W03 | MapReduce and Its Limits | Dean & Ghemawat (2004); Zaharia et al. (2012) | `mapreduce/` Go: MR framework (goroutines), word count, iterative PageRank; HTTP coordinator |
+| W04 | Clocks, Causality, Time | Lamport (1978); DDIA Ch.8 | `clocks/` Go: vector clocks + causal delivery over channels |
 
-### Arc 2: Streaming and Dataflow (W05–W08), Scala
+### Arc 2: Streaming and Dataflow (W05–W08), Rust
 
 | Week | Topic | Key Paper | Deliverable |
 |------|-------|-----------|-------------|
-| W05 | Stream Processing Primitives | Dataflow Model (Akidau et al., 2015); DDIA Ch.11 | `streaming/` Scala: windowed aggregation, purely functional |
-| W06 | Naiad + Timely Dataflow | Naiad paper (Murray et al., SOSP 2013) | `timely-toy/` Scala: Timestamp, Pointstamp, ProgressTracker |
-| W07 | Differential Dataflow | DD paper (McSherry, 2013) | `dd-scratch/` Scala: DD engine from scratch, Update, Collection, WordCount, Reachability |
-| W08 | Query Execution | Volcano (1994); MonetDB/X100 (2005) | `query-exec/` Scala: RowExecutor, ColumnFilter, HashJoin, Benchmark (3–8x speedup) |
+| W05 | Stream Processing Primitives | Dataflow Model (Akidau et al., 2015); DDIA Ch.11 | `streaming/` Rust: windowed aggregation, immutability enforced by the borrow checker |
+| W06 | Naiad + Timely Dataflow | Naiad paper (Murray et al., SOSP 2013) | `timely-toy/` Rust: Timestamp, Pointstamp, ProgressTracker |
+| W07 | Differential Dataflow | DD paper (McSherry, 2013) | `dd-scratch/` Rust: DD engine from scratch, Update, Collection, WordCount, Reachability — same language as the real `differential-dataflow` crate |
+| W08 | Query Execution | Volcano (1994); MonetDB/X100 (2005) | `query-exec/` Rust: RowExecutor, ColumnFilter, HashJoin, Benchmark (3–8x speedup) |
 
 ### Arc 3: Distributed ML & Compute (W09–W15), Python / Go secondary
 
@@ -77,10 +77,10 @@ No Notion. No separate task tracker. Everything lives here.
 | W11 | The Actor Model and Ray | Hewitt, Bishop, Steiger (1973); Ray (Moritz et al., OSDI 2018) | `actor-training/` Python: Ray actors (TrainerWorker + ParameterServer), PyTorch CNN on MNIST, benchmarked against W10 |
 | W12 | GPU Memory + Compute | CUDA Guide Ch.1-3; Roofline (2009) | `gpu-gemm/` Python/Numba: naive vs tiled CUDA matmul + roofline; Go bench runner |
 | W13 | Attention + KV Cache | Attention Is All You Need (2017); FlashAttention (2022); PagedAttention (2023) | `attention/` Python: MHA forward pass + KV cache, NumPy only |
-| W14 | Fault Tolerance | Chandy-Lamport (1985); Flink ABS (2015) | `snapshot/` Java: Chandy-Lamport 3-node simulation; Go rewrite optional |
-| W15 | Capstone | none | Go: replicated KV store / Scala: streaming pipeline / Scala: incremental query engine |
+| W14 | Fault Tolerance | Chandy-Lamport (1985); Flink ABS (2015) | `snapshot/` Go: Chandy-Lamport 3-node simulation over native channels |
+| W15 | Capstone | none | Go: replicated KV store / Rust: streaming pipeline / Rust: incremental query engine |
 
-### Arc 4: Infrastructure (W16–W17), Go / Scala
+### Arc 4: Infrastructure (W16–W17), Go / Rust
 
 | Week | Topic | Deliverable |
 |------|-------|-------------|

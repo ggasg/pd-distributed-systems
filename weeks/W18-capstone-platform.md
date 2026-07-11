@@ -5,7 +5,7 @@ status: not-started
 
 # W18: Grand Capstone: Distributed Training & Serving Platform
 
-> **Arc:** Optional capstone · **Language:** Go, Python, Scala, reuses W09, W10, W13, W14, W16, W17
+> **Arc:** Optional capstone · **Language:** Go, Python, Rust, reuses W09, W10, W13, W14, W16, W17
 > **Status:** Optional / stretch week. Not required to finish the core curriculum (W00–W17).
 
 **Prerequisite:** W09 (feature pipeline), W10 (distributed training), W13 (attention + KV cache), W14 (Chandy-Lamport snapshots), W16 (Kubernetes Operators), and W17 (Observability) all completed.
@@ -59,7 +59,7 @@ Project: `code/capstone-platform/` (Go for the operator and serving layer, Pytho
 **Part 5: Serving + observability (extend W13 and W17)**
 
 - [ ] `serve.py`: a small HTTP service (Flask/FastAPI is fine here, this isn't the distributed part) that loads the trained model and serves `/generate` using the KV cache from W13
-- [ ] Instrument the serving endpoint the same way you instrumented the DD engine in W17 (`prometheus_client` this time, not the Scala client): `requests_total` (Counter), `generation_latency_seconds` (Histogram), `active_kv_cache_entries` (Gauge)
+- [ ] Instrument the serving endpoint the same way you instrumented the DD engine in W17 (Python's `prometheus_client` this time, not the Rust `prometheus` crate): `requests_total` (Counter), `generation_latency_seconds` (Histogram), `active_kv_cache_entries` (Gauge)
 - [ ] Deploy everything to kind: training Job, operator, serving Deployment + ServiceMonitor
 - [ ] Grafana dashboard, 4 panels: training throughput (updates/sec across workers), checkpoint/restore events over time, inference p99 latency, active KV cache size
 

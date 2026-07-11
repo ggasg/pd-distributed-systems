@@ -5,10 +5,10 @@ status: not-started
 
 # W08: Query Execution
 
-> **Arc:** Streaming and Dataflow · **Language:** Scala
+> **Arc:** Streaming and Dataflow · **Language:** Rust
 
 ## What you'll build
-A vectorized query executor in Scala: columnar filter + hash join + projection over in-memory data. Benchmark it against a row-at-a-time version of the same pipeline and measure the speedup.
+A vectorized query executor in Rust: columnar filter + hash join + projection over in-memory data. Benchmark it against a row-at-a-time version of the same pipeline and measure the speedup.
 
 ---
 
@@ -22,28 +22,28 @@ A vectorized query executor in Scala: columnar filter + hash join + projection o
 
 ## Code
 
-Project: `code/query-exec/` (Scala 2.13, sbt)
+Project: `code/query-exec/` (Rust, cargo)
 
-Data model: a table of 1M rows with columns `id: Array[Int]`, `dept: Array[Int]`, `salary: Array[Int]` stored separately (columnar).
+Data model: a table of 1M rows with columns `id: Vec<i32>`, `dept: Vec<i32>`, `salary: Vec<i32>` stored separately (columnar).
 
 **Row-at-a-time executor (baseline):**
 
-- [ ] `RowExecutor.scala`: case class `Row(id: Int, dept: Int, salary: Int)`; `Iterator[Row]` that zips the three arrays; apply `filter(_.salary > threshold)`, then `map(r => (r.id, r.salary))`; collect results
+- [ ] `row_executor.rs`: `struct Row { id: i32, dept: i32, salary: i32 }`; an iterator that zips the three columns (`id.iter().zip(dept.iter()).zip(salary.iter())`); apply `.filter(|r| r.salary > threshold)`, then `.map(|r| (r.id, r.salary))`; collect results
 
 **Vectorized executor:**
 
-- [ ] `ColumnFilter.scala`: `def filter(col: Array[Int], threshold: Int): Array[Boolean]`, branchless: `col.map(v => v > threshold)`
-- [ ] `ColumnProject.scala`: `def project(col: Array[Int], mask: Array[Boolean]): Array[Int]`, collect values where mask is true
-- [ ] `HashJoin.scala`: `def join(leftKey: Array[Int], leftVal: Array[Int], rightKey: Array[Int], rightVal: Array[Int]): Array[(Int, Int)]`, build `HashMap[Int, Int]` from left side, probe with right side, emit matching pairs
-- [ ] `Benchmark.scala`: generate 1M random rows; time filter + project pipeline 10 times each (warm up JVM first with 3 dry runs); print mean throughput in M rows/sec for both executors
+- [ ] `column_filter.rs`: `fn filter(col: &[i32], threshold: i32) -> Vec<bool>`, branchless: `col.iter().map(|&v| v > threshold).collect()`
+- [ ] `column_project.rs`: `fn project(col: &[i32], mask: &[bool]) -> Vec<i32>`, collect values where mask is true
+- [ ] `hash_join.rs`: `fn join(left_key: &[i32], left_val: &[i32], right_key: &[i32], right_val: &[i32]) -> Vec<(i32, i32)>`, build a `HashMap<i32, i32>` from the left side, probe with the right side, emit matching pairs
+- [ ] `src/bin/benchmark.rs`: generate 1M random rows; time the filter + project pipeline 10 times each using `std::time::Instant` (3 warm-up runs first, so caches and branch prediction are primed); print mean throughput in M rows/sec for both executors. Run with `cargo run --release --bin benchmark` — **the `--release` flag is not optional here**, an unoptimized debug build will make the comparison meaningless
 
-**Expected outcome:** vectorized should be 3–8x faster. If the gap is smaller, check whether the JIT is auto-vectorizing the iterator version (run with `-XX:+PrintCompilation` to inspect).
+**Expected outcome:** vectorized should be 3–8x faster. If the gap is smaller, the first thing to check is whether you actually ran `--release` — that's the single most common reason a Rust benchmark looks flat.
 
 ---
 
 ## 🐍 Python DSA Review (optional)
 
-**Hash join + binary search on sorted arrays**: the two algorithms your Scala `HashJoin.scala` and `ColumnFilter.scala` implement. Python makes the probe/build logic easy to inspect.
+**Hash join + binary search on sorted arrays**: the two algorithms your Rust `hash_join.rs` and `column_filter.rs` implement. Python makes the probe/build logic easy to inspect.
 
 ```python
 from collections import defaultdict
@@ -67,7 +67,7 @@ right = [{"id": 1, "score": 95},     {"id": 1, "score": 88}]
 joined = hash_join(left, right, "id")
 assert len(joined) == 2 and all(r["name"] == "alice" for r in joined)
 
-# binary_filter.py: binary search on a sorted column (like ColumnFilter.scala)
+# binary_filter.py: binary search on a sorted column (like column_filter.rs)
 def filter_sorted_col(col: list[int], predicate_min: int, predicate_max: int) -> list[int]:
     lo = bisect_left(col, predicate_min)
     hi = bisect_left(col, predicate_max + 1)
@@ -77,7 +77,7 @@ col = sorted([5, 2, 8, 1, 9, 3, 7, 4, 6])
 assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
 ```
 
-**Connection:** `HashJoin.scala` is the build+probe pattern in Scala with `Array[Int]` columns. `ColumnFilter.scala` can use a `bisect_left` equivalent for range filters on sorted columns, 3–8x faster than scanning.
+**Connection:** `hash_join.rs` is the build+probe pattern in Rust over `&[i32]` columns. `column_filter.rs` can use a `bisect_left`-equivalent (binary search on a sorted column, `slice::binary_search`) for range filters, 3–8x faster than scanning.
 
 ---
 
@@ -94,6 +94,6 @@ assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
 
 **What does this tell you about how query execution works in a system you know?**
 
-**Where did letting data change in place (mutation) buy you speed?** Your vectorized executor mutates arrays directly for performance. That's the opposite of the "never change data, always create a new copy" style (immutability) you leaned on in W05 and W07. Point to one specific place in `ColumnFilter.scala` or `HashJoin.scala` where mutation mattered, and estimate what it would've cost you in speed to keep that spot immutable instead.
+**Where did mutation buy you speed?** Your vectorized executor builds and fills `Vec`s directly for performance. That's in tension with the "never mutate, always produce a new `Collection`" style the borrow checker forced on you in W05 and W07. Point to one specific place in `column_filter.rs` or `hash_join.rs` where you used `&mut` or filled a pre-allocated `Vec` in place, and estimate what it would've cost you in speed to avoid that mutation and chain allocations instead.
 
 **What I'd do differently:**

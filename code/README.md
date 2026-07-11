@@ -11,72 +11,72 @@ code/
 │       ├── deployment.yaml
 │       └── service-monitor.yaml
 │
-├── lsm/                    # W01: Java 21
-│   ├── src/main/java/
-│   │   ├── MemTable.java
-│   │   ├── SSTable.java
-│   │   ├── LSMTree.java
-│   │   └── LSMTreeTest.java
-│   └── pom.xml             # or build.gradle
+├── lsm/                    # W01: Go
+│   ├── memtable.go
+│   ├── sstable.go
+│   ├── lsm_tree.go
+│   ├── lsm_tree_test.go
+│   └── go.mod
 │
-├── encoding/               # W02: Java 21
-│   ├── src/main/java/
-│   │   ├── Varint.java
-│   │   ├── RowStore.java
-│   │   ├── ColumnStore.java
-│   │   └── Benchmark.java
-│   └── pom.xml
+├── encoding/               # W02: Go
+│   ├── varint.go
+│   ├── row_store.go
+│   ├── column_store.go
+│   ├── benchmark.go        # or cmd/benchmark/main.go
+│   └── go.mod
 │
-├── mapreduce/              # W03: Java 21 + Go tool
-│   ├── src/main/java/
-│   │   ├── MapReduceJob.java
-│   │   ├── MapReduceRunner.java
-│   │   ├── WordCount.java
-│   │   └── PageRank.java
-│   └── pom.xml
-│   # Go tool lives in tools/job_coordinator/
+├── mapreduce/              # W03: Go
+│   ├── mapreduce.go        # Mapper/Reducer interfaces
+│   ├── runner.go
+│   ├── word_count.go
+│   ├── pagerank.go
+│   └── go.mod
+│   # HTTP coordinator lives in tools/job_coordinator/
 │
-├── clocks/                 # W04: Java 21
-│   ├── src/main/java/
-│   │   ├── VectorClock.java
-│   │   ├── Message.java
-│   │   ├── Node.java
-│   │   └── CausalDeliveryTest.java
-│   └── pom.xml
+├── clocks/                 # W04: Go
+│   ├── vector_clock.go
+│   ├── message.go
+│   ├── node.go
+│   ├── causal_delivery_test.go
+│   └── go.mod
 │
-├── streaming/               # W05: Scala 2.13
-│   ├── src/main/scala/
-│   │   ├── Event.scala
-│   │   ├── Watermark.scala
-│   │   ├── TumblingWindowAggregator.scala
-│   │   └── StreamProcessor.scala
-│   └── build.sbt
+├── streaming/               # W05: Rust
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── event.rs
+│   │   ├── watermark.rs
+│   │   ├── aggregator.rs       # TumblingWindowAggregator
+│   │   └── processor.rs        # StreamProcessor + StreamItem enum; #[cfg(test)] tests live here
+│   └── Cargo.toml
 │
-├── timely-toy/             # W06: Scala 2.13
-│   ├── src/main/scala/
-│   │   ├── Timestamp.scala
-│   │   ├── Pointstamp.scala
-│   │   ├── Operator.scala
-│   │   ├── ProgressTracker.scala
-│   │   └── DataflowTest.scala
-│   └── build.sbt
+├── timely-toy/             # W06: Rust
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── timestamp.rs
+│   │   ├── pointstamp.rs
+│   │   ├── operator.rs         # Operator trait, MapOperator, SinkOperator
+│   │   └── progress_tracker.rs
+│   └── Cargo.toml
 │
-├── dd-scratch/             # W07: Scala 2.13
-│   ├── src/main/scala/
-│   │   ├── Update.scala
-│   │   ├── Collection.scala
-│   │   ├── WordCount.scala
-│   │   └── Reachability.scala
-│   └── build.sbt
+├── dd-scratch/             # W07: Rust
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── update.rs
+│   │   ├── collection.rs
+│   │   ├── word_count.rs
+│   │   └── reachability.rs
+│   └── Cargo.toml
 │
-├── query-exec/             # W08: Scala 2.13
-│   ├── src/main/scala/
-│   │   ├── RowExecutor.scala
-│   │   ├── ColumnFilter.scala
-│   │   ├── ColumnProject.scala
-│   │   ├── HashJoin.scala
-│   │   └── Benchmark.scala
-│   └── build.sbt
+├── query-exec/             # W08: Rust
+│   ├── src/
+│   │   ├── lib.rs
+│   │   ├── row_executor.rs
+│   │   ├── column_filter.rs
+│   │   ├── column_project.rs
+│   │   └── hash_join.rs
+│   ├── src/bin/
+│   │   └── benchmark.rs        # cargo run --release --bin benchmark
+│   └── Cargo.toml
 │
 ├── feature-pipeline/       # W09: Python
 │   ├── feature_store.py
@@ -113,14 +113,13 @@ code/
 │   ├── benchmark.py
 │   └── requirements.txt
 │
-├── snapshot/                # W14: Java 21 (+ optional Go)
-│   ├── src/main/java/
-│   │   ├── Channel.java
-│   │   ├── Message.java
-│   │   ├── Node.java
-│   │   ├── Coordinator.java
-│   │   └── SnapshotTest.java
-│   └── pom.xml
+├── snapshot/                # W14: Go
+│   ├── channel.go
+│   ├── message.go
+│   ├── node.go
+│   ├── coordinator.go
+│   ├── snapshot_test.go
+│   └── go.mod
 │
 ├── capstone/                # W15: your choice of language
 │   ├── README.md           # required: design doc
@@ -139,10 +138,10 @@ code/
 │   └── go.mod
 │
 ├── dd-scratch/             # W17: extends W07
-│   └── metrics/
-│       ├── DDMetrics.scala
-│       ├── tracing/DDTracer.scala
-│       └── logging/Log.scala
+│   └── src/
+│       ├── metrics.rs
+│       ├── tracing_setup.rs
+│       └── logging.rs
 │
 └── capstone-platform/      # W18 (optional): Go + Python, combines W09+W10+W13+W14+W16+W17
     ├── train_worker.py
@@ -156,25 +155,12 @@ code/
 
 ## Build Commands
 
-**Java (Maven):**
+**Rust (Cargo):**
 ```bash
-mvn compile
-mvn test
-mvn exec:java -Dexec.mainClass=YourMainClass
-```
-
-**Java (Gradle):**
-```bash
-./gradlew build
-./gradlew run
-```
-
-**Scala (SBT):**
-```bash
-sbt compile
-sbt run
-sbt test
-sbt "runMain com.example.Benchmark"
+cargo build
+cargo test
+cargo run                        # default bin target, if any
+cargo run --release --bin benchmark   # named bin target; use --release for anything timed
 ```
 
 **Python:**
@@ -199,3 +185,4 @@ go build -o bin/app .
 - Keep each project buildable in isolation. No shared parent build file.
 - Code in this directory is the "lab." It's meant to be written, broken, and rewritten.
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
+- Rust projects (W05–W08, W17) keep unit tests inline via `#[cfg(test)] mod tests { ... }` at the bottom of the relevant file, in the Rust convention — no separate `*Test.rs` files

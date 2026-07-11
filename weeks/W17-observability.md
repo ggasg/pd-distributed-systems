@@ -5,10 +5,10 @@ status: not-started
 
 # W17: Observability: Metrics, Tracing, Logging
 
-> **Arc:** Infrastructure · **Language:** Scala + Go
+> **Arc:** Infrastructure · **Language:** Rust + Go
 
 ## What you'll build
-Instrument your W07 Differential Dataflow engine with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
+Instrument your W07 Differential Dataflow engine (Rust) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
 
 **Prerequisites:** W00 (kind + Prometheus + Grafana), W07 (DD engine).
 
@@ -25,30 +25,30 @@ Instrument your W07 Differential Dataflow engine with Prometheus metrics, OpenTe
 
 ## Code
 
-**Part 1: Instrument the DD Engine (Scala)**
+**Part 1: Instrument the DD Engine (Rust)**
 
 Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
-- [ ] Add to `build.sbt`:
-  ```scala
-  "io.prometheus" % "simpleclient" % "0.16.0",
-  "io.prometheus" % "simpleclient_httpserver" % "0.16.0",
-  "io.opentelemetry" % "opentelemetry-api" % "1.36.0",
-  "io.opentelemetry" % "opentelemetry-sdk" % "1.36.0"
+- [ ] Add dependencies:
+  ```bash
+  cd code/dd-scratch
+  cargo add prometheus tracing tracing-subscriber tracing-opentelemetry
+  cargo add opentelemetry opentelemetry_sdk opentelemetry-otlp
   ```
-- [ ] `metrics/DDMetrics.scala`: define and register:
-  - `updates_processed_total`: Counter, incremented once per `Update` processed
-  - `consolidation_duration_seconds`: Histogram (buckets: 0.1ms, 1ms, 5ms, 10ms, 50ms), time in `consolidate()`
-  - `batch_size`: Histogram (buckets: 1, 10, 100, 1000, 10000), updates per batch
-  - `active_keys`: Gauge, current distinct key count in collection
-  - Start `HTTPServer` on port 9091 to expose `/metrics`
-- [ ] `tracing/DDTracer.scala`: add OTel spans around `map`, `filter`, and `consolidate` in `Collection.scala`. Each span records: operation name, input batch size, output batch size as attributes.
-- [ ] `logging/Log.scala`: a small structured logger that writes JSON lines to stdout:
+  `tracing` is the idiomatic choice here: the same `tracing::info!`/`tracing::span!` macros give you both structured logs and spans, and `tracing-opentelemetry` bridges those spans into OTel directly — you're not hand-writing separate metrics and tracing code paths the way the original design implied.
+- [ ] `metrics.rs`: define and register the following against a `prometheus::Registry`:
+  - `updates_processed_total`: `IntCounter`, incremented once per `Update` processed
+  - `consolidation_duration_seconds`: `Histogram` (buckets: 0.1ms, 1ms, 5ms, 10ms, 50ms), time spent in `consolidate()`
+  - `batch_size`: `Histogram` (buckets: 1, 10, 100, 1000, 10000), updates per batch
+  - `active_keys`: `IntGauge`, current distinct key count in the collection
+  - Start an HTTP server on port 9091 exposing `/metrics` (a small handler using `tiny_http` or `hyper` that calls `prometheus::TextEncoder::encode` on scrape)
+- [ ] `tracing_setup.rs`: initialize a `tracing_subscriber::Registry` with the `tracing-opentelemetry` layer; annotate `map`, `filter`, and `consolidate` in `collection.rs` with `#[tracing::instrument]`, recording input batch size and output batch size as span fields
+- [ ] `logging.rs`: add a JSON-formatting layer to the `tracing_subscriber` registry so every `tracing::info!` call writes a JSON line to stdout:
   ```json
   {"level":"INFO","ts":"2026-10-19T10:00:00Z","op":"consolidate","input":1000,"output":42,"duration_ms":3}
   ```
-  Replace any `println` in the DD engine with `Log.info(...)`.
-- [ ] Run `WordCount.scala` with 10k document updates. Verify `/metrics` at `localhost:9091`.
+  Replace any `println!` in the DD engine with `tracing::info!(...)`.
+- [ ] Run `word_count.rs` with 10k document updates. Verify `/metrics` at `localhost:9091`.
 
 **Part 2: Grafana Dashboard**
 
