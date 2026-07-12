@@ -61,9 +61,30 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   - `active_keys`: gauge value over time (graph)
 - [ ] Export the dashboard as `config/grafana-dashboard.json` (Grafana → Share → Export)
 
-**Part 3: Go log aggregator (optional stretch)**
+**Part 3: Go log aggregator — wire it into the W16 operator**
 
-- [ ] `tools/log-aggregator/main.go`: HTTP server that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Acts as a sidecar container in your k8s Pod. Use a ring buffer protected by a `sync.RWMutex`. ~80 lines.
+- [ ] `tools/log-aggregator/main.go`: HTTP server that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a ring buffer protected by a `sync.RWMutex`. ~80 lines.
+- [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.23-alpine` builder → `alpine` runtime), `EXPOSE 8080`.
+- [ ] Build and load into the kind cluster from W16:
+  ```bash
+  docker build -t log-aggregator:latest tools/log-aggregator
+  kind load docker-image log-aggregator:latest --name pd-systems
+  ```
+- [ ] Set `sidecarImage: log-aggregator:latest` on your `DistributedJob` (`code/operator/config/sample.yaml`), then reapply:
+  ```bash
+  kubectl apply -f code/operator/config/sample.yaml
+  kubectl get pod -l job-name=my-job -o jsonpath='{.items[0].spec.containers[*].name}'
+  # expect: main sidecar
+  ```
+- [ ] Confirm the two containers share a network namespace — the point of the sidecar pattern, not just "two containers exist":
+  ```bash
+  POD=$(kubectl get pod -l job-name=my-job -o jsonpath='{.items[0].metadata.name}')
+  kubectl exec $POD -c main -- wget -qO- --post-data='{"msg":"hello from main container"}' localhost:8080/log
+  kubectl exec $POD -c main -- wget -qO- localhost:8080/logs
+  # the posted line should come back
+  ```
+
+**Minimum bar:** the `DistributedJob` Pod runs two containers; the main container reaches the sidecar over `localhost` with no Service or DNS involved; a log line posted from the main container round-trips through `GET /logs`.
 
 ---
 
@@ -74,5 +95,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 **What tracing reveals that metrics alone can't (think: which operator is slow for which specific inputs):**
 
 **How you'd extend this instrumentation to W10's distributed training setup:**
+
+**What you'd change to have the DD engine actually ship its `tracing` JSON lines to the sidecar over `localhost:8080/log` instead of stdout (the exercise above only proves connectivity via a synthetic curl, not the real log path):**
 
 **What I'd do differently:**

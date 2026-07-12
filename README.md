@@ -83,7 +83,7 @@ Every week has:
 | W14 | Go | Native channels are FIFO by construction, a direct fit for Chandy-Lamport's marker protocol |
 | W15 | Go / Rust / Python | Depends on capstone option |
 | W16 | Go | Operators are almost exclusively written in Go |
-| W17 | Rust + Go | Instrument existing Rust code; Go sidecar optional |
+| W17 | Rust + Go | Instrument existing Rust code; Go log-aggregator built and wired in as a sidecar on the W16 operator |
 | W03, W10, W12, W15 | Go (secondary) | Automation tools, coordination services |
 
 ---
