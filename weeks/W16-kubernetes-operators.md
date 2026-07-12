@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 A Kubernetes Operator in Go that manages a custom `DistributedJob` resource. When a `DistributedJob` is created, the operator creates worker Pods and a coordinator Service. When it's deleted, GC cleans up everything via owner references. This is the pattern behind Kafka operators, Spark operators, Flink operators, and every managed ML training job on k8s.
 
+The Pod builder also supports an optional sidecar container (`spec.sidecarImage`) — same mechanism Kubeflow's training operator uses to attach log/metric shippers to each worker Pod. You wire the field in now; W17 builds the actual sidecar image and plugs it in.
+
 **Prerequisite:** W00 stack (kind cluster + monitoring) must be running.
 
 ---
@@ -33,9 +35,10 @@ Write it from scratch, no `kubebuilder generate`. Every file is small and intent
 - [ ] `api/v1/types.go`: define CRD structs:
   ```go
   type DistributedJobSpec struct {
-      Workers int32  `json:"workers"`
-      Image   string `json:"image"`
-      Command string `json:"command"`
+      Workers      int32  `json:"workers"`
+      Image        string `json:"image"`
+      Command      string `json:"command"`
+      SidecarImage string `json:"sidecarImage,omitempty"` // optional; wired up in W17
   }
   type DistributedJobStatus struct {
       Phase        string `json:"phase"` // Pending | Running | Complete
@@ -52,15 +55,16 @@ Write it from scratch, no `kubebuilder generate`. Every file is small and intent
 - [ ] `config/crd.yaml`: hand-write the `CustomResourceDefinition` YAML:
   - group: `pd.systems`, version: `v1`, kind: `DistributedJob`, scope: `Namespaced`
   - Include `spec.versions[].schema.openAPIV3Schema` for basic field validation
+  - Fields: `workers` (integer), `image` (string), `command` (string), `sidecarImage` (string, optional)
 - [ ] `controllers/reconciler.go`: implement `Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error)`:
   1. Fetch `DistributedJob` by name, return if not found (deleted)
   2. List existing worker Pods labelled `job-name=<name>`
-  3. If len(pods) < spec.Workers: create the missing Pods (set owner reference to DistributedJob)
+  3. If len(pods) < spec.Workers: create the missing Pods (set owner reference to DistributedJob). Build `pod.Spec.Containers` as a slice: always append the main container (`spec.Image`, `spec.Command`, name `"main"`); if `spec.SidecarImage != ""`, append a second container (name `"sidecar"`) running that image. Both containers share the Pod's network namespace and lifecycle — the main container reaches the sidecar at `localhost:<port>`, and the sidecar terminates when the Pod does.
   4. Count Ready pods, update `status.ReadyWorkers`
   5. If readyWorkers == spec.Workers: set `status.Phase = "Running"`; else `"Pending"`
   6. Patch status subresource
 - [ ] `main.go`: set up `ctrl.Manager`, register scheme, start `DistributedJobReconciler` with `ctrl.SetupWithManager`
-- [ ] `config/sample.yaml`: a `DistributedJob` with `workers: 3`, image `busybox:latest`, command `sleep 30`
+- [ ] `config/sample.yaml`: a `DistributedJob` with `workers: 3`, image `busybox:latest`, command `sleep 30`. Leave `sidecarImage` unset for now — W17 builds the image and sets it.
 - [ ] Deploy and test:
   ```bash
   kubectl apply -f config/crd.yaml
@@ -83,5 +87,7 @@ Write it from scratch, no `kubebuilder generate`. Every file is small and intent
 **How owner references enable garbage collection without the controller doing explicit cleanup:**
 
 **How this maps to real systems (Kafka operator, Flink operator, Kubeflow training operator):**
+
+**Why the sidecar container goes in the same Pod as the main container instead of a separate Pod or Deployment (think: network namespace, lifecycle, scheduling):**
 
 **What you'd add to make this production-ready (finalizers, leader election, webhook validation, metrics):**
