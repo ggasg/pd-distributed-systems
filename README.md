@@ -160,3 +160,11 @@ Every week has:
 No PhD required. No ML background required for the early arcs.
 
 **New to Go? Rusty on C++? Already know Scala?** Go is the genuinely new language here: see its ramp notes in [SETUP.md](SETUP.md) before W00, and don't try to learn it and LSM-trees simultaneously on day one. C++ is different: if you learned it years ago (school, an earlier job) and haven't touched it since, W05 is a refresh into modern idioms, not a cold start; budget real time regardless, both for the idioms that changed and for CMake, which has no equivalent to Cargo's zero-config build experience. Scala (W09–W10) is the lowest-ramp of the three if you already have production Spark/Scala experience: these two weeks are meant to formalize FP intuition you likely already use, not teach the language from zero. See the language-specific sections of [SETUP.md](SETUP.md) for what to review before each.
+
+---
+
+## Licensing
+
+This curriculum's written content (everything under `weeks/`, `Templates/`, `posts/`, and this documentation) is licensed under [CC BY 4.0](LICENSE): free to use, adapt, and build on, including for your own trainings, courses, or videos, provided you credit Gaston Guitart as the original author. See [CITATION.cff](CITATION.cff) for the exact attribution format.
+
+Code under `code/` and `tools/` is licensed separately under the [MIT License](code/LICENSE), permissive with no attribution requirement beyond keeping the copyright notice intact.

@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: >-
+  If you use, adapt, or build on this curriculum (including derivative
+  training material, courses, or videos), please cite it as below. This
+  citation format is the attribution requested under the CC BY 4.0
+  license that covers this repository's written content; see LICENSE.
+title: >-
+  Distributed, Data-Intensive Systems: Engineering Curriculum
+authors:
+  - family-names: Guitart
+    given-names: Gaston
+type: dataset
+url: "https://github.com/ggasg/pd-distributed-systems"
+license: CC-BY-4.0
+date-released: 2026-07-14
+abstract: >-
+  A self-directed, 20-week curriculum for pragmatic mastery of
+  distributed and data-intensive systems, covering storage engines,
+  streaming and dataflow, query planning, distributed model training,
+  GPU compute, and production observability.
