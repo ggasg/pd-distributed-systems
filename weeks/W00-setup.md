@@ -14,7 +14,7 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 ## Read (before anything else)
 
-- [ ] **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications. Not tied to this week's build — read it because it's the vocabulary the entire rest of the curriculum assumes. "Reliable," "scalable," and "maintainable" get used loosely everywhere; Kleppmann defines each precisely in about 20 pages, and every later week's design trade-offs (why W07 trims a corner ClickHouse also trims, why W16 cares about a *consistent* snapshot, why W18's reconcile loop is level-triggered) are instances of these three properties in tension. Read once here, then let it recede into the background.
+- [ ] **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications. Not tied to this week's build; read it because it's the vocabulary the entire rest of the curriculum assumes. "Reliable," "scalable," and "maintainable" get used loosely everywhere; Kleppmann defines each precisely in about 20 pages, and every later week's design trade-offs (why W07 trims a corner ClickHouse also trims, why W16 cares about a *consistent* snapshot, why W18's reconcile loop is level-triggered) are instances of these three properties in tension. Read once here, then let it recede into the background.
 
 ---
 
@@ -31,7 +31,7 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 20–30 minutes, separate from the observability build below. Go's sequential syntax (structs, slices, `if err != nil`) tends to feel familiar fast if you know any C-family language; goroutines and channels are the part that's actually new, and W03 (MapReduce) throws you into them for real, mid-task, with a warning that a small mistake there costs "an hour of confusing debugging instead of teaching you anything." This drill gets that mistake out of the way now, on a problem simple enough that the channel mechanics are the only thing you're thinking about.
 
-Build a tiny worker pool: N goroutines pull ints off an input channel, double them, and send the result to an output channel — the exact fan-out/fan-in shape W03's `runner.go` uses, isolated from any MapReduce logic.
+Build a tiny worker pool: N goroutines pull ints off an input channel, double them, and send the result to an output channel. This is the exact fan-out/fan-in shape W03's `runner.go` uses, isolated from any MapReduce logic.
 
 ```go
 func doubler(in <-chan int, out chan<- int, wg *sync.WaitGroup) {
@@ -66,9 +66,9 @@ func main() {
 }
 ```
 
-Run it, then break it on purpose once: move `close(out)` outside the `wg.Wait()` goroutine and call it directly after the loop that starts workers. Watch it panic ("send on closed channel") or deadlock, depending on timing. That failure mode — closing a channel before everyone writing to it is done — is the one W03 calls out by name; seeing it here, in eleven lines, is cheaper than seeing it there, in the middle of a shuffle phase.
+Run it, then break it on purpose once: move `close(out)` outside the `wg.Wait()` goroutine and call it directly after the loop that starts workers. Watch it panic ("send on closed channel") or deadlock, depending on timing. That failure mode, closing a channel before everyone writing to it is done, is the one W03 calls out by name; seeing it here, in eleven lines, is cheaper than seeing it there, in the middle of a shuffle phase.
 
-If this all felt obvious, skip straight to the observability stack below — you don't need it. If `close(in)` / `range in` / the two-goroutine close pattern felt new, this was worth the 20 minutes; W01–W04 build on it being second nature.
+If this all felt obvious, skip straight to the observability stack below; you don't need it. If `close(in)` / `range in` / the two-goroutine close pattern felt new, this was worth the 20 minutes; W01–W04 build on it being second nature.
 
 ---
 

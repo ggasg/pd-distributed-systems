@@ -14,7 +14,7 @@ A Ray-based actor system in Python that retrains the same data-parallel MNIST jo
 
 ## Read
 - [ ] [A Universal Modular ACTOR Formalism for Artificial Intelligence](https://www.ijcai.org/Proceedings/73/Papers/027B.pdf) (Hewitt, Bishop, Steiger, IJCAI 1973): read Sections 1–3. This is the original actor model paper, no Erlang or Akka involved. The core claim: an actor is a computational primitive that has private state, communicates only via asynchronous messages, and processes one message at a time. Everything Ray does with actors is this idea, 45 years later.
-- [ ] [Ray: A Distributed Framework for Emerging AI Applications](https://www.usenix.org/system/files/osdi18-moritz.pdf) (Moritz et al., OSDI 2018): read Section 3 (Programming Model) closely, skim the rest. Focus on how Ray unifies stateless *tasks* and stateful *actors* under one API, and why that distinction exists at all. Ray is Anyscale's product — this week is hands-on with a target company's core framework, not a paper read at a distance.
+- [ ] [Ray: A Distributed Framework for Emerging AI Applications](https://www.usenix.org/system/files/osdi18-moritz.pdf) (Moritz et al., OSDI 2018): read Section 3 (Programming Model) closely, skim the rest. Focus on how Ray unifies stateless *tasks* and stateful *actors* under one API, and why that distinction exists at all. Ray is Anyscale's product; this week is hands-on with a target company's core framework, not a paper read at a distance.
 
 **Key question:** Ray's programming model gives you both stateless tasks and stateful actors. Why does distributed training specifically need actors and not just tasks? Concretely, what state would you lose between calls if every worker were a stateless task instead of an actor?
 
@@ -34,7 +34,7 @@ Scenario: reimplement W12's data-parallel training job, but with two changes: wo
 
 **Verify:** all three implementations in `compare.py` converge to comparable accuracy (within a couple percentage points). Run `ray list actors` (or `ray.util.state.list_actors()`) during training and confirm N+1 actors are alive.
 
-**Minimum bar:** N≥2 `TrainerWorker` actors plus 1 `ParameterServer` actor coordinate correctly with no shared memory between them — all communication happens through actor method calls, matching the message-passing model from the 1973 paper, not through globals or files.
+**Minimum bar:** N≥2 `TrainerWorker` actors plus 1 `ParameterServer` actor coordinate correctly with no shared memory between them: all communication happens through actor method calls, matching the message-passing model from the 1973 paper, not through globals or files.
 
 ---
 
@@ -73,7 +73,7 @@ a.process_one()          # state = 8
 assert a.process_one() == 8   # processed strictly in order, no locks needed
 ```
 
-**Connection:** `ParameterServer.push_gradients()` is this same pattern at scale. Ray gives every actor its own mailbox and guarantees method calls to one actor process sequentially, so averaging gradients from concurrent workers is exactly as safe as `process_one()` mutating `self.state` above. Compare this to W12's `ring_allreduce.py`, where you had to reason about socket message ordering by hand — the actor model buys you that ordering guarantee for free, at the cost of the parameter server becoming a potential bottleneck (more on that in Reflect).
+**Connection:** `ParameterServer.push_gradients()` is this same pattern at scale. Ray gives every actor its own mailbox and guarantees method calls to one actor process sequentially, so averaging gradients from concurrent workers is exactly as safe as `process_one()` mutating `self.state` above. Compare this to W12's `ring_allreduce.py`, where you had to reason about socket message ordering by hand; the actor model buys you that ordering guarantee for free, at the cost of the parameter server becoming a potential bottleneck (more on that in Reflect).
 
 ---
 
