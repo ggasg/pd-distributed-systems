@@ -126,7 +126,9 @@ code/
 ├── feature-pipeline/       # W11: Python
 │   ├── feature_store.py
 │   ├── pipeline.py
-│   └── requirements.txt
+│   ├── requirements.txt
+│   # Optional: generate_events_large.py, memory_naive.py, memory_chunked.py,
+│   # memory_columnar.py (evidence-based memory exercise, no new dependencies)
 │
 ├── distributed-training/   # W12: Python + Go tool
 │   ├── mlp.py

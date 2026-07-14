@@ -42,6 +42,27 @@ Scenario: raw user activity events to session features to versioned feature stor
 
 ---
 
+## Optional: Memory-Bound Processing (evidence-based)
+
+`events.parquet` at 10k rows fits in memory without thinking about it. Real event tables don't: mixed-type JSON fields (a `tags` column that's sometimes a list, sometimes a string, sometimes null, depending on which client emitted the event) and row counts in the millions are exactly the shape of data that makes naive pandas fall over. Worth seeing the failure and the fix firsthand instead of taking it on faith.
+
+No new dependencies: everything below uses `pandas`, `pyarrow`, and the standard library you already have for this week. No Dask, no Polars, no new file format; the point is that `pandas` + `pyarrow` + Parquet, used correctly, already get you most of the way there.
+
+- [ ] `generate_events_large.py`: same schema as `generate_events.py`, but 2M rows (bump higher if your machine has headroom and you want a starker gap) and one deliberately dirty column, `tags`: for each row, randomly emit a JSON-serializable list of strings, a single string, or `null` (roughly equal thirds). Write to `data/raw/events_large.parquet`.
+- [ ] `memory_naive.py`: load `events_large.parquet` in one call (`pd.read_parquet`), then normalize `tags` to a consistent string representation column-wide (`.astype(str)`). Wrap the load-and-normalize step in `tracemalloc.start()` / `tracemalloc.get_traced_memory()` and print peak memory in MB.
+- [ ] `memory_chunked.py`: process the same file in real chunks, using `pyarrow.parquet.ParquetFile(path).iter_batches(batch_size=100_000)` directly, converting each batch to a small pandas DataFrame only for that batch, normalizing `tags`, and writing each cleaned batch out incrementally with `pyarrow.parquet.ParquetWriter` (one `write_table` call per batch). At no point should the full 2M-row dataset exist as one in-memory object; that's the actual difference between this and a loop that slices an already-fully-loaded DataFrame, which isn't real chunking, just decorative iteration. Measure peak memory the same way as `memory_naive.py` and compare.
+- [ ] `memory_columnar.py`: read the same file two ways and compare `.memory_usage(deep=True).sum()` for the `tags` column: once as plain pandas (`pd.read_parquet(path)`, `object` dtype, one Python string object per cell) and once with `pd.read_parquet(path, dtype_backend="pyarrow")` (pandas 2.x's PyArrow-backed columnar dtypes, no per-cell Python object overhead; `pip install pandas` today gets you 2.x by default). This is W02's row-vs-column-store memory argument again, one level up: DataFrame columns instead of hand-rolled Go structs.
+
+**Minimum bar:** three real numbers you measured, not estimated: peak memory naive vs. chunked (MB), and `tags` column memory footprint object-dtype vs. `dtype_backend="pyarrow"` (MB). `memory_chunked.py`'s peak should be substantially lower than `memory_naive.py`'s; if it isn't, the first thing to check is whether the full DataFrame got materialized somewhere before chunking kicked in. That's the most common way this exercise goes wrong, and it's the same mistake the inspiration for this exercise (a published data engineering article) actually made in its own "chunked" solution.
+
+**Reflect (this section only):**
+- Peak memory, naive: __ MB. Chunked: __ MB.
+- `tags` column memory, object dtype: __ MB. PyArrow-backed dtype: __ MB.
+- What did W02's row-vs-column-store benchmark predict about this result, and did it hold?
+- Where would the naive-chunking mistake (iterating over an already-fully-loaded DataFrame instead of never materializing the whole thing) be easy to make by accident in `feature_engineering.py` above, at real scale?
+
+---
+
 ## Reflect
 
 **What clicked:**
