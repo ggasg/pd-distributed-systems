@@ -21,6 +21,8 @@ A 3-node key-value store in Go where writes are replicated via a simple primary-
 
 **Why Go:** goroutines + channels make the node communication natural; Go's stdlib HTTP makes the client API trivial. This is the kind of tool engineers actually write in Go.
 
+**If you pick this option, read first: DDIA Chapter 5** (Replication) — specifically "Leaders and Followers." Primary-backup *is* the leader-based replication Ch. 5 describes; the chapter names the failure modes worth designing around before you write `promote()` (replication lag, what happens to in-flight writes when the leader dies mid-forward) rather than discovering them by hand.
+
 **Minimum bar:** 3-node cluster, primary-backup replication works, one node can fail and the system continues.
 
 ---

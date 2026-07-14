@@ -8,7 +8,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 | Book | Author | Weeks | Notes |
 |------|--------|-------|-------|
-| [Designing Data-Intensive Applications (DDIA)](https://dataintensive.net) | Kleppmann (2017) | W01, W02, W04, W05 | The single most useful book for this curriculum. Buy it. |
+| [Designing Data-Intensive Applications (DDIA)](https://dataintensive.net) | Kleppmann (2017) | W00, W01, W02, W03, W04, W05, W16 (optional), W17 (Option A), W20 (optional) | The single most useful book for this curriculum. Buy it. |
 | [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W16 | For concurrency primitives and correctness |
 | [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W19 | O'Reilly; pairs well with the Google SRE chapter |
 | [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W19 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
@@ -17,6 +17,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W00: Infrastructure Setup
 
+- **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications — read before anything else in the curriculum, not tied to this week's build specifically
 - [kind docs](https://kind.sigs.k8s.io/): Kubernetes in Docker
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack): Helm chart for Prometheus + Grafana
 - [Prometheus Go client library](https://github.com/prometheus/client_golang)
@@ -41,6 +42,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W03: MapReduce and Its Limits
 
+- **DDIA Chapter 10**: Batch Processing — read this first; it tells the MapReduce-to-Spark story as one continuous narrative and frames it as a point on a spectrum, not a standalone system
 - [MapReduce: Simplified Data Processing on Large Clusters](https://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf): Dean & Ghemawat, OSDI 2004 (**free PDF**)
 - [Resilient Distributed Datasets (Spark)](https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf): Zaharia et al., NSDI 2012 (**free PDF**), the "why MapReduce isn't enough" paper
 - [Spark: Cluster Computing with Working Sets](https://people.csail.mit.edu/matei/papers/2010/hotcloud_spark.pdf): Zaharia et al. (2010) (**free PDF**), shorter, read first
@@ -157,12 +159,13 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 - [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456): Chandy & Lamport (1985), 10 pages; read all of it
 - [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603): Carbone et al. (2015) (**free on arXiv**), Flink's ABS algorithm
+- **DDIA Chapter 9** (optional): Consistency and Consensus — the linearizability section specifically, to sharpen the distinction between "consistent cut" (what Chandy-Lamport gives you) and linearizability (a stronger guarantee it doesn't)
 
 ---
 
 ## W17: Capstone
 
-No required reading. You're synthesizing earlier weeks.
+No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 5**, Replication — read "Leaders and Followers" before writing `promote()`.
 
 ---
 
@@ -188,7 +191,7 @@ No required reading. You're synthesizing earlier weeks.
 
 ## W20: Grand Capstone (optional)
 
-No new required reading. This week synthesizes W11, W12, W15, W16, W18, and W19. Revisit those weeks' resources as needed.
+No required reading tied to this week's build. This week synthesizes W11, W12, W15, W16, W18, and W19 — revisit those weeks' resources as needed. **DDIA Chapter 12** (The Future of Data Systems), optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
 
 ---
 

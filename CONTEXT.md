@@ -50,13 +50,15 @@ No Notion. No separate task tracker. Everything lives here.
 |------|-------|-------------|
 | W00 | Local k8s (kind) + Prometheus + Grafana | `code/hello-metrics/` Go service with Prometheus metrics, deployed to kind |
 
+W00 also carries the curriculum's first reading: **DDIA Chapter 1**, read before anything technical starts — vocabulary the rest of the curriculum assumes rather than material this week's build needs directly.
+
 ### Arc 1: Data Systems Internals (W01–W04), Go
 
 | Week | Topic | Key Paper | Deliverable |
 |------|-------|-----------|-------------|
 | W01 | LSM-Trees + Storage Engines | DDIA Ch.3; LevelDB source | `lsm/` Go: MemTable, SSTable, LSMTree |
 | W02 | Encoding + Wire Formats | DDIA Ch.4; Protobuf encoding spec | `encoding/` Go: varint, row vs column store benchmark |
-| W03 | MapReduce and Its Limits | Dean & Ghemawat (2004); Zaharia et al. (2012) | `mapreduce/` Go: MR framework (goroutines), word count, iterative PageRank; HTTP coordinator |
+| W03 | MapReduce and Its Limits | DDIA Ch.10; Dean & Ghemawat (2004); Zaharia et al. (2012) | `mapreduce/` Go: MR framework (goroutines), word count, iterative PageRank; HTTP coordinator |
 | W04 | Clocks, Causality, Time | Lamport (1978); DDIA Ch.8 | `clocks/` Go: vector clocks + causal delivery over channels |
 
 ### Arc 2: Streaming, Dataflow, and Query Planning (W05–W10), C++ (W05–W08) / Scala (W09–W10)
@@ -83,8 +85,8 @@ No Notion. No separate task tracker. Everything lives here.
 | W13 | The Actor Model and Ray | Hewitt, Bishop, Steiger (1973); Ray (Moritz et al., OSDI 2018) | `actor-training/` Python: Ray actors (TrainerWorker + ParameterServer), PyTorch CNN on MNIST, benchmarked against W12 |
 | W14 | GPU Memory + Compute | CUDA Guide Ch.1-3; Roofline (2009) | `gpu-gemm/` Python/Numba: naive vs tiled CUDA matmul + roofline; Go bench runner |
 | W15 | Attention + KV Cache | Attention Is All You Need (2017); FlashAttention (2022); PagedAttention (2023) | `attention/` Python: MHA forward pass + KV cache, NumPy only |
-| W16 | Fault Tolerance | Chandy-Lamport (1985); Flink ABS (2015) | `snapshot/` Go: Chandy-Lamport 3-node simulation over native channels |
-| W17 | Capstone | none | Go: replicated KV store / C++: streaming pipeline / C++: incremental query engine / Python: GPU-accelerated ring-allreduce (W12+W14, the option that stays inside this arc) |
+| W16 | Fault Tolerance | Chandy-Lamport (1985); Flink ABS (2015); DDIA Ch.9 (optional) | `snapshot/` Go: Chandy-Lamport 3-node simulation over native channels |
+| W17 | Capstone | DDIA Ch.5 (Option A only) | Go: replicated KV store / C++: streaming pipeline / C++: incremental query engine / Python: GPU-accelerated ring-allreduce (W12+W14, the option that stays inside this arc) |
 
 ### Arc 4: Infrastructure (W18–W19), Go / C++
 
@@ -98,6 +100,8 @@ No Notion. No separate task tracker. Everything lives here.
 | Week | Topic | Deliverable |
 |------|-------|-------------|
 | W20 | Distributed training + serving platform | `code/capstone-platform/`: training across worker Pods (W12+W15), Chandy-Lamport-style checkpoint/restore (W16), operator-managed recovery (W18), fully observed in Grafana (W19) |
+
+Optional companion read: **DDIA Chapter 12**, The Future of Data Systems — Kleppmann's own synthesis chapter, read in the week that's doing the same thing to the curriculum's own pieces.
 
 ---
 

@@ -15,6 +15,7 @@ Chandy-Lamport distributed snapshot in Go: 3 simulated nodes with FIFO channels,
 ## Read
 - [ ] [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456) (Chandy & Lamport, 1985): 10 pages. Read all of it. The algorithm is in Section 3. A "marker" is just a special message; that's the whole trick.
 - [ ] [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603) (Carbone et al., 2015): Flink's ABS algorithm. Read Sections 1–4. Understand how they extend Chandy-Lamport for cyclic dataflow graphs with barriers.
+- [ ] Optional, context: **DDIA Chapter 9**, Consistency and Consensus — specifically the section on linearizability. Chandy-Lamport doesn't give you linearizability, it gives you a *consistent cut* (a recorded state that could have occurred at one instant, even if it never literally did); the chapter is useful precisely because it draws that distinction sharply, so you don't walk away from this week conflating "consistent snapshot" with the stronger guarantees Ch. 9 covers.
 
 **Key question:** Chandy-Lamport requires FIFO channels. What breaks if channels can reorder messages? How does Flink's barrier approach handle this?
 
