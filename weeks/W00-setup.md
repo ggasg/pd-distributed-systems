@@ -12,6 +12,12 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 ---
 
+## Read (before anything else)
+
+- [ ] **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications. Not tied to this week's build — read it because it's the vocabulary the entire rest of the curriculum assumes. "Reliable," "scalable," and "maintainable" get used loosely everywhere; Kleppmann defines each precisely in about 20 pages, and every later week's design trade-offs (why W07 trims a corner ClickHouse also trims, why W16 cares about a *consistent* snapshot, why W18's reconcile loop is level-triggered) are instances of these three properties in tension. Read once here, then let it recede into the background.
+
+---
+
 ## Install
 
 - [ ] Install Docker Desktop (or Podman Desktop)
