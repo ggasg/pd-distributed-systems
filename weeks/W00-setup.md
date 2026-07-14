@@ -8,7 +8,7 @@ status: not-started
 > **Pre-week:** Complete before W01 begins · **Language:** Go + shell
 
 ## What you'll build
-A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By end of week, you can deploy any of your weekly code artifacts to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W16 and W17.
+A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By end of week, you can deploy any of your weekly code artifacts to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W18 and W19.
 
 ---
 
@@ -113,4 +113,4 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
 
 **What Helm does that raw kubectl apply doesn't:**
 
-**What metrics you'd expose on a real distributed system component (you'll instrument one for real in W17):**
+**What metrics you'd expose on a real distributed system component (you'll instrument one for real in W19):**

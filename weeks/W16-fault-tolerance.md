@@ -1,9 +1,9 @@
 ---
-week_number: 14
+week_number: 16
 status: not-started
 ---
 
-# W14: Fault Tolerance and Snapshots
+# W16: Fault Tolerance and Snapshots
 
 > **Arc:** Distributed ML & Compute · **Language:** Go
 

@@ -9,9 +9,9 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 | Book | Author | Weeks | Notes |
 |------|--------|-------|-------|
 | [Designing Data-Intensive Applications (DDIA)](https://dataintensive.net) | Kleppmann (2017) | W01, W02, W04, W05 | The single most useful book for this curriculum. Buy it. |
-| [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W14 | For concurrency primitives and correctness |
-| [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W17 | O'Reilly; pairs well with the Google SRE chapter |
-| [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W17 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
+| [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W16 | For concurrency primitives and correctness |
+| [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W19 | O'Reilly; pairs well with the Google SRE chapter |
+| [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W19 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
 
 ---
 
@@ -90,13 +90,28 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032): Graefe (1994), the iterator model; skim for the `open/next/close` interface
 - [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf): Boncz, Zukowski, Nes, CIDR 2005 (**free PDF**), the vectorized execution paper
 - [An Overview of Query Optimization in Relational Systems](https://dl.acm.org/doi/10.1145/275487.275492): Chaudhuri (1998), optional background
-- [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended — a real, actively maintained vectorized query engine in C++, already in your stack via W09's feature store
-- [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html): Databricks' vectorized engine, written from the ground up in C++, built to replace JVM-based Spark execution for the exact row-vs-vectorized reasons this week benchmarks
+- [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended — a real, actively maintained vectorized query engine in C++, already in your stack via W11's feature store
+- [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html): optional, context only (a free public blog post, not something you install or test against) — Databricks' vectorized engine, written from the ground up in C++, built to replace JVM-based Spark execution for the exact row-vs-vectorized reasons this week benchmarks
 - [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional — `IProcessor` and `Chunk`-based batching, a second C++ production reference with a different pipeline design than DuckDB or Photon
 
 ---
 
-## W09: ML Data Pipelines
+## W09: Rule-Based Query Planning in Scala
+
+- [Spark SQL: Relational Data Processing in Spark](https://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf): Armbrust et al., SIGMOD 2015 (**free PDF**), Section 4 describes Catalyst directly
+- [Catalyst source: `TreeNode.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/trees/TreeNode.scala): the real `transform`/`transformDown`/`transformUp` combinators
+- [Catalyst source: `Optimizer.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/optimizer/Optimizer.scala): search for `PushDownPredicates`, the production version of this week's rewrite rule
+
+---
+
+## W10: Aggregation Algebra — Monoids and Semigroups
+
+- [Algebird `Semigroup.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Semigroup.scala) and [`Monoid.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Monoid.scala): Twitter's real Scala library built around this idea. Note: published artifacts only target Scala up to 2.13, no Scala 3 port — read for the idea, build your own typeclass in current Scala for the exercise.
+- [Of Algebirds, Monoids, Monads, and Other Bestiary for Large-Scale Data Analytics](https://www.michael-noll.com/blog/2013/12/02/twitter-algebird-monoid-monad-for-large-scala-data-analytics/): Michael Noll, an accessible walkthrough with concrete MapReduce-shaped examples
+
+---
+
+## W11: ML Data Pipelines
 
 - [Hidden Technical Debt in Machine Learning Systems](https://papers.nips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf): Sculley et al., NeurIPS 2015 (**free PDF**)
 - [Delta Lake: High-Performance ACID Table Storage](https://www.vldb.org/pvldb/vol13/p3411-armbrust.pdf): Armbrust et al., VLDB 2020 (**free PDF**)
@@ -105,7 +120,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W10: Distributed Training
+## W12: Distributed Training
 
 - [Horovod: fast and easy distributed deep learning in TensorFlow](https://arxiv.org/abs/1802.05799): Sergeev & Del Balso (2018) (**free on arXiv**), focus on Section 3 (ring-allreduce)
 - [PyTorch Distributed: Experiences on Accelerating Data Parallel Training](https://arxiv.org/abs/2006.15704): Li et al. (2020) (**free on arXiv**), how DDP actually works
@@ -113,7 +128,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W11: The Actor Model and Ray
+## W13: The Actor Model and Ray
 
 - [A Universal Modular ACTOR Formalism for Artificial Intelligence](https://www.ijcai.org/Proceedings/73/Papers/027B.pdf): Hewitt, Bishop, Steiger, IJCAI 1973 (**free PDF**), the original actor model paper
 - [Ray: A Distributed Framework for Emerging AI Applications](https://www.usenix.org/system/files/osdi18-moritz.pdf): Moritz et al., OSDI 2018 (**free PDF via USENIX**), Section 3 is the unified task/actor programming model
@@ -121,7 +136,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W12: GPU Memory and Compute
+## W14: GPU Memory and Compute
 
 - [CUDA C++ Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/): NVIDIA docs; read Chapters 1–3 (Architecture, Programming Model, Memory Hierarchy)
 - [Roofline: An Insightful Visual Performance Model](https://people.eecs.berkeley.edu/~kubitron/cs252/handouts/papers/RooflineVyNoYellow.pdf): Williams, Waterman, Patterson, CACM 2009 (**free PDF**)
@@ -129,7 +144,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W13: Attention and KV Cache
+## W15: Attention and KV Cache
 
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762): Vaswani et al. (2017) (**free on arXiv**), the transformer paper
 - [FlashAttention: Fast and Memory-Efficient Exact Attention](https://arxiv.org/abs/2205.14135): Dao et al. (2022) (**free on arXiv**), read the intro and Section 2
@@ -138,20 +153,20 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W14: Fault Tolerance and Snapshots
+## W16: Fault Tolerance and Snapshots
 
 - [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456): Chandy & Lamport (1985), 10 pages; read all of it
 - [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603): Carbone et al. (2015) (**free on arXiv**), Flink's ABS algorithm
 
 ---
 
-## W15: Capstone
+## W17: Capstone
 
 No required reading. You're synthesizing earlier weeks.
 
 ---
 
-## W16: Kubernetes Operators
+## W18: Kubernetes Operators
 
 - [Kubernetes Operators docs](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): official k8s docs
 - [controller-runtime](https://pkg.go.dev/sigs.k8s.io/controller-runtime): Go library for writing operators
@@ -160,7 +175,7 @@ No required reading. You're synthesizing earlier weeks.
 
 ---
 
-## W17: Observability: Metrics, Tracing, Logging
+## W19: Observability: Metrics, Tracing, Logging
 
 - [Prometheus data model](https://prometheus.io/docs/concepts/data_model/) + [metric types](https://prometheus.io/docs/concepts/metric_types/)
 - [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/)
@@ -171,9 +186,9 @@ No required reading. You're synthesizing earlier weeks.
 
 ---
 
-## W18: Grand Capstone (optional)
+## W20: Grand Capstone (optional)
 
-No new required reading. This week synthesizes W09, W10, W13, W14, W16, and W17. Revisit those weeks' resources as needed.
+No new required reading. This week synthesizes W11, W12, W15, W16, W18, and W19. Revisit those weeks' resources as needed.
 
 ---
 

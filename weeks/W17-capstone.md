@@ -1,9 +1,9 @@
 ---
-week_number: 15
+week_number: 17
 status: not-started
 ---
 
-# W15: Capstone
+# W17: Capstone
 
 > **Arc:** Distributed ML & Compute · **Language:** Go, C++, or Python, your choice
 
@@ -26,7 +26,7 @@ A 3-node key-value store in Go where writes are replicated via a simple primary-
 ---
 
 ### Option B: Streaming Pipeline with Exactly-Once (C++)
-Combine W05 (stream processing) + W14 (snapshots).
+Combine W05 (stream processing) + W16 (snapshots).
 
 A stateful streaming word count in C++ that periodically checkpoints using Chandy-Lamport snapshots. On simulated failure: restore from the latest snapshot, replay messages from that point, verify the final word count matches a non-failing run.
 
@@ -47,7 +47,7 @@ Extend your W07 DD engine with vectorized operator execution from W08: `filter` 
 
 - [ ] Working code in `code/capstone/`
 - [ ] `code/capstone/README.md`: explains what it does, the design decisions, what you'd do differently, what breaks at scale
-- [ ] `posts/W15-capstone.md`: a technical post (500–1000 words) for a dev blog or GitHub. Explain the system to a fellow engineer who hasn't done this curriculum.
+- [ ] `posts/W17-capstone.md`: a technical post (500–1000 words) for a dev blog or GitHub. Explain the system to a fellow engineer who hasn't done this curriculum.
 
 ---
 
