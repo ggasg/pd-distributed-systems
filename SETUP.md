@@ -26,14 +26,14 @@ go version   # go1.22.x
 # Or download from https://go.dev/dl/
 ```
 
-**W00–W04, W16, W18, and secondary tooling in W03/W12/W14/W17/W19** use Go — this is the backbone language of the curriculum alongside C++. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
+**W00–W04, W16, W18, and secondary tooling in W03/W12/W14/W17/W19** use Go: this is the backbone language of the curriculum alongside C++. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
 
-**W18 (Kubernetes Operators) requires Go** — this isn't optional the way secondary tooling elsewhere is. Install `controller-runtime`:
+**W18 (Kubernetes Operators) requires Go**: this isn't optional the way secondary tooling elsewhere is. Install `controller-runtime`:
 ```bash
 go get sigs.k8s.io/controller-runtime@v0.18.0
 ```
 
-**New to Go?** Start here, not at W05. Go's learning curve is short by design — the language spec is deliberately small, there's no ownership model or macro system to internalize — but it's still worth a dedicated pass before W01 rather than learning it while also learning LSM-trees. Work through [A Tour of Go](https://go.dev/tour/) (free, interactive, ~2–3 hours) end to end, then read [Effective Go](https://go.dev/doc/effective_go)'s sections on goroutines, channels, and error handling (~1 hour). That's enough to be productive in W00–W04. The one habit worth building early: Go returns errors as values (`result, err := doThing()`) instead of throwing exceptions — get comfortable checking `err != nil` everywhere, it's idiomatic, not boilerplate to work around.
+**New to Go?** Start here, not at W05. Go's learning curve is short by design (the language spec is deliberately small, and there's no ownership model or macro system to internalize), but it's still worth a dedicated pass before W01 rather than learning it while also learning LSM-trees. Work through [A Tour of Go](https://go.dev/tour/) (free, interactive, ~2–3 hours) end to end, then read [Effective Go](https://go.dev/doc/effective_go)'s sections on goroutines, channels, and error handling (~1 hour). That's enough to be productive in W00–W04. The one habit worth building early: Go returns errors as values (`result, err := doThing()`) instead of throwing exceptions. Get comfortable checking `err != nil` everywhere; it's idiomatic, not boilerplate to work around.
 
 ---
 
@@ -61,13 +61,13 @@ ctest --test-dir build      # GoogleTest suite, where the project has one
 ```
 Most Arc 2 weeks (W05–W07) declare zero or one dependency (GoogleTest); W19's Prometheus/OTel instrumentation is the one place this arc pulls in real external libraries.
 
-**W05–W08** target C++20 (structured bindings, `std::variant`, concepts where useful) — modern enough to be relevant to the codebases W06 and W08 point you at (PyTorch's autograd engine, DuckDB's execution engine), most of which build against C++17/20 themselves. No nightly/experimental compiler flags needed; mainline `clang` or `gcc` from Homebrew is current enough.
+**W05–W08** target C++20 (structured bindings, `std::variant`, concepts where useful), modern enough to be relevant to the codebases W06 and W08 point you at (PyTorch's autograd engine, DuckDB's execution engine), most of which build against C++17/20 themselves. No nightly/experimental compiler flags needed; mainline `clang` or `gcc` from Homebrew is current enough.
 
-**Already know C++?** If your C++ is from school or an earlier job, most of the syntax will come back fast, but treat this as a refresh into *modern* idioms rather than a cold start — the gap is usually smart pointers (`std::unique_ptr`/`std::shared_ptr` instead of raw `new`/`delete`), move semantics and RAII (resource cleanup tied to scope, the closest thing C++ has to what the borrow checker gave you automatically in a hypothetical Rust track), and STL algorithms/containers (`std::vector`, `std::unordered_map`, `<algorithm>`) instead of hand-rolled arrays and loops. Before starting W05, read [A Tour of C++](https://www.stroustrup.com/tour3.html) (Stroustrup, free chapter previews / short book) Chapters 1 (Basics), 4 (Classes), 5 (Essential Operations — this is where move semantics and RAII live), and 8 (Templates); pair it with cppreference's pages on [smart pointers](https://en.cppreference.com/w/cpp/memory) and [move semantics](https://en.cppreference.com/w/cpp/language/move_constructor). Budget 4–6 hours — less than a from-scratch language, since the syntax and control flow are already familiar, but real time nonetheless for the idioms that changed since you last wrote C++.
+**Already know C++?** If your C++ is from school or an earlier job, most of the syntax will come back fast, but treat this as a refresh into *modern* idioms rather than a cold start. The gap is usually smart pointers (`std::unique_ptr`/`std::shared_ptr` instead of raw `new`/`delete`), move semantics and RAII (resource cleanup tied to scope, the closest thing C++ has to what the borrow checker gave you automatically in a hypothetical Rust track), and STL algorithms/containers (`std::vector`, `std::unordered_map`, `<algorithm>`) instead of hand-rolled arrays and loops. Before starting W05, read [A Tour of C++](https://www.stroustrup.com/tour3.html) (Stroustrup, free chapter previews / short book) Chapters 1 (Basics), 4 (Classes), 5 (Essential Operations, where move semantics and RAII live), and 8 (Templates); pair it with cppreference's pages on [smart pointers](https://en.cppreference.com/w/cpp/memory) and [move semantics](https://en.cppreference.com/w/cpp/language/move_constructor). Budget 4–6 hours: less than a from-scratch language, since the syntax and control flow are already familiar, but real time nonetheless for the idioms that changed since you last wrote C++.
 
-**One thing that has no Rust equivalent to complain about:** C++ won't stop you from writing something that compiles but is wrong — no borrow checker catches a dangling reference or a data race for you here. The weeks' "Constraints" sections call out, explicitly, where you're now responsible for a discipline (encapsulation, immutability of returned collections) that used to be compiler-enforced. Read those callouts; they're not boilerplate.
+**One thing that has no Rust equivalent to complain about:** C++ won't stop you from writing something that compiles but is wrong; no borrow checker catches a dangling reference or a data race for you here. The weeks' "Constraints" sections call out, explicitly, where you're now responsible for a discipline (encapsulation, immutability of returned collections) that used to be compiler-enforced. Read those callouts; they're not boilerplate.
 
-**CMake itself is a real ramp, separate from the language.** Cargo's zero-config "it just builds" experience has no CMake equivalent — expect `CMakeLists.txt` boilerplate and `find_package`/vcpkg wiring to cost real time in W05, even though the C++ language itself is familiar. If a project won't configure, check the vcpkg toolchain file path before anything else; it's the most common first-week failure.
+**CMake itself is a real ramp, separate from the language.** Cargo's zero-config "it just builds" experience has no CMake equivalent; expect `CMakeLists.txt` boilerplate and `find_package`/vcpkg wiring to cost real time in W05, even though the C++ language itself is familiar. If a project won't configure, check the vcpkg toolchain file path before anything else; it's the most common first-week failure.
 
 ---
 
@@ -81,15 +81,15 @@ brew install coursier/formulas/coursier && cs setup
 sbt --version    # sbt 1.9.x or later
 ```
 
-Each Scala project (`code/query-planner/`, `code/agg-algebra/`) is its own sbt project — `build.sbt` pins `scalaVersion := "2.13.14"` (or the latest 2.13.x patch), so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, back to the same zero-config experience Cargo had for Rust and unlike CMake's `find_package`/vcpkg wiring for C++.
+Each Scala project (`code/query-planner/`, `code/agg-algebra/`) is its own sbt project: `build.sbt` pins `scalaVersion := "2.13.14"` (or the latest 2.13.x patch), so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, back to the same zero-config experience Cargo had for Rust and unlike CMake's `find_package`/vcpkg wiring for C++.
 
-**W09–W10 target Scala 2.13, not 3** — this is a deliberate match, not an oversight. 2.13 is what Apache Spark itself is built and published against today (Spark 4.x still compiles Catalyst and the rest of the codebase on 2.13; there is no Spark-on-Scala-3 build), and it's what Algebird (W10's real-world reference) publishes for. Writing these two weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Algebird source — not a newer dialect neither project has adopted.
+**W09–W10 target Scala 2.13, not 3.** This is a deliberate match, not an oversight. 2.13 is what Apache Spark itself is built and published against today (Spark 4.x still compiles Catalyst and the rest of the codebase on 2.13; there is no Spark-on-Scala-3 build), and it's what Algebird (W10's real-world reference) publishes for. Writing these two weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Algebird source, not a newer dialect neither project has adopted.
 
-**Already know Scala from Spark?** This is the lowest-ramp module in the curriculum, and now a near-zero one: 2.13 is almost certainly the exact Scala version you already write in production Spark jobs, so there's no syntax delta to review at all — case classes, pattern matching, and `implicit` typeclass instances are patterns you already use, just without naming the underlying algebra ("this is a semigroup," "this rewrite rule is a partial function over the plan tree") explicitly. Budget closer to zero prep; go straight to W09. If your Scala is genuinely rusty or this is a first real exposure, [Scala Book](https://docs.scala-lang.org/overviews/scala-book/introduction.html) (scala-lang.org's official 2.13-era guide) chapters on classes, traits, and implicits cover what these two weeks need — budget 2–3 hours instead.
+**Already know Scala from Spark?** This is the lowest-ramp module in the curriculum, and now a near-zero one: 2.13 is almost certainly the exact Scala version you already write in production Spark jobs, so there's no syntax delta to review at all. Case classes, pattern matching, and `implicit` typeclass instances are patterns you already use, just without naming the underlying algebra ("this is a semigroup," "this rewrite rule is a partial function over the plan tree") explicitly. Budget closer to zero prep; go straight to W09. If your Scala is genuinely rusty or this is a first real exposure, [Scala Book](https://docs.scala-lang.org/overviews/scala-book/introduction.html) (scala-lang.org's official 2.13-era guide) chapters on classes, traits, and implicits cover what these two weeks need; budget 2–3 hours instead.
 
-Recommended IDE: IntelliJ IDEA with the Scala plugin — the standard choice for Spark/Scala work, and likely already familiar if you've done production Scala.
+Recommended IDE: IntelliJ IDEA with the Scala plugin, the standard choice for Spark/Scala work and likely already familiar if you've done production Scala.
 
-**New to Scala, or want a warm-up before W09 specifically?** See the drill in [W09](weeks/W09-query-planning.md)'s "Before you start" section — a 15–20 minute case-class-and-pattern-matching exercise scoped to exactly what that week needs, meant to be done the day you start W09, not months ahead of it.
+**New to Scala, or want a warm-up before W09 specifically?** See the drill in [W09](weeks/W09-query-planning.md)'s "Before you start" section: a 15–20 minute case-class-and-pattern-matching exercise scoped to exactly what that week needs, meant to be done the day you start W09, not months ahead of it.
 
 ---
 
@@ -131,7 +131,7 @@ pip install "ray[default]" torch  # torch for the CNN, Ray for actors
 ```bash
 pip install numba numpy matplotlib
 ```
-No GPU? Skip this install — use the C fallback (`code/cpu-gemm/`) instead: cache-blocked + AVX2 SIMD GEMM, no Python dependencies beyond a working gcc/clang.
+No GPU? Skip this install; use the C fallback (`code/cpu-gemm/`) instead: cache-blocked + AVX2 SIMD GEMM, no Python dependencies beyond a working gcc/clang.
 
 **W15 (attention):**
 ```bash
@@ -142,16 +142,16 @@ pip install numpy                 # NumPy only, no PyTorch for this week
 
 ## ClickHouse + PySpark (W07 only)
 
-W07's Part 2 comparison exercise runs two real local systems alongside your C++ build — both single-machine, no account, no cluster.
+W07's Part 2 comparison exercise runs two real local systems alongside your C++ build; both single-machine, no account, no cluster.
 
 ```bash
 # ClickHouse: single local server, no cluster
 brew install clickhouse
 
-# Spark runs on the JVM regardless of the Python surface — install a JDK if you don't have one
+# Spark runs on the JVM regardless of the Python surface; install a JDK if you don't have one
 brew install openjdk@17
 
-# PySpark, against your existing Python 3.11 setup — no version conflicts
+# PySpark, against your existing Python 3.11 setup; no version conflicts
 pip install pyspark
 ```
 
@@ -163,7 +163,7 @@ clickhouse client --query "SELECT 1"
 python -c "from pyspark.sql import SparkSession; SparkSession.builder.master('local[*]').getOrCreate(); print('ok')"
 ```
 
-Neither tool is needed outside W07 — uninstall or ignore afterward if you'd rather not keep them around.
+Neither tool is needed outside W07; uninstall or ignore afterward if you'd rather not keep them around.
 
 ---
 

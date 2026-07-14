@@ -29,7 +29,7 @@ Instrument your W07 Differential Dataflow engine (C++) with Prometheus metrics, 
 
 Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
-- [ ] Add dependencies via CMake (`FetchContent` or vcpkg, your call — vcpkg is what's recommended in SETUP.md):
+- [ ] Add dependencies via CMake (`FetchContent` or vcpkg, your call; vcpkg is what's recommended in SETUP.md):
   - [prometheus-cpp](https://github.com/jupp0r/prometheus-cpp): the standard C++ Prometheus client, provides `Registry`, `Counter`, `Histogram`, `Gauge`, and an `Exposer` HTTP server for `/metrics`
   - [opentelemetry-cpp](https://opentelemetry.io/docs/languages/cpp/): official OTel SDK for C++
   - [nlohmann/json](https://github.com/nlohmann/json): header-only, for the structured log lines
@@ -39,7 +39,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   - `batch_size`: `Histogram` (buckets: 1, 10, 100, 1000, 10000), updates per batch
   - `active_keys`: `Gauge`, current distinct key count in the collection
   - Start a `prometheus::Exposer` on port 9091 serving `/metrics`
-- [ ] `include/dd_scratch/tracing_setup.hpp` + `src/tracing_setup.cpp`: initialize an OpenTelemetry `TracerProvider` with an OTLP exporter. Unlike Rust's `#[tracing::instrument]` attribute macro, C++ has no equivalent sugar — write a small RAII `ScopedSpan` class instead: it starts a span in its constructor and ends it in its destructor, so wrapping a function body in `ScopedSpan span("consolidate");` gets you the same "span closes when the function returns" guarantee the macro gave you in Rust, just spelled out explicitly. Wrap `map`, `filter`, and `consolidate` in `collection.hpp` this way, recording input batch size and output batch size as span attributes.
+- [ ] `include/dd_scratch/tracing_setup.hpp` + `src/tracing_setup.cpp`: initialize an OpenTelemetry `TracerProvider` with an OTLP exporter. Unlike Rust's `#[tracing::instrument]` attribute macro, C++ has no equivalent sugar. Write a small RAII `ScopedSpan` class instead: it starts a span in its constructor and ends it in its destructor, so wrapping a function body in `ScopedSpan span("consolidate");` gets you the same "span closes when the function returns" guarantee the macro gave you in Rust, just spelled out explicitly. Wrap `map`, `filter`, and `consolidate` in `collection.hpp` this way, recording input batch size and output batch size as span attributes.
 - [ ] `include/dd_scratch/logging.hpp` + `src/logging.cpp`: a small helper that builds a `nlohmann::json` object per log event and writes it as a single line to stdout:
   ```json
   {"level":"INFO","ts":"2026-10-19T10:00:00Z","op":"consolidate","input":1000,"output":42,"duration_ms":3}
@@ -49,7 +49,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
 **Part 2: Grafana Dashboard**
 
-- [ ] Containerize the instrumented DD engine (`Dockerfile` — a multi-stage build compiling with CMake in a builder stage, then copying the binary into a slim runtime image; k8s `Deployment` + `ServiceMonitor`)
+- [ ] Containerize the instrumented DD engine (`Dockerfile`: a multi-stage build compiling with CMake in a builder stage, then copying the binary into a slim runtime image; k8s `Deployment` + `ServiceMonitor`)
 - [ ] Deploy to kind: `kind load docker-image dd-engine:latest --name pd-systems && kubectl apply -f k8s/`
 - [ ] In Grafana, create a dashboard with 4 panels:
   - `rate(updates_processed_total[1m])`: update throughput (graph)
@@ -58,7 +58,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   - `active_keys`: gauge value over time (graph)
 - [ ] Export the dashboard as `config/grafana-dashboard.json` (Grafana → Share → Export)
 
-**Part 3: Go log aggregator — wire it into the W18 operator**
+**Part 3: Go log aggregator, wired into the W18 operator**
 
 - [ ] `tools/log-aggregator/main.go`: HTTP server that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a ring buffer protected by a `sync.RWMutex`. ~80 lines.
 - [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.22-alpine` builder → `alpine` runtime, same as W00's), `EXPOSE 8080`.
@@ -73,7 +73,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   kubectl get pod -l job-name=my-job -o jsonpath='{.items[0].spec.containers[*].name}'
   # expect: main sidecar
   ```
-- [ ] Confirm the two containers share a network namespace — the point of the sidecar pattern, not just "two containers exist":
+- [ ] Confirm the two containers share a network namespace: the point of the sidecar pattern, not just "two containers exist":
   ```bash
   POD=$(kubectl get pod -l job-name=my-job -o jsonpath='{.items[0].metadata.name}')
   kubectl exec $POD -c main -- wget -qO- --post-data='{"msg":"hello from main container"}' localhost:8080/log
@@ -95,6 +95,6 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
 **What you'd change to have the DD engine actually ship its JSON log lines to the sidecar over `localhost:8080/log` instead of stdout (the exercise above only proves connectivity via a synthetic curl, not the real log path):**
 
-**How the `ScopedSpan` RAII pattern compares to Rust's `#[instrument]` macro — what did you lose, and did the C++ version teach you anything about span lifetimes the macro was hiding?**
+**How does the `ScopedSpan` RAII pattern compare to Rust's `#[instrument]` macro? What did you lose, and did the C++ version teach you anything about span lifetimes the macro was hiding?**
 
 **What I'd do differently:**
