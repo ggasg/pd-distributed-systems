@@ -14,6 +14,31 @@ A toy version of Spark's Catalyst optimizer: a logical query plan represented as
 
 ---
 
+## Before you start (optional, 15–20 min)
+
+A warm-up if it's been a while since you wrote Scala day to day — skip it entirely if you're currently writing Spark jobs and this all looks familiar already.
+
+Write a five-line arithmetic expression evaluator using the exact pattern this week scales up: a sealed ADT of case classes, and a function that pattern-matches over it.
+
+```scala
+sealed trait Expr
+case class Num(value: Int) extends Expr
+case class Add(left: Expr, right: Expr) extends Expr
+case class Mul(left: Expr, right: Expr) extends Expr
+
+def eval(e: Expr): Int = e match {
+  case Num(v)     => v
+  case Add(l, r)  => eval(l) + eval(r)
+  case Mul(l, r)  => eval(l) * eval(r)
+}
+
+// eval(Add(Num(2), Mul(Num(3), Num(4)))) should be 14
+```
+
+If that reads naturally, go straight to `Expr.scala`/`LogicalPlan.scala` below — same shape, a plan tree instead of an arithmetic tree. `TreeTransform.scala` is `eval`'s recursive match generalized into a `transformDown` that rewrites the tree instead of reducing it to a number.
+
+---
+
 ## Read
 - [ ] [Spark SQL: Relational Data Processing in Spark](https://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf) (Armbrust et al., SIGMOD 2015): read Sections 1–4. Section 4 describes Catalyst directly — the tree representation, rules, and the batches they're organized into (analysis, logical optimization, physical planning).
 - [ ] [Catalyst source: `TreeNode.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/trees/TreeNode.scala): skim `transform`, `transformDown`, and `transformUp`. This is the real version of the combinator you're about to build a simplified copy of.
@@ -25,7 +50,7 @@ A toy version of Spark's Catalyst optimizer: a logical query plan represented as
 
 ## Code
 
-Project: `code/query-planner/` (Scala 3, sbt)
+Project: `code/query-planner/` (Scala 2.13, sbt)
 
 **Plan representation:**
 
