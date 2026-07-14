@@ -28,7 +28,7 @@ Project: `code/encoding/` (Go, module)
 - [ ] `varint.go`: implement protobuf-style variable-length integer encoding: `EncodeVarint(value int64) []byte`, `DecodeVarint(buf []byte, offset int) (int64, int)` (returns decoded value and new offset). Handle sign extension for negative numbers (zigzag encoding: `(n << 1) ^ (n >> 63)`)
 - [ ] `row_store.go`: store 1M records of `[10]int32` in row-major layout (one contiguous `[]int32` slice, stride 10). Implement `ReadColumn(col int) []int32`
 - [ ] `column_store.go`: store the same data in columnar layout (one `[]int32` per column). Implement `ReadColumn(col int) []int32`
-- [ ] `benchmark.go`, exposed as a `cmd/benchmark` binary: use `time.Now()`/`time.Since()` to measure: (1) full column scan in row store vs column store; (2) point lookup by row index in both layouts. Print results. Alternatively, write this as a proper Go benchmark using `testing.B` (`go test -bench=.`) instead of hand-rolled timing — either is fine, but if you go the `testing.B` route note that Go's benchmark framework already handles warm-up iterations for you
+- [ ] `benchmark.go`, exposed as a `cmd/benchmark` binary: use `time.Now()`/`time.Since()` to measure: (1) full column scan in row store vs column store; (2) point lookup by row index in both layouts. Print results. Alternatively, write this as a proper Go benchmark using `testing.B` (`go test -bench=.`) instead of hand-rolled timing; either is fine, but if you go the `testing.B` route note that Go's benchmark framework already handles warm-up iterations for you
 
 **Expected outcome:** column scan should be ~5–10x faster in columnar layout. If it's not, investigate why (cache effects, whether you accidentally allocated inside the hot loop).
 

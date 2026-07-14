@@ -243,5 +243,5 @@ go build -o bin/app .
 - Keep each project buildable in isolation. No shared parent build file.
 - Code in this directory is the "lab." It's meant to be written, broken, and rewritten.
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
-- C++ projects (W05–W08, W19) keep tests in a separate `tests/` directory using GoogleTest, the CMake-project convention — unlike Rust's inline `#[cfg(test)] mod tests`, C++ test files are separate translation units registered in `CMakeLists.txt` via `gtest_discover_tests`
-- Scala projects (W09–W10) follow the standard sbt layout (`src/main/scala`, `src/test/scala`) rather than Rust's inline-test or C++'s separate-`tests/`-directory conventions — that's just how sbt expects things laid out
+- C++ projects (W05–W08, W19) keep tests in a separate `tests/` directory using GoogleTest, the CMake-project convention. Unlike Rust's inline `#[cfg(test)] mod tests`, C++ test files are separate translation units registered in `CMakeLists.txt` via `gtest_discover_tests`
+- Scala projects (W09–W10) follow the standard sbt layout (`src/main/scala`, `src/test/scala`) rather than Rust's inline-test or C++'s separate-`tests/`-directory conventions; that's just how sbt expects things laid out

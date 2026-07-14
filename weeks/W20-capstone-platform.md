@@ -28,7 +28,7 @@ No new required reading tied to this week's build. If any of these feel rusty, s
 - W18: the reconcile loop, and why it's level-triggered
 - W19: the four golden signals
 
-One genuinely new read, if you want it: **DDIA Chapter 12**, The Future of Data Systems. It's the book's own synthesis chapter — unbundling databases into composable derived-data systems, correctness as a property of the whole pipeline rather than any one component — and this is the week where that stops being abstract and becomes the actual shape of what you built: a feature store, a trainer, a checkpoint coordinator, an operator, and a server, each correct on its own, wired into one pipeline where correctness is a property of the whole. Fitting bookend to a curriculum that leaned on this book from W00 onward.
+One genuinely new read, if you want it: **DDIA Chapter 12**, The Future of Data Systems. It's the book's own synthesis chapter (unbundling databases into composable derived-data systems, correctness as a property of the whole pipeline rather than any one component), and this is the week where that stops being abstract and becomes the actual shape of what you built: a feature store, a trainer, a checkpoint coordinator, an operator, and a server, each correct on its own, wired into one pipeline where correctness is a property of the whole. Fitting bookend to a curriculum that leaned on this book from W00 onward.
 
 **Key question:** If a worker dies mid-training and the operator restarts it, what exactly needs to be true about the checkpoint for the resumed training to be *correct*, not just "the process didn't crash"?
 

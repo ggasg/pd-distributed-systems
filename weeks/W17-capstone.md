@@ -21,7 +21,7 @@ A 3-node key-value store in Go where writes are replicated via a simple primary-
 
 **Why Go:** goroutines + channels make the node communication natural; Go's stdlib HTTP makes the client API trivial. This is the kind of tool engineers actually write in Go.
 
-**If you pick this option, read first: DDIA Chapter 5** (Replication) — specifically "Leaders and Followers." Primary-backup *is* the leader-based replication Ch. 5 describes; the chapter names the failure modes worth designing around before you write `promote()` (replication lag, what happens to in-flight writes when the leader dies mid-forward) rather than discovering them by hand.
+**If you pick this option, read first: DDIA Chapter 5** (Replication), specifically "Leaders and Followers." Primary-backup *is* the leader-based replication Ch. 5 describes; the chapter names the failure modes worth designing around before you write `promote()` (replication lag, what happens to in-flight writes when the leader dies mid-forward) rather than discovering them by hand.
 
 **Minimum bar:** 3-node cluster, primary-backup replication works, one node can fail and the system continues.
 
@@ -48,9 +48,9 @@ Extend your W07 DD engine with vectorized operator execution from W08: `filter` 
 ### Option D: GPU-Accelerated Distributed Training (Python)
 Combine W12 (ring-allreduce) + W14 (GPU-accelerated GEMM).
 
-The only option that stays inside this arc rather than reaching back into Arc 1/Arc 2 — worth choosing if distributed training and compute-intensive AI workflows specifically are what you're optimizing this curriculum for. Take W12's 2-worker ring-allreduce training loop and replace the MLP's NumPy matrix multiplies with your W14 tiled CUDA GEMM kernel, so gradient exchange still happens over real TCP sockets between workers, but the compute inside each worker is GPU-accelerated instead of CPU NumPy. Benchmark per-epoch wall time, W12's CPU-only baseline vs. this GPU-accelerated version, and break down where time actually goes: compute or network.
+The only option that stays inside this arc rather than reaching back into Arc 1/Arc 2, worth choosing if distributed training and compute-intensive AI workflows specifically are what you're optimizing this curriculum for. Take W12's 2-worker ring-allreduce training loop and replace the MLP's NumPy matrix multiplies with your W14 tiled CUDA GEMM kernel, so gradient exchange still happens over real TCP sockets between workers, but the compute inside each worker is GPU-accelerated instead of CPU NumPy. Benchmark per-epoch wall time, W12's CPU-only baseline vs. this GPU-accelerated version, and break down where time actually goes: compute or network.
 
-**No GPU?** Use W14's cache-blocked/AVX2 C kernel via `ctypes` instead of CUDA — same comparison, CPU-baseline vs. optimized-kernel, without requiring hardware you may not have.
+**No GPU?** Use W14's cache-blocked/AVX2 C kernel via `ctypes` instead of CUDA: same comparison, CPU-baseline vs. optimized-kernel, without requiring hardware you may not have.
 
 **Minimum bar:** the 2-worker ring-allreduce loop runs end-to-end with the GPU (or SIMD C) kernel doing the matmuls, converges to comparable accuracy to W12, and your writeup names where wall-clock time goes at each worker count.
 
