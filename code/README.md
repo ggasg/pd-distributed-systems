@@ -40,43 +40,61 @@ code/
 │   ├── causal_delivery_test.go
 │   └── go.mod
 │
-├── streaming/               # W05: Rust
+├── streaming/               # W05: C++ (CMake)
+│   ├── include/streaming/
+│   │   ├── event.hpp
+│   │   ├── watermark.hpp
+│   │   ├── aggregator.hpp      # TumblingWindowAggregator
+│   │   └── processor.hpp       # StreamProcessor + StreamItem = std::variant<Event, Watermark>
 │   ├── src/
-│   │   ├── lib.rs
-│   │   ├── event.rs
-│   │   ├── watermark.rs
-│   │   ├── aggregator.rs       # TumblingWindowAggregator
-│   │   └── processor.rs        # StreamProcessor + StreamItem enum; #[cfg(test)] tests live here
-│   └── Cargo.toml
+│   │   ├── aggregator.cpp
+│   │   └── processor.cpp
+│   ├── tests/
+│   │   └── processor_test.cpp  # GoogleTest
+│   └── CMakeLists.txt
 │
-├── timely-toy/             # W06: Rust
+├── timely-toy/             # W06: C++ (CMake)
+│   ├── include/timely_toy/
+│   │   ├── timestamp.hpp
+│   │   ├── pointstamp.hpp
+│   │   ├── operator.hpp        # Operator base class, MapOperator, SinkOperator
+│   │   └── progress_tracker.hpp
 │   ├── src/
-│   │   ├── lib.rs
-│   │   ├── timestamp.rs
-│   │   ├── pointstamp.rs
-│   │   ├── operator.rs         # Operator trait, MapOperator, SinkOperator
-│   │   └── progress_tracker.rs
-│   └── Cargo.toml
+│   │   └── progress_tracker.cpp
+│   ├── tests/
+│   │   └── progress_tracker_test.cpp   # GoogleTest
+│   └── CMakeLists.txt
 │
-├── dd-scratch/             # W07: Rust
+├── dd-scratch/             # W07: C++ (CMake, header-only where templated)
+│   ├── include/dd_scratch/
+│   │   ├── update.hpp                 # template struct Update<K, V>  (Part 1)
+│   │   ├── collection.hpp             # template class Collection<K, V>  (Part 1)
+│   │   ├── full_recompute_view.hpp    # FullRecomputeView  (Part 2)
+│   │   └── materialized_view.hpp      # IncrementalAggregateView  (Part 2)
 │   ├── src/
-│   │   ├── lib.rs
-│   │   ├── update.rs
-│   │   ├── collection.rs
-│   │   ├── word_count.rs
-│   │   └── reachability.rs
-│   └── Cargo.toml
+│   │   ├── word_count.cpp             # Part 1
+│   │   ├── full_recompute_view.cpp    # Part 2
+│   │   └── materialized_view.cpp      # Part 2
+│   ├── benchmark/
+│   │   └── mv_benchmark.cpp           # Part 2: incremental vs. full-recompute latency, Release build
+│   ├── comparisons/                   # Part 2: same orders/region-revenue model, tested against real local OSS systems
+│   │   ├── clickhouse_mv.sql          # local ClickHouse server, real materialized view
+│   │   └── spark_stateful_agg.py      # local-mode Spark Structured Streaming, stateful aggregation
+│   └── CMakeLists.txt
 │
-├── query-exec/             # W08: Rust
+├── query-exec/             # W08: C++ (CMake)
+│   ├── include/query_exec/
+│   │   ├── row_executor.hpp
+│   │   ├── column_filter.hpp
+│   │   ├── column_project.hpp
+│   │   └── hash_join.hpp
 │   ├── src/
-│   │   ├── lib.rs
-│   │   ├── row_executor.rs
-│   │   ├── column_filter.rs
-│   │   ├── column_project.rs
-│   │   └── hash_join.rs
-│   ├── src/bin/
-│   │   └── benchmark.rs        # cargo run --release --bin benchmark
-│   └── Cargo.toml
+│   │   ├── column_filter.cpp
+│   │   ├── column_project.cpp
+│   │   └── hash_join.cpp
+│   ├── benchmark/
+│   │   └── benchmark.cpp       # build Release; see W08 for why that's not optional
+│   └── CMakeLists.txt
 │
 ├── feature-pipeline/       # W09: Python
 │   ├── feature_store.py
@@ -137,11 +155,15 @@ code/
 │   ├── main.go
 │   └── go.mod
 │
-├── dd-scratch/             # W17: extends W07
+├── dd-scratch/             # W17: extends W07 (C++)
+│   ├── include/dd_scratch/
+│   │   ├── metrics.hpp          # prometheus-cpp
+│   │   ├── tracing_setup.hpp    # opentelemetry-cpp, ScopedSpan RAII helper
+│   │   └── logging.hpp          # nlohmann::json structured log lines
 │   └── src/
-│       ├── metrics.rs
-│       ├── tracing_setup.rs
-│       └── logging.rs
+│       ├── metrics.cpp
+│       ├── tracing_setup.cpp
+│       └── logging.cpp
 │
 └── capstone-platform/      # W18 (optional): Go + Python, combines W09+W10+W13+W14+W16+W17
     ├── train_worker.py
@@ -155,12 +177,13 @@ code/
 
 ## Build Commands
 
-**Rust (Cargo):**
+**C++ (CMake):**
 ```bash
-cargo build
-cargo test
-cargo run                        # default bin target, if any
-cargo run --release --bin benchmark   # named bin target; use --release for anything timed
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
+cmake --build build
+ctest --test-dir build                              # GoogleTest suite, where present
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build && ./build/benchmark
+                                                      # Release build required for anything timed (W08)
 ```
 
 **Python:**
@@ -185,4 +208,4 @@ go build -o bin/app .
 - Keep each project buildable in isolation. No shared parent build file.
 - Code in this directory is the "lab." It's meant to be written, broken, and rewritten.
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
-- Rust projects (W05–W08, W17) keep unit tests inline via `#[cfg(test)] mod tests { ... }` at the bottom of the relevant file, in the Rust convention — no separate `*Test.rs` files
+- C++ projects (W05–W08, W17) keep tests in a separate `tests/` directory using GoogleTest, the CMake-project convention — unlike Rust's inline `#[cfg(test)] mod tests`, C++ test files are separate translation units registered in `CMakeLists.txt` via `gtest_discover_tests`

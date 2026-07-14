@@ -30,7 +30,7 @@ Vault structure:
 - `weeks/W00-*.md` through `W17-*.md`: one file per week; each has Read, Code, optional Python DSA Review, and Reflect sections
 - `weeks/W18-*.md`: optional grand capstone; synthesizes W09, W10, W13, W14, W16, W17 into one distributed training and serving platform
 - `tools/plan-dates.go`: `go run tools/plan-dates.go --start 2026-07-13` prints full schedule
-- `SETUP.md`: full environment setup (Go, Rust, Python, Docker, Obsidian)
+- `SETUP.md`: full environment setup (Go, C++, Python, Docker, Obsidian)
 - `RESOURCES.md`: all papers and books by week with free links
 - `Templates/week-template.md`: blank week file for adding custom weeks
 - `posts/TEMPLATE.md`: structured blog post format for weekly write-ups
@@ -59,14 +59,16 @@ No Notion. No separate task tracker. Everything lives here.
 | W03 | MapReduce and Its Limits | Dean & Ghemawat (2004); Zaharia et al. (2012) | `mapreduce/` Go: MR framework (goroutines), word count, iterative PageRank; HTTP coordinator |
 | W04 | Clocks, Causality, Time | Lamport (1978); DDIA Ch.8 | `clocks/` Go: vector clocks + causal delivery over channels |
 
-### Arc 2: Streaming and Dataflow (W05–W08), Rust
+### Arc 2: Streaming and Dataflow (W05–W08), C++
 
 | Week | Topic | Key Paper | Deliverable |
 |------|-------|-----------|-------------|
-| W05 | Stream Processing Primitives | Dataflow Model (Akidau et al., 2015); DDIA Ch.11 | `streaming/` Rust: windowed aggregation, immutability enforced by the borrow checker |
-| W06 | Naiad + Timely Dataflow | Naiad paper (Murray et al., SOSP 2013) | `timely-toy/` Rust: Timestamp, Pointstamp, ProgressTracker |
-| W07 | Differential Dataflow | DD paper (McSherry, 2013) | `dd-scratch/` Rust: DD engine from scratch, Update, Collection, WordCount, Reachability — same language as the real `differential-dataflow` crate |
-| W08 | Query Execution | Volcano (1994); MonetDB/X100 (2005) | `query-exec/` Rust: RowExecutor, ColumnFilter, HashJoin, Benchmark (3–8x speedup) |
+| W05 | Stream Processing Primitives | Dataflow Model (Akidau et al., 2015); DDIA Ch.11 | `streaming/` C++: windowed aggregation, immutability enforced by design discipline (encapsulation + `const`), not the compiler |
+| W06 | Naiad + Timely Dataflow | Naiad paper (Murray et al., SOSP 2013) | `timely-toy/` C++: Timestamp, Pointstamp, ProgressTracker — reference reading swapped from the Rust `timely-dataflow` crate to PyTorch's autograd engine (`torch/csrc/autograd/engine.cpp`), a real C++ codebase solving the same dependency-counted DAG-scheduling problem |
+| W07 | Differential Dataflow + Incremental View Maintenance | DD paper (McSherry, 2013), Sections 1–2 | `dd-scratch/` C++: trimmed DD core (Update, Collection, WordCount, 1–2 days) + incremental materialized view vs. full-recompute benchmark, tested hands-on against a locally-installed ClickHouse server and local-mode Spark Structured Streaming — both real, both OSS, both run on your own machine, no vendor docs taken on faith |
+| W08 | Query Execution | Volcano (1994); MonetDB/X100 (2005) | `query-exec/` C++: RowExecutor, ColumnFilter, HashJoin, Benchmark (3–8x speedup) — benchmarked conceptually against DuckDB's vectorized execution engine (C++, already in the stack via W09) |
+
+**Note on the C++ swap (2026-07-13):** Arc 2 was originally Rust, chosen because `timely-dataflow`/`differential-dataflow` are themselves actively maintained Rust crates. Gaston found Rust's ramp (the borrow checker specifically) too costly relative to the payoff and asked for the next-best alternative. C++ won over staying with Rust or reverting to Scala because it points directly at the curriculum's actual target — distributed model training and compute-intensive AI workflows are implemented in C++ at the systems level (PyTorch's `c10d`/ATen, NCCL, gRPC) — and because Gaston already has prior C++ exposure (his first language), lowering the activation energy relative to a brand-new ownership model. The honest cost: the "read the real reference implementation" rationale that justified Rust for this arc doesn't transfer — no C++ project continues the Naiad/timely-dataflow/differential-dataflow lineage. W06–W08 substitute adjacent, still-real C++ reference material (PyTorch's autograd engine, DuckDB's execution engine) instead. See [[pd-curriculum-language-stack]] for the full history.
 
 ### Arc 3: Distributed ML & Compute (W09–W15), Python / Go secondary
 
@@ -78,9 +80,9 @@ No Notion. No separate task tracker. Everything lives here.
 | W12 | GPU Memory + Compute | CUDA Guide Ch.1-3; Roofline (2009) | `gpu-gemm/` Python/Numba: naive vs tiled CUDA matmul + roofline; Go bench runner |
 | W13 | Attention + KV Cache | Attention Is All You Need (2017); FlashAttention (2022); PagedAttention (2023) | `attention/` Python: MHA forward pass + KV cache, NumPy only |
 | W14 | Fault Tolerance | Chandy-Lamport (1985); Flink ABS (2015) | `snapshot/` Go: Chandy-Lamport 3-node simulation over native channels |
-| W15 | Capstone | none | Go: replicated KV store / Rust: streaming pipeline / Rust: incremental query engine |
+| W15 | Capstone | none | Go: replicated KV store / C++: streaming pipeline / C++: incremental query engine |
 
-### Arc 4: Infrastructure (W16–W17), Go / Rust
+### Arc 4: Infrastructure (W16–W17), Go / C++
 
 | Week | Topic | Deliverable |
 |------|-------|-------------|

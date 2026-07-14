@@ -5,10 +5,10 @@ status: not-started
 
 # W05: Stream Processing Primitives
 
-> **Arc:** Streaming and Dataflow · **Language:** Rust
+> **Arc:** Streaming and Dataflow · **Language:** C++
 
 ## What you'll build
-Tumbling window aggregation from scratch in Rust. No Flink, no Spark. Input: a stream of `(event_time: i64, value: i32)` tuples. Output: per-window sums, emitted when a watermark advances past the window boundary.
+Tumbling window aggregation from scratch in C++. No Flink, no Spark. Input: a stream of `(event_time: int64_t, value: int32_t)` tuples. Output: per-window sums, emitted when a watermark advances past the window boundary.
 
 ---
 
@@ -22,15 +22,15 @@ Tumbling window aggregation from scratch in Rust. No Flink, no Spark. Input: a s
 
 ## Code
 
-Project: `code/streaming/` (Rust, cargo)
+Project: `code/streaming/` (C++, CMake + GoogleTest)
 
-- [ ] `event.rs`: `struct Event { event_time: i64, value: i32 }`, `#[derive(Debug, Clone, Copy)]`
-- [ ] `watermark.rs`: `struct Watermark { timestamp: i64 }`, represents the assertion "no events with event_time < timestamp will arrive"
-- [ ] `aggregator.rs`: `TumblingWindowAggregator` holds a `HashMap<WindowId, i32>` of partial sums; `on_event(&mut self, e: Event)`: assign to window, add value; `on_watermark(&mut self, w: Watermark) -> Vec<(WindowId, i32)>`: emit and evict all windows whose end time ≤ watermark timestamp
-- [ ] `processor.rs`: `enum StreamItem { Event(Event), Watermark(Watermark) }`, representing a mixed stream of events and watermarks; `StreamProcessor::process(&mut self, items: &[StreamItem]) -> Vec<(WindowId, i32)>` runs the stream through the aggregator and returns completed windows
-- [ ] Tests, in `#[cfg(test)] mod tests` at the bottom of `processor.rs`: test 1: all events in order, watermarks advance correctly; test 2: out-of-order events arrive before the watermark; test 3: late event arrives after watermark (confirm it's dropped or handled)
+- [ ] `include/streaming/event.hpp`: `struct Event { int64_t event_time; int32_t value; };` — a plain aggregate type, no custom constructors needed
+- [ ] `include/streaming/watermark.hpp`: `struct Watermark { int64_t timestamp; };`, represents the assertion "no events with event_time < timestamp will arrive"
+- [ ] `include/streaming/aggregator.hpp` + `src/aggregator.cpp`: `class TumblingWindowAggregator` holds a private `std::unordered_map<WindowId, int32_t> sums_`; `void on_event(const Event& e)`: assign to window, add value; `std::vector<std::pair<WindowId, int32_t>> on_watermark(const Watermark& w)`: emit and evict all windows whose end time ≤ watermark timestamp
+- [ ] `include/streaming/processor.hpp` + `src/processor.cpp`: `using StreamItem = std::variant<Event, Watermark>;`, representing a mixed stream of events and watermarks; `class StreamProcessor { public: std::vector<std::pair<WindowId, int32_t>> process(const std::vector<StreamItem>& items); }` runs the stream through the aggregator via `std::visit` and returns completed windows
+- [ ] Tests, in `tests/processor_test.cpp` (GoogleTest): test 1: all events in order, watermarks advance correctly; test 2: out-of-order events arrive before the watermark; test 3: late event arrives after watermark (confirm it's dropped or handled)
 
-**Constraints:** state lives only inside `TumblingWindowAggregator` — no global mutable state, no `static mut`. Prefer iterator chains (`.iter().map()`, `.filter()`) over manual loops where they're at least as readable; the aggregator itself will need real `&mut self` mutation, and that's fine — the discipline here is *encapsulated* mutation, not zero mutation. Use `i64` timestamps (milliseconds).
+**Constraints:** state lives only inside `TumblingWindowAggregator` — no global mutable state, no free-floating `static` variables. Prefer `<algorithm>` calls (`std::transform`, `std::copy_if`, range-based `for`) over manual index loops where they're at least as readable; the aggregator itself will need real mutation of `sums_`, and that's fine — the discipline here is *encapsulated* mutation (private state, `const`-qualified accessors), not zero mutation. One honest difference from the original Rust plan: Rust's borrow checker enforced that encapsulation for you at compile time. C++ won't stop anything outside the class from reaching into `sums_` if you make it public, or stop you from mutating through a `const&` via `const_cast`. Treat encapsulation here as a design discipline you're now responsible for, not a compiler guarantee. Use `int64_t` timestamps (milliseconds), and mark any method that doesn't mutate `sums_` as `const`.
 
 ---
 
@@ -70,7 +70,7 @@ def sliding_max(nums: list[int], k: int) -> list[int]:
 assert sliding_max([1, 3, -1, -3, 5, 3, 6, 7], 3) == [3, 3, 5, 5, 6, 7]
 ```
 
-**Connection:** `TumblingWindowAggregator` in Rust holds events in time order; a heap is exactly that priority queue. The monotone deque pattern is how you'd implement a sliding-window aggregate efficiently; your Rust version does this with an explicit `HashMap`, but the deque makes the O(n) trick explicit.
+**Connection:** `TumblingWindowAggregator` in C++ holds events in time order inside a hash map; a heap is exactly the priority queue that ordering implies. The monotone deque pattern is how you'd implement a sliding-window aggregate efficiently; your C++ version does this with an explicit `unordered_map`, but the deque makes the O(n) trick explicit.
 
 ---
 
