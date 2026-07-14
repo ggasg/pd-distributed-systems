@@ -67,15 +67,21 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 ## W06: Naiad and Timely Dataflow
 
 - [Naiad: A Timely Dataflow System](https://dl.acm.org/doi/10.1145/2517349.2522738): Murray et al., SOSP 2013 (**ACM DL**; also [free via MSR](https://www.microsoft.com/en-us/research/wp-content/uploads/2013/11/naiad_sosp2013.pdf))
-- [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): this is what `timely-toy/` is a simplified version of, in the same language
+- [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): `timely-toy/` was originally planned as a simplified version of this, in the same language. Since Arc 2 moved to C++, this stays a conceptual reference only — no build target reads it anymore.
+- [PyTorch Autograd Engine source](https://github.com/pytorch/pytorch/blob/main/torch/csrc/autograd/engine.cpp): the actual C++ reference for `timely-toy/` — a production dependency-counted DAG scheduler, the closest real analogue to Naiad's progress tracking in a language you're writing this arc in
+- [Ray Core Worker & Task Execution](https://deepwiki.com/ray-project/ray/2.1-core-worker-and-task-execution): Ray's `CoreWorker` (C++) fires tasks once their dependencies are satisfied — a second, directly target-company-relevant analogue (Anyscale)
 
 ---
 
-## W07: Differential Dataflow
+## W07: Differential Dataflow and Incremental View Maintenance
 
 - [Differential Dataflow](https://github.com/frankmcsherry/blog/blob/master/posts/2015-09-29.md): McSherry (2013/2015), blog post (**free**), more accessible than the formal paper
-- [Differential Dataflow (formal paper)](https://dl.acm.org/doi/10.1145/2588555.2610364): McSherry, Murray et al., CIDR 2013
-- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): source reference — your `Update`/`Collection` types in `dd-scratch/` are simplified versions of `collection.rs`
+- [Differential Dataflow (formal paper)](https://dl.acm.org/doi/10.1145/2588555.2610364): McSherry, Murray et al., CIDR 2013 — Part 1 reading, Sections 1–2 only
+- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): optional, for context — your `Update`/`Collection` types in `dd-scratch/` were originally planned as simplified versions of `collection.rs`. No maintained C++ continuation of this lineage exists, so this stays a reading-only reference.
+- [ClickHouse Materialized Views](https://clickhouse.com/docs/en/guides/developer/cascading-materialized-views): Part 2 required reading — an insert trigger, not a retraction-aware incrementally maintained view. You'll install ClickHouse locally and build one yourself in the exercise.
+- [Spark Structured Streaming: arbitrary stateful operations](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#arbitrary-stateful-operations): Part 2 required reading — per-key state maintained and updated incrementally between micro-batches. Runs entirely in local mode via `pip install pyspark`, no Databricks account or proprietary docs needed.
+- [Snowflake Dynamic Tables](https://docs.snowflake.com/en/user-guide/dynamic-tables-about): optional, not required — closed-source SaaS with no self-hosted option, so it's excluded from the hands-on comparison the same way ClickHouse would have been if it weren't locally installable
+- [pg_ivm](https://github.com/sraoss/pg_ivm): optional stretch — a real, actively maintained PostgreSQL extension for true incremental view maintenance, closer in spirit to DD than ClickHouse or Spark's approach, but requires building a Postgres extension from source (PGXS) rather than a single-binary or `pip install`
 
 ---
 
@@ -84,6 +90,9 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032): Graefe (1994), the iterator model; skim for the `open/next/close` interface
 - [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf): Boncz, Zukowski, Nes, CIDR 2005 (**free PDF**), the vectorized execution paper
 - [An Overview of Query Optimization in Relational Systems](https://dl.acm.org/doi/10.1145/275487.275492): Chaudhuri (1998), optional background
+- [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended — a real, actively maintained vectorized query engine in C++, already in your stack via W09's feature store
+- [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html): Databricks' vectorized engine, written from the ground up in C++, built to replace JVM-based Spark execution for the exact row-vs-vectorized reasons this week benchmarks
+- [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional — `IProcessor` and `Chunk`-based batching, a second C++ production reference with a different pipeline design than DuckDB or Photon
 
 ---
 
@@ -157,6 +166,8 @@ No required reading. You're synthesizing earlier weeks.
 - [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/)
 - [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): **free online**
 - [Grafana dashboarding docs](https://grafana.com/docs/grafana/latest/dashboards/)
+- [prometheus-cpp](https://github.com/jupp0r/prometheus-cpp): the C++ Prometheus client used to instrument the W07 DD engine
+- [OpenTelemetry C++ SDK](https://opentelemetry.io/docs/languages/cpp/): official docs, used for the `ScopedSpan` tracing setup
 
 ---
 

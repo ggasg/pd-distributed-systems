@@ -5,10 +5,10 @@ status: not-started
 
 # W17: Observability: Metrics, Tracing, Logging
 
-> **Arc:** Infrastructure · **Language:** Rust + Go
+> **Arc:** Infrastructure · **Language:** C++ + Go
 
 ## What you'll build
-Instrument your W07 Differential Dataflow engine (Rust) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
+Instrument your W07 Differential Dataflow engine (C++) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
 
 **Prerequisites:** W00 (kind + Prometheus + Grafana), W07 (DD engine).
 
@@ -25,34 +25,31 @@ Instrument your W07 Differential Dataflow engine (Rust) with Prometheus metrics,
 
 ## Code
 
-**Part 1: Instrument the DD Engine (Rust)**
+**Part 1: Instrument the DD Engine (C++)**
 
 Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
-- [ ] Add dependencies:
-  ```bash
-  cd code/dd-scratch
-  cargo add prometheus tracing tracing-subscriber tracing-opentelemetry
-  cargo add opentelemetry opentelemetry_sdk opentelemetry-otlp
-  ```
-  `tracing` is the idiomatic choice here: the same `tracing::info!`/`tracing::span!` macros give you both structured logs and spans, and `tracing-opentelemetry` bridges those spans into OTel directly — you're not hand-writing separate metrics and tracing code paths the way the original design implied.
-- [ ] `metrics.rs`: define and register the following against a `prometheus::Registry`:
-  - `updates_processed_total`: `IntCounter`, incremented once per `Update` processed
+- [ ] Add dependencies via CMake (`FetchContent` or vcpkg, your call — vcpkg is what's recommended in SETUP.md):
+  - [prometheus-cpp](https://github.com/jupp0r/prometheus-cpp): the standard C++ Prometheus client, provides `Registry`, `Counter`, `Histogram`, `Gauge`, and an `Exposer` HTTP server for `/metrics`
+  - [opentelemetry-cpp](https://opentelemetry.io/docs/languages/cpp/): official OTel SDK for C++
+  - [nlohmann/json](https://github.com/nlohmann/json): header-only, for the structured log lines
+- [ ] `include/dd_scratch/metrics.hpp` + `src/metrics.cpp`: define and register the following against a `prometheus::Registry`:
+  - `updates_processed_total`: `Counter`, incremented once per `Update` processed
   - `consolidation_duration_seconds`: `Histogram` (buckets: 0.1ms, 1ms, 5ms, 10ms, 50ms), time spent in `consolidate()`
   - `batch_size`: `Histogram` (buckets: 1, 10, 100, 1000, 10000), updates per batch
-  - `active_keys`: `IntGauge`, current distinct key count in the collection
-  - Start an HTTP server on port 9091 exposing `/metrics` (a small handler using `tiny_http` or `hyper` that calls `prometheus::TextEncoder::encode` on scrape)
-- [ ] `tracing_setup.rs`: initialize a `tracing_subscriber::Registry` with the `tracing-opentelemetry` layer; annotate `map`, `filter`, and `consolidate` in `collection.rs` with `#[tracing::instrument]`, recording input batch size and output batch size as span fields
-- [ ] `logging.rs`: add a JSON-formatting layer to the `tracing_subscriber` registry so every `tracing::info!` call writes a JSON line to stdout:
+  - `active_keys`: `Gauge`, current distinct key count in the collection
+  - Start a `prometheus::Exposer` on port 9091 serving `/metrics`
+- [ ] `include/dd_scratch/tracing_setup.hpp` + `src/tracing_setup.cpp`: initialize an OpenTelemetry `TracerProvider` with an OTLP exporter. Unlike Rust's `#[tracing::instrument]` attribute macro, C++ has no equivalent sugar — write a small RAII `ScopedSpan` class instead: it starts a span in its constructor and ends it in its destructor, so wrapping a function body in `ScopedSpan span("consolidate");` gets you the same "span closes when the function returns" guarantee the macro gave you in Rust, just spelled out explicitly. Wrap `map`, `filter`, and `consolidate` in `collection.hpp` this way, recording input batch size and output batch size as span attributes.
+- [ ] `include/dd_scratch/logging.hpp` + `src/logging.cpp`: a small helper that builds a `nlohmann::json` object per log event and writes it as a single line to stdout:
   ```json
   {"level":"INFO","ts":"2026-10-19T10:00:00Z","op":"consolidate","input":1000,"output":42,"duration_ms":3}
   ```
-  Replace any `println!` in the DD engine with `tracing::info!(...)`.
-- [ ] Run `word_count.rs` with 10k document updates. Verify `/metrics` at `localhost:9091`.
+  Replace any `std::cout <<` in the DD engine with calls through this helper.
+- [ ] Run `word_count.cpp` with 10k document updates. Verify `/metrics` at `localhost:9091`.
 
 **Part 2: Grafana Dashboard**
 
-- [ ] Containerize the instrumented DD engine (`Dockerfile`, k8s `Deployment` + `ServiceMonitor`)
+- [ ] Containerize the instrumented DD engine (`Dockerfile` — a multi-stage build compiling with CMake in a builder stage, then copying the binary into a slim runtime image; k8s `Deployment` + `ServiceMonitor`)
 - [ ] Deploy to kind: `kind load docker-image dd-engine:latest --name pd-systems && kubectl apply -f k8s/`
 - [ ] In Grafana, create a dashboard with 4 panels:
   - `rate(updates_processed_total[1m])`: update throughput (graph)
@@ -96,6 +93,8 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
 **How you'd extend this instrumentation to W10's distributed training setup:**
 
-**What you'd change to have the DD engine actually ship its `tracing` JSON lines to the sidecar over `localhost:8080/log` instead of stdout (the exercise above only proves connectivity via a synthetic curl, not the real log path):**
+**What you'd change to have the DD engine actually ship its JSON log lines to the sidecar over `localhost:8080/log` instead of stdout (the exercise above only proves connectivity via a synthetic curl, not the real log path):**
+
+**How the `ScopedSpan` RAII pattern compares to Rust's `#[instrument]` macro — what did you lose, and did the C++ version teach you anything about span lifetimes the macro was hiding?**
 
 **What I'd do differently:**

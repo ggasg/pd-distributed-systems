@@ -9,7 +9,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 ## Quick Start
 
 1. Clone the repo and open it as an Obsidian vault
-2. Follow [SETUP.md](SETUP.md) to install Go, Rust, Python, Docker, and Obsidian plugins
+2. Follow [SETUP.md](SETUP.md) to install Go, C++, Python, Docker, and Obsidian plugins
 3. Skim [RESOURCES.md](RESOURCES.md): most readings are free links, but a few (DDIA, the most-used book) are worth buying before you hit the week that needs them
 4. Set `start_date` in [config.md](config.md), and all week dates recalculate automatically
 5. Open [Home.md](Home.md) as your daily entry point
@@ -25,9 +25,9 @@ This isn't for people who want to pass system design interviews. It's for engine
 |-----|-------|-------|----------|
 | Setup | W00 | Local k8s, Prometheus, Grafana | Go |
 | Data Systems Internals | W01–W04 | Storage engines, encoding, MapReduce, causality | Go |
-| Streaming and Dataflow | W05–W08 | Stream processing, Naiad, Differential Dataflow, query execution | Rust |
+| Streaming and Dataflow | W05–W08 | Stream processing, Naiad, Differential Dataflow, query execution | C++ |
 | Distributed ML & Compute | W09–W15 | ML pipelines, distributed training, actor model (Ray), GPU compute, transformers, fault tolerance | Python / Go (W14) |
-| Infrastructure | W16–W17 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / Rust |
+| Infrastructure | W16–W17 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / C++ |
 | Capstone (optional) | W18 | Distributed training + serving platform, fully observed (synthesizes W09, W10, W13, W14, W16, W17) | Go / Python |
 
 ---
@@ -43,7 +43,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 **After Arc 2 (W05–W08):**
 - Build a streaming windowed aggregator with watermarks; explain what "late data" means
 - Implement Naiad's timestamp and progress-tracking model from the paper
-- Build a Differential Dataflow engine from scratch: incremental word count and reachability
+- Build the core of a Differential Dataflow engine from scratch (incremental word count), then build and benchmark an incremental materialized view against a full-recompute baseline — the same trade-off Snowflake, Databricks, and ClickHouse make in production
 - Benchmark vectorized vs. row-at-a-time query execution; explain the 3–8x gap
 
 **After Arc 3 (W09–W15):**
@@ -78,12 +78,12 @@ Every week has:
 |-------|----------|-----|
 | W00 | Go | Service + k8s deployment; Prometheus metrics |
 | W01–W04 | Go | Storage engines and coordination logic; goroutines/channels for the concurrent parts, plain structs and interfaces for the data structures |
-| W05–W08 | Rust | Ownership + algebraic enums are a natural fit for dataflow and incremental computation; the reference implementations (timely-dataflow, differential-dataflow) are themselves Rust |
+| W05–W08 | C++ | This is the substrate of the systems the curriculum's actual target (distributed model training, compute-intensive AI workflows) runs on — PyTorch's `c10d`/ATen, NCCL, gRPC's core, and DuckDB's execution engine are all C++. The dataflow papers this arc is built around (Naiad, Differential Dataflow) have no maintained C++ reference implementation the way they do a Rust one (`timely-dataflow`/`differential-dataflow`), so this arc leans on the papers directly and points at adjacent production C++ codebases (PyTorch's autograd engine, DuckDB) instead of a source-level companion |
 | W09–W13 | Python | ML ecosystem, numerical computing, Ray for distributed actors, Numba for GPU |
 | W14 | Go | Native channels are FIFO by construction, a direct fit for Chandy-Lamport's marker protocol |
-| W15 | Go / Rust / Python | Depends on capstone option |
+| W15 | Go / C++ / Python | Depends on capstone option |
 | W16 | Go | Operators are almost exclusively written in Go |
-| W17 | Rust + Go | Instrument existing Rust code; Go log-aggregator built and wired in as a sidecar on the W16 operator |
+| W17 | C++ + Go | Instrument existing C++ code (the W07 DD engine) with `prometheus-cpp` and `opentelemetry-cpp`; Go log-aggregator built and wired in as a sidecar on the W16 operator |
 | W03, W10, W12, W15 | Go (secondary) | Automation tools, coordination services |
 
 ---
@@ -95,7 +95,7 @@ Every week has:
 ├── Home.md               # Daily entry point, open this in Obsidian
 ├── config.md             # Set start_date here
 ├── README.md             # This file
-├── SETUP.md              # Environment setup (Go, Rust, Python, Docker, Obsidian)
+├── SETUP.md              # Environment setup (Go, C++, Python, Docker, Obsidian)
 ├── RESOURCES.md          # All papers and books, by week, with free links
 ├── CONTEXT.md            # Session context for AI-assisted study sessions
 ├── weeks/                # One .md file per week (W00–W17)
@@ -141,17 +141,17 @@ Every week has:
 
 **Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers. See the Branch Workflow section in [CONTEXT.md](CONTEXT.md) for how to merge updates between them.
 
-**Different languages?** The algorithms are language-agnostic. This curriculum is deliberately built around Go and Rust as the two languages to gain real fluency in, alongside Python for the ML-native arc — but the Go weeks could be C++ or Java if you'd rather stay on a GC'd/OOP-familiar language; the Rust weeks could be Haskell, OCaml, or Scala if you'd rather skip the ownership model; the Python weeks could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
+**Different languages?** The algorithms are language-agnostic. This curriculum is built around Go as the one genuinely new language to gain fluency in, C++ as a deliberate refresh into modern idioms (smart pointers, move semantics, RAII, templates) rather than a cold start, and Python for the ML-native arc — but the Go weeks could be Java if you'd rather stay on a GC'd/OOP-familiar language; the C++ weeks could be Rust, Scala, or Java if you'd rather trade manual memory management for a borrow-checked or GC'd model (Rust in particular is the closer conceptual fit for W05–W08, since ownership and algebraic enums map naturally onto dataflow and incremental computation — it was the original choice here, dropped in favor of C++ for tighter alignment with this curriculum's actual target of distributed training and compute-intensive AI workflows, not because it's the wrong tool for the topic); the Python weeks could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
 
 ---
 
 ## Prerequisites
 
-- Comfortable programming in at least one language, in any paradigm — this curriculum is explicitly meant to be your on-ramp into Go and Rust, not something that assumes you already know them
+- Comfortable programming in at least one language, in any paradigm — this curriculum is explicitly meant to be your on-ramp into Go, and a refresh back into modern C++, not something that assumes you already know them
 - Knows what a hash map and B-tree are
 - Has written concurrent code before (threads, async, actors, etc.) in whatever language you already know
 - Familiar with basic algorithms (sorting, BFS, binary search)
 
 No PhD required. No ML background required for the early arcs.
 
-**New to Go and/or Rust?** That's the point. See the ramp notes for both in [SETUP.md](SETUP.md) before you start W00 (Go) and W05 (Rust) — budget real time before each, don't try to learn the language and the week's algorithm simultaneously on day one. Go's ramp is short (the language is deliberately small); Rust's is longer, mainly because of the borrow checker, which has no equivalent in Go or most languages you're likely coming from.
+**New to Go? Rusty on C++?** Go is the genuinely new language here — see its ramp notes in [SETUP.md](SETUP.md) before W00, and don't try to learn it and LSM-trees simultaneously on day one. C++ is different: if you learned it years ago (school, an earlier job) and haven't touched it since, W05 is a refresh into modern idioms, not a cold start — budget real time regardless, both for the idioms that changed and for CMake, which has no equivalent to Cargo's zero-config build experience. See the C++ section of [SETUP.md](SETUP.md) for what specifically to review before W05.

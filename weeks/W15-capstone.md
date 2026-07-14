@@ -5,7 +5,7 @@ status: not-started
 
 # W15: Capstone
 
-> **Arc:** Distributed ML & Compute · **Language:** Go, Rust, or Python, your choice
+> **Arc:** Distributed ML & Compute · **Language:** Go, C++, or Python, your choice
 
 ## What you'll build
 One system that combines at least two concepts from this curriculum. It should be something you can explain end-to-end, from the data model to the failure behavior. No scaffolding provided; you design it.
@@ -25,16 +25,16 @@ A 3-node key-value store in Go where writes are replicated via a simple primary-
 
 ---
 
-### Option B: Streaming Pipeline with Exactly-Once (Rust)
+### Option B: Streaming Pipeline with Exactly-Once (C++)
 Combine W05 (stream processing) + W14 (snapshots).
 
-A stateful streaming word count in Rust that periodically checkpoints using Chandy-Lamport snapshots. On simulated failure: restore from the latest snapshot, replay messages from that point, verify the final word count matches a non-failing run.
+A stateful streaming word count in C++ that periodically checkpoints using Chandy-Lamport snapshots. On simulated failure: restore from the latest snapshot, replay messages from that point, verify the final word count matches a non-failing run.
 
 **Minimum bar:** windowed word count, periodic snapshots, crash-and-recover test passes.
 
 ---
 
-### Option C: Incremental Query Engine (Rust)
+### Option C: Incremental Query Engine (C++)
 Combine W07 (differential dataflow) + W08 (query execution).
 
 Extend your W07 DD engine with vectorized operator execution from W08: `filter` and `join` operate on batches of updates rather than one at a time. Benchmark: insert 10k rows, run a filter+join query, then update 100 rows and measure incremental re-evaluation vs full re-execution.
