@@ -96,12 +96,39 @@ code/
 │   │   └── benchmark.cpp       # build Release; see W08 for why that's not optional
 │   └── CMakeLists.txt
 │
-├── feature-pipeline/       # W09: Python
+├── query-planner/          # W09: Scala (sbt)
+│   ├── src/main/scala/
+│   │   ├── Expr.scala               # Column, Literal, GreaterThan, And
+│   │   ├── LogicalPlan.scala        # Scan, Filter, Project, Join
+│   │   ├── TreeTransform.scala      # generic transformDown combinator
+│   │   ├── rules/
+│   │   │   ├── PushDownFilter.scala
+│   │   │   └── ConstantFold.scala
+│   │   └── Optimizer.scala          # runs rules to a fixed point
+│   ├── src/test/scala/
+│   │   └── OptimizerSpec.scala      # ScalaTest or MUnit
+│   └── build.sbt
+│
+├── agg-algebra/            # W10: Scala (sbt)
+│   ├── src/main/scala/
+│   │   ├── Semigroup.scala
+│   │   ├── Monoid.scala
+│   │   ├── instances/
+│   │   │   └── IntInstances.scala   # sum Monoid[Int], Max wrapper Monoid
+│   │   ├── Combine.scala            # combineAll (fold) + reduceTree
+│   │   ├── Average.scala            # AvgAcc(sum, count), the non-naive associative version
+│   │   ├── ApproxDistinct.scala     # capped-Set approximate distinct-count monoid
+│   │   └── ConnectToConsolidate.scala  # reimplements W07's Collection.consolidate() via combineAll
+│   ├── src/test/scala/
+│   │   └── MonoidSpec.scala         # includes the failing-naive-average test
+│   └── build.sbt
+│
+├── feature-pipeline/       # W11: Python
 │   ├── feature_store.py
 │   ├── pipeline.py
 │   └── requirements.txt
 │
-├── distributed-training/   # W10: Python + Go tool
+├── distributed-training/   # W12: Python + Go tool
 │   ├── mlp.py
 │   ├── ring_allreduce.py
 │   ├── worker.py
@@ -109,15 +136,15 @@ code/
 │   └── requirements.txt
 │   # Go tool lives in tools/grad_server/
 │
-├── actor-training/         # W11: Python + Ray
+├── actor-training/         # W13: Python + Ray
 │   ├── model.py             # PyTorch CNN
 │   ├── worker_actor.py      # @ray.remote TrainerWorker
 │   ├── parameter_server_actor.py  # @ray.remote ParameterServer
 │   ├── train.py
-│   ├── compare.py           # sequential vs W10 ring-allreduce vs Ray actors
+│   ├── compare.py           # sequential vs W12 ring-allreduce vs Ray actors
 │   └── requirements.txt
 │
-├── gpu-gemm/               # W12: Python/Numba + C fallback
+├── gpu-gemm/               # W14: Python/Numba + C fallback
 │   ├── naive_gemm.py
 │   ├── tiled_gemm.py
 │   ├── benchmark.py
@@ -125,13 +152,13 @@ code/
 │   ├── gemm_fallback.c     # no-GPU fallback
 │   └── requirements.txt
 │
-├── attention/              # W13: Python
+├── attention/              # W15: Python
 │   ├── attention.py        # MultiHeadAttention
 │   ├── kv_cache.py
 │   ├── benchmark.py
 │   └── requirements.txt
 │
-├── snapshot/                # W14: Go
+├── snapshot/                # W16: Go
 │   ├── channel.go
 │   ├── message.go
 │   ├── node.go
@@ -139,11 +166,11 @@ code/
 │   ├── snapshot_test.go
 │   └── go.mod
 │
-├── capstone/                # W15: your choice of language
+├── capstone/                # W17: your choice of language
 │   ├── README.md           # required: design doc
 │   └── ...
 │
-├── operator/                # W16: Go
+├── operator/                # W18: Go
 │   ├── api/v1/
 │   │   ├── types.go
 │   │   └── register.go
@@ -155,7 +182,7 @@ code/
 │   ├── main.go
 │   └── go.mod
 │
-├── dd-scratch/             # W17: extends W07 (C++)
+├── dd-scratch/             # W19: extends W07 (C++)
 │   ├── include/dd_scratch/
 │   │   ├── metrics.hpp          # prometheus-cpp
 │   │   ├── tracing_setup.hpp    # opentelemetry-cpp, ScopedSpan RAII helper
@@ -165,11 +192,11 @@ code/
 │       ├── tracing_setup.cpp
 │       └── logging.cpp
 │
-└── capstone-platform/      # W18 (optional): Go + Python, combines W09+W10+W13+W14+W16+W17
+└── capstone-platform/      # W20 (optional): Go + Python, combines W11+W12+W15+W16+W18+W19
     ├── train_worker.py
     ├── checkpoint_coordinator.py
     ├── serve.py
-    ├── operator/            # extends code/operator/ from W16
+    ├── operator/            # extends code/operator/ from W18
     └── README.md            # required: design doc
 ```
 
@@ -184,6 +211,13 @@ cmake --build build
 ctest --test-dir build                              # GoogleTest suite, where present
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build && ./build/benchmark
                                                       # Release build required for anything timed (W08)
+```
+
+**Scala (sbt):**
+```bash
+sbt compile
+sbt test
+sbt run
 ```
 
 **Python:**
@@ -208,4 +242,5 @@ go build -o bin/app .
 - Keep each project buildable in isolation. No shared parent build file.
 - Code in this directory is the "lab." It's meant to be written, broken, and rewritten.
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
-- C++ projects (W05–W08, W17) keep tests in a separate `tests/` directory using GoogleTest, the CMake-project convention — unlike Rust's inline `#[cfg(test)] mod tests`, C++ test files are separate translation units registered in `CMakeLists.txt` via `gtest_discover_tests`
+- C++ projects (W05–W08, W19) keep tests in a separate `tests/` directory using GoogleTest, the CMake-project convention — unlike Rust's inline `#[cfg(test)] mod tests`, C++ test files are separate translation units registered in `CMakeLists.txt` via `gtest_discover_tests`
+- Scala projects (W09–W10) follow the standard sbt layout (`src/main/scala`, `src/test/scala`) rather than Rust's inline-test or C++'s separate-`tests/`-directory conventions — that's just how sbt expects things laid out

@@ -31,16 +31,20 @@ var weeks = []week{
 	{6, "Arc 2", "Naiad and Timely Dataflow"},
 	{7, "Arc 2", "Differential Dataflow"},
 	{8, "Arc 2", "Query Execution"},
-	{9, "Arc 3", "ML Data Pipelines"},
-	{10, "Arc 3", "Distributed Training"},
-	{11, "Arc 3", "The Actor Model and Ray"},
-	{12, "Arc 3", "GPU Memory and Compute"},
-	{13, "Arc 3", "Attention and KV Cache"},
-	{14, "Arc 3", "Fault Tolerance and Snapshots"},
-	{15, "Arc 3", "Capstone"},
-	{16, "Arc 4", "Kubernetes and Operators"},
-	{17, "Arc 4", "Observability: Metrics, Tracing, Logging"},
+	{9, "Arc 2", "Rule-Based Query Planning in Scala"},
+	{10, "Arc 2", "Aggregation Algebra: Monoids and Semigroups"},
+	{11, "Arc 3", "ML Data Pipelines"},
+	{12, "Arc 3", "Distributed Training"},
+	{13, "Arc 3", "The Actor Model and Ray"},
+	{14, "Arc 3", "GPU Memory and Compute"},
+	{15, "Arc 3", "Attention and KV Cache"},
+	{16, "Arc 3", "Fault Tolerance and Snapshots"},
+	{17, "Arc 3", "Capstone"},
+	{18, "Arc 4", "Kubernetes and Operators"},
+	{19, "Arc 4", "Observability: Metrics, Tracing, Logging"},
 }
+
+const optionalCapstoneWeek = 20
 
 func main() {
 	startStr := flag.String("start", "", "Start date for W01 (YYYY-MM-DD, required)")
@@ -86,9 +90,14 @@ func main() {
 		)
 	}
 
-	fmt.Printf("\nTotal: %d weeks  |  W01 starts %s  |  W17 ends %s\n",
+	lastCore := weeks[len(weeks)-1].num
+	optionalEnd := w01Start.AddDate(0, 0, (optionalCapstoneWeek-1)*7+6)
+
+	fmt.Printf("\nTotal: %d core weeks  |  W01 starts %s  |  W%d ends %s\n",
 		len(weeks),
 		w01Start.Format("Jan 02 2006"),
-		w01Start.AddDate(0, 0, 16*7+6).Format("Jan 02 2006"),
+		lastCore,
+		w01Start.AddDate(0, 0, (lastCore-1)*7+6).Format("Jan 02 2006"),
 	)
+	fmt.Printf("Optional W%d (Grand Capstone) ends %s\n", optionalCapstoneWeek, optionalEnd.Format("Jan 02 2006"))
 }

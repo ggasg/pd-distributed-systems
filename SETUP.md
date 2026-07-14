@@ -26,9 +26,9 @@ go version   # go1.22.x
 # Or download from https://go.dev/dl/
 ```
 
-**W00–W04, W14, W16, and secondary tooling in W03/W10/W12/W15/W17** use Go — this is the backbone language of the curriculum alongside C++. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
+**W00–W04, W16, W18, and secondary tooling in W03/W12/W14/W17/W19** use Go — this is the backbone language of the curriculum alongside C++. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
 
-**W16 (Kubernetes Operators) requires Go** — this isn't optional the way secondary tooling elsewhere is. Install `controller-runtime`:
+**W18 (Kubernetes Operators) requires Go** — this isn't optional the way secondary tooling elsewhere is. Install `controller-runtime`:
 ```bash
 go get sigs.k8s.io/controller-runtime@v0.18.0
 ```
@@ -47,7 +47,7 @@ brew install cmake ninja vcpkg
 cmake --version                # 3.25+ recommended
 clang++ --version               # or g++ --version if you prefer GCC
 
-# vcpkg (C++ package manager, used for prometheus-cpp / opentelemetry-cpp / GoogleTest in W05–W08, W17)
+# vcpkg (C++ package manager, used for prometheus-cpp / opentelemetry-cpp / GoogleTest in W05–W08, W19)
 git clone https://github.com/microsoft/vcpkg ~/vcpkg
 ~/vcpkg/bootstrap-vcpkg.sh
 export VCPKG_ROOT=~/vcpkg
@@ -59,7 +59,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROO
 cmake --build build
 ctest --test-dir build      # GoogleTest suite, where the project has one
 ```
-Most Arc 2 weeks (W05–W07) declare zero or one dependency (GoogleTest); W17's Prometheus/OTel instrumentation is the one place this arc pulls in real external libraries.
+Most Arc 2 weeks (W05–W07) declare zero or one dependency (GoogleTest); W19's Prometheus/OTel instrumentation is the one place this arc pulls in real external libraries.
 
 **W05–W08** target C++20 (structured bindings, `std::variant`, concepts where useful) — modern enough to be relevant to the codebases W06 and W08 point you at (PyTorch's autograd engine, DuckDB's execution engine), most of which build against C++17/20 themselves. No nightly/experimental compiler flags needed; mainline `clang` or `gcc` from Homebrew is current enough.
 
@@ -68,6 +68,27 @@ Most Arc 2 weeks (W05–W07) declare zero or one dependency (GoogleTest); W17's 
 **One thing that has no Rust equivalent to complain about:** C++ won't stop you from writing something that compiles but is wrong — no borrow checker catches a dangling reference or a data race for you here. The weeks' "Constraints" sections call out, explicitly, where you're now responsible for a discipline (encapsulation, immutability of returned collections) that used to be compiler-enforced. Read those callouts; they're not boilerplate.
 
 **CMake itself is a real ramp, separate from the language.** Cargo's zero-config "it just builds" experience has no CMake equivalent — expect `CMakeLists.txt` boilerplate and `find_package`/vcpkg wiring to cost real time in W05, even though the C++ language itself is familiar. If a project won't configure, check the vcpkg toolchain file path before anything else; it's the most common first-week failure.
+
+---
+
+## Scala 3 (sbt)
+
+```bash
+# macOS
+brew install coursier/formulas/coursier && cs setup
+# cs setup installs a JDK if needed, plus sbt, scala, and scalac
+
+sbt --version    # sbt 1.9.x or later
+scala --version  # Scala 3.x
+```
+
+Each Scala project (`code/query-planner/`, `code/agg-algebra/`) is its own sbt project — `build.sbt` declares the Scala version and any test dependencies (ScalaTest or MUnit, your call). `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, back to the same zero-config experience Cargo had for Rust and unlike CMake's `find_package`/vcpkg wiring for C++.
+
+**W09–W10** target Scala 3, a deliberate choice, not a default: Algebird (the real-world reference for W10) only publishes for Scala up to 2.13, so depending on it directly would mean pinning to 2.13 specifically — but neither week actually requires it as a library dependency (you build your own typeclasses from scratch), so there's no reason to hold the module back to an older Scala just to match a library you're reading, not compiling against.
+
+**Already know Scala from Spark?** This is the lowest-ramp language swap in the curriculum. If you have production Spark/Scala experience, W09–W10 aren't teaching you a new language — they're formalizing FP patterns (case classes, pattern matching, typeclasses) you likely already use operationally when writing Spark jobs, just without naming the underlying algebra explicitly. Budget closer to 1–2 hours reviewing Scala 3's syntax differences from whatever Scala 2.x you're used to (indentation-based syntax is now optional, `given`/`using` replaces `implicit` for typeclasses, `enum` replaces sealed-trait boilerplate for simple ADTs) rather than a full language ramp. If your Scala is genuinely rusty or this is a first real exposure, [Scala 3 Book](https://docs.scala-lang.org/scala3/book/introduction.html)'s chapters on classes, traits, and contextual abstractions (`given`/`using`) cover what these two weeks need — budget 3–4 hours instead.
+
+Recommended IDE: IntelliJ IDEA with the Scala plugin — the standard choice for Spark/Scala work, and likely already familiar if you've done production Scala.
 
 ---
 
@@ -85,33 +106,33 @@ python --version   # 3.11.x
 
 Install dependencies per arc:
 
-**Arc 3 base (W09–W13):**
+**Arc 3 base (W11–W15):**
 ```bash
 pip install numpy torch torchvision duckdb pyarrow pandas "ray[default]"
 ```
 
-**W09 (ML pipelines):**
+**W11 (ML pipelines):**
 ```bash
 pip install duckdb pyarrow pandas
 ```
 
-**W10 (distributed training):**
+**W12 (distributed training):**
 ```bash
 pip install numpy torch           # torch for MNIST loading only
 ```
 
-**W11 (actor model / Ray):**
+**W13 (actor model / Ray):**
 ```bash
 pip install "ray[default]" torch  # torch for the CNN, Ray for actors
 ```
 
-**W12 (GPU compute), requires NVIDIA GPU:**
+**W14 (GPU compute), requires NVIDIA GPU:**
 ```bash
 pip install numba cupy-cuda12x matplotlib
 ```
 No GPU? The week includes a C fallback. Numba's CPU JIT still demonstrates the roofline model.
 
-**W13 (attention):**
+**W15 (attention):**
 ```bash
 pip install numpy                 # NumPy only, no PyTorch for this week
 ```
@@ -145,7 +166,7 @@ Neither tool is needed outside W07 — uninstall or ignore afterward if you'd ra
 
 ---
 
-## Docker + kind (W00, W16, W17)
+## Docker + kind (W00, W18, W19)
 
 ```bash
 # Docker Desktop: https://www.docker.com/products/docker-desktop/
@@ -162,7 +183,7 @@ kind delete cluster --name pd-systems
 
 ---
 
-## GPU Setup (W12, optional)
+## GPU Setup (W14, optional)
 
 **NVIDIA GPU required.** If you don't have one, skip the Numba CUDA path and use the C fallback.
 
@@ -179,6 +200,8 @@ kind delete cluster --name pd-systems
 go version           # 1.22.x
 cmake --version      # 3.25.x or later
 clang++ --version    # or g++ --version
+sbt --version        # 1.9.x or later
+scala --version      # Scala 3.x
 python --version     # 3.11.x or 3.12.x
 docker --version     # 25.x or later
 kind --version       # 0.22.x or later
@@ -194,5 +217,6 @@ helm version         # 3.14.x or later
 |----------|-----|
 | Go | VS Code + Go extension, or GoLand |
 | C++ | VS Code + clangd extension, or CLion |
+| Scala | IntelliJ IDEA + Scala plugin |
 | Python | VS Code + Pylance, or PyCharm Community |
 | All | Neovim with LSP (if you're into that) |
