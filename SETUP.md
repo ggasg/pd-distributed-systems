@@ -71,24 +71,25 @@ Most Arc 2 weeks (W05–W07) declare zero or one dependency (GoogleTest); W19's 
 
 ---
 
-## Scala 3 (sbt)
+## Scala 2.13 (sbt)
 
 ```bash
 # macOS
 brew install coursier/formulas/coursier && cs setup
-# cs setup installs a JDK if needed, plus sbt, scala, and scalac
+# cs setup installs a JDK if needed, plus sbt and scalac
 
 sbt --version    # sbt 1.9.x or later
-scala --version  # Scala 3.x
 ```
 
-Each Scala project (`code/query-planner/`, `code/agg-algebra/`) is its own sbt project — `build.sbt` declares the Scala version and any test dependencies (ScalaTest or MUnit, your call). `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, back to the same zero-config experience Cargo had for Rust and unlike CMake's `find_package`/vcpkg wiring for C++.
+Each Scala project (`code/query-planner/`, `code/agg-algebra/`) is its own sbt project — `build.sbt` pins `scalaVersion := "2.13.14"` (or the latest 2.13.x patch), so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, back to the same zero-config experience Cargo had for Rust and unlike CMake's `find_package`/vcpkg wiring for C++.
 
-**W09–W10** target Scala 3, a deliberate choice, not a default: Algebird (the real-world reference for W10) only publishes for Scala up to 2.13, so depending on it directly would mean pinning to 2.13 specifically — but neither week actually requires it as a library dependency (you build your own typeclasses from scratch), so there's no reason to hold the module back to an older Scala just to match a library you're reading, not compiling against.
+**W09–W10 target Scala 2.13, not 3** — this is a deliberate match, not an oversight. 2.13 is what Apache Spark itself is built and published against today (Spark 4.x still compiles Catalyst and the rest of the codebase on 2.13; there is no Spark-on-Scala-3 build), and it's what Algebird (W10's real-world reference) publishes for. Writing these two weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Algebird source — not a newer dialect neither project has adopted.
 
-**Already know Scala from Spark?** This is the lowest-ramp language swap in the curriculum. If you have production Spark/Scala experience, W09–W10 aren't teaching you a new language — they're formalizing FP patterns (case classes, pattern matching, typeclasses) you likely already use operationally when writing Spark jobs, just without naming the underlying algebra explicitly. Budget closer to 1–2 hours reviewing Scala 3's syntax differences from whatever Scala 2.x you're used to (indentation-based syntax is now optional, `given`/`using` replaces `implicit` for typeclasses, `enum` replaces sealed-trait boilerplate for simple ADTs) rather than a full language ramp. If your Scala is genuinely rusty or this is a first real exposure, [Scala 3 Book](https://docs.scala-lang.org/scala3/book/introduction.html)'s chapters on classes, traits, and contextual abstractions (`given`/`using`) cover what these two weeks need — budget 3–4 hours instead.
+**Already know Scala from Spark?** This is the lowest-ramp module in the curriculum, and now a near-zero one: 2.13 is almost certainly the exact Scala version you already write in production Spark jobs, so there's no syntax delta to review at all — case classes, pattern matching, and `implicit` typeclass instances are patterns you already use, just without naming the underlying algebra ("this is a semigroup," "this rewrite rule is a partial function over the plan tree") explicitly. Budget closer to zero prep; go straight to W09. If your Scala is genuinely rusty or this is a first real exposure, [Scala Book](https://docs.scala-lang.org/overviews/scala-book/introduction.html) (scala-lang.org's official 2.13-era guide) chapters on classes, traits, and implicits cover what these two weeks need — budget 2–3 hours instead.
 
 Recommended IDE: IntelliJ IDEA with the Scala plugin — the standard choice for Spark/Scala work, and likely already familiar if you've done production Scala.
+
+**New to Scala, or want a warm-up before W09 specifically?** See the drill in [W09](weeks/W09-query-planning.md)'s "Before you start" section — a 15–20 minute case-class-and-pattern-matching exercise scoped to exactly what that week needs, meant to be done the day you start W09, not months ahead of it.
 
 ---
 
@@ -200,8 +201,7 @@ kind delete cluster --name pd-systems
 go version           # 1.22.x
 cmake --version      # 3.25.x or later
 clang++ --version    # or g++ --version
-sbt --version        # 1.9.x or later
-scala --version      # Scala 3.x
+sbt --version        # 1.9.x or later, builds Scala 2.13 per-project via build.sbt
 python --version     # 3.11.x or 3.12.x
 docker --version     # 25.x or later
 kind --version       # 0.22.x or later

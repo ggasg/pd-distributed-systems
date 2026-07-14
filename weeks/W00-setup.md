@@ -21,6 +21,51 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 ---
 
+## Go Warm-Up (recommended if goroutines and channels are new or rusty)
+
+20–30 minutes, separate from the observability build below. Go's sequential syntax (structs, slices, `if err != nil`) tends to feel familiar fast if you know any C-family language; goroutines and channels are the part that's actually new, and W03 (MapReduce) throws you into them for real, mid-task, with a warning that a small mistake there costs "an hour of confusing debugging instead of teaching you anything." This drill gets that mistake out of the way now, on a problem simple enough that the channel mechanics are the only thing you're thinking about.
+
+Build a tiny worker pool: N goroutines pull ints off an input channel, double them, and send the result to an output channel — the exact fan-out/fan-in shape W03's `runner.go` uses, isolated from any MapReduce logic.
+
+```go
+func doubler(in <-chan int, out chan<- int, wg *sync.WaitGroup) {
+    defer wg.Done()
+    for n := range in {
+        out <- n * 2
+    }
+}
+
+func main() {
+    in, out := make(chan int), make(chan int)
+    var wg sync.WaitGroup
+
+    for i := 0; i < 3; i++ { // 3 workers
+        wg.Add(1)
+        go doubler(in, out, &wg)
+    }
+    go func() { wg.Wait(); close(out) }() // close AFTER all workers finish
+
+    go func() {
+        for i := 1; i <= 10; i++ {
+            in <- i
+        }
+        close(in) // tells workers' `range in` to stop
+    }()
+
+    sum := 0
+    for n := range out {
+        sum += n
+    }
+    fmt.Println(sum) // 110: doubled 1..10
+}
+```
+
+Run it, then break it on purpose once: move `close(out)` outside the `wg.Wait()` goroutine and call it directly after the loop that starts workers. Watch it panic ("send on closed channel") or deadlock, depending on timing. That failure mode — closing a channel before everyone writing to it is done — is the one W03 calls out by name; seeing it here, in eleven lines, is cheaper than seeing it there, in the middle of a shuffle phase.
+
+If this all felt obvious, skip straight to the observability stack below — you don't need it. If `close(in)` / `range in` / the two-goroutine close pattern felt new, this was worth the 20 minutes; W01–W04 build on it being second nature.
+
+---
+
 ## Deploy the Observability Stack
 
 - [ ] Add Helm repo and install kube-prometheus-stack:
