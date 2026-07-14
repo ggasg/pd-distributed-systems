@@ -119,6 +119,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [Delta Lake: High-Performance ACID Table Storage](https://www.vldb.org/pvldb/vol13/p3411-armbrust.pdf): Armbrust et al., VLDB 2020 (**free PDF**)
 - [DuckDB docs](https://duckdb.org/docs/): for the SQL-on-Parquet layer in the feature store
 - [Apache Parquet spec](https://parquet.apache.org/docs/file-format/): understand the columnar format your feature store writes
+- Optional, for the memory exercise: [pandas PyArrow-backed dtypes (`dtype_backend`)](https://pandas.pydata.org/docs/user_guide/pyarrow.html) and [`pyarrow.parquet.ParquetFile.iter_batches`](https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetFile.html) docs
 
 ---
 
