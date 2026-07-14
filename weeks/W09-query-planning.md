@@ -82,6 +82,8 @@ Project: `code/query-planner/` (Scala 2.13, sbt)
 
 **What does `transformDown` guarantee about rule application order that `transformUp` wouldn't, and why does that matter for filter pushdown specifically?**
 
+**Building `Filter(GreaterThan(Column("age"), Literal(18)), Scan(...))` doesn't scan anything; it's just a `LogicalPlan` value sitting in memory until something else walks it. What would break about `PushDownFilter`'s ability to rearrange the tree if constructing a plan node ran the scan or filter immediately instead of just recording intent? This is the lazy-versus-eager distinction underneath every query engine, Catalyst included, not just this toy version of it.**
+
 **What real Catalyst does that your toy optimizer doesn't (hint: cost-based optimization, not just rule-based):**
 
 **What I'd do differently:**

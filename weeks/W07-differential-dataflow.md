@@ -31,6 +31,8 @@ Project: `code/dd-scratch/` (C++, CMake, header-only where templated)
 
 **Constraints:** zero external dependencies beyond the standard library. `filter`/`consolidate` are `const` methods that return a new `Collection` rather than mutating `*this`. Nothing in C++ enforces that the way the borrow checker would have; treat it as a promise you're keeping by discipline, and notice if you break it.
 
+One simplification worth naming, not replicating: `filter`/`consolidate` here compute and return a fully materialized new `Collection` immediately, so this is eager function composition, not a lazy dataflow graph. A real Naiad/DD program builds the operator graph first (map, filter, and consolidate all wired together as nodes) and only pushes data through it once, when the computation actually runs; nothing computes at graph-construction time. This toy version skips that indirection so the DD-specific algebra (the diff-based data model) stays the focus of the week, but it's worth knowing the real thing works differently before you assume this `Collection` API is a faithful model of how Naiad or DD actually execute.
+
 ---
 
 ## Part 2: Incremental Materialized Views, Tested Against Real Local Systems (remaining days)
@@ -113,6 +115,7 @@ assert result == {"apple": 1}
 **What you observed in ClickHouse and Spark:**
 - ClickHouse: what specifically told you the target table was updated incrementally, not rescanned?
 - Spark: what did the console sink show after you dropped the new order file? Did the whole aggregation re-run, or just the affected group?
+- Nothing happens when `spark_stateful_agg.py` calls `df.groupBy("region_id").sum("amount")`; the actual streaming job only starts when you call `.start()` on the writer afterward. What does Spark need to see across the whole pipeline before it can decide how to execute it, and what would it lose if `groupBy` ran eagerly the moment you called it?
 
 **Rank your four implementations (C++ `IncrementalAggregateView`, ClickHouse MV, Spark stateful aggregation, and pg_ivm if you did the stretch) from closest to furthest from true DD semantics (tracks retractions, recomputes only the affected delta). Where does each one cut a corner, and why might that corner-cutting be the right engineering trade-off for that system's actual use case?**
 
