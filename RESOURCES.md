@@ -69,7 +69,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [Naiad: A Timely Dataflow System](https://dl.acm.org/doi/10.1145/2517349.2522738): Murray et al., SOSP 2013 (**ACM DL**; also [free via MSR](https://www.microsoft.com/en-us/research/wp-content/uploads/2013/11/naiad_sosp2013.pdf))
 - [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): `timely-toy/` was originally planned as a simplified version of this, in the same language. Since Arc 2 moved to C++, this stays a conceptual reference only — no build target reads it anymore.
 - [PyTorch Autograd Engine source](https://github.com/pytorch/pytorch/blob/main/torch/csrc/autograd/engine.cpp): the actual C++ reference for `timely-toy/` — a production dependency-counted DAG scheduler, the closest real analogue to Naiad's progress tracking in a language you're writing this arc in
-- [Ray Core Worker & Task Execution](https://deepwiki.com/ray-project/ray/2.1-core-worker-and-task-execution): Ray's `CoreWorker` (C++) fires tasks once their dependencies are satisfied — a second, directly target-company-relevant analogue (Anyscale)
+- [Ray source: `core_worker.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/core_worker.cc) and [`task_manager.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/task_manager.cc): Ray's `CoreWorker` (C++) fires tasks once their dependencies are satisfied — a second, directly target-company-relevant analogue (Anyscale), read from source rather than a third-party summary
 
 ---
 

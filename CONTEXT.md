@@ -64,7 +64,7 @@ No Notion. No separate task tracker. Everything lives here.
 | Week | Topic | Key Paper | Deliverable |
 |------|-------|-----------|-------------|
 | W05 | Stream Processing Primitives | Dataflow Model (Akidau et al., 2015); DDIA Ch.11 | `streaming/` C++: windowed aggregation, immutability enforced by design discipline (encapsulation + `const`), not the compiler |
-| W06 | Naiad + Timely Dataflow | Naiad paper (Murray et al., SOSP 2013) | `timely-toy/` C++: Timestamp, Pointstamp, ProgressTracker — reference reading swapped from the Rust `timely-dataflow` crate to PyTorch's autograd engine (`torch/csrc/autograd/engine.cpp`) and Ray's `CoreWorker`, both real dependency-counted schedulers |
+| W06 | Naiad + Timely Dataflow | Naiad paper (Murray et al., SOSP 2013) | `timely-toy/` C++: Timestamp, Pointstamp, ProgressTracker — reference reading swapped from the Rust `timely-dataflow` crate to PyTorch's autograd engine (`torch/csrc/autograd/engine.cpp`) and Ray's `CoreWorker` (`core_worker.cc`/`task_manager.cc`), both real dependency-counted schedulers |
 | W07 | Differential Dataflow + Incremental View Maintenance | DD paper (McSherry, 2013), Sections 1–2 | `dd-scratch/` C++: trimmed DD core (Update, Collection, WordCount, 1–2 days) + incremental materialized view vs. full-recompute benchmark, tested hands-on against a locally-installed ClickHouse server and local-mode Spark Structured Streaming — both real, both OSS, both run on your own machine, no vendor docs taken on faith |
 | W08 | Query Execution | Volcano (1994); MonetDB/X100 (2005) | `query-exec/` C++: RowExecutor, ColumnFilter, HashJoin, Benchmark (3–8x speedup) — benchmarked conceptually against DuckDB's vectorized execution engine (C++, already in the stack via W11) |
 | W09 | Rule-Based Query Planning | Spark SQL/Catalyst paper (Armbrust et al., SIGMOD 2015) | `query-planner/` Scala: toy Catalyst-style optimizer — `LogicalPlan`/`Expr` ADTs, pattern-matching rewrite rules, `transformDown` combinator; reads real Catalyst source in the same language it's written in |
@@ -84,7 +84,7 @@ No Notion. No separate task tracker. Everything lives here.
 | W14 | GPU Memory + Compute | CUDA Guide Ch.1-3; Roofline (2009) | `gpu-gemm/` Python/Numba: naive vs tiled CUDA matmul + roofline; Go bench runner |
 | W15 | Attention + KV Cache | Attention Is All You Need (2017); FlashAttention (2022); PagedAttention (2023) | `attention/` Python: MHA forward pass + KV cache, NumPy only |
 | W16 | Fault Tolerance | Chandy-Lamport (1985); Flink ABS (2015) | `snapshot/` Go: Chandy-Lamport 3-node simulation over native channels |
-| W17 | Capstone | none | Go: replicated KV store / C++: streaming pipeline / C++: incremental query engine |
+| W17 | Capstone | none | Go: replicated KV store / C++: streaming pipeline / C++: incremental query engine / Python: GPU-accelerated ring-allreduce (W12+W14, the option that stays inside this arc) |
 
 ### Arc 4: Infrastructure (W18–W19), Go / C++
 

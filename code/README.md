@@ -191,6 +191,7 @@ code/
 │       ├── metrics.cpp
 │       ├── tracing_setup.cpp
 │       └── logging.cpp
+│   # Go sidecar lives in tools/log-aggregator/, wired into the W18 operator's DistributedJob
 │
 └── capstone-platform/      # W20 (optional): Go + Python, combines W11+W12+W15+W16+W18+W19
     ├── train_worker.py
