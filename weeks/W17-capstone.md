@@ -43,6 +43,17 @@ Extend your W07 DD engine with vectorized operator execution from W08: `filter` 
 
 ---
 
+### Option D: GPU-Accelerated Distributed Training (Python)
+Combine W12 (ring-allreduce) + W14 (GPU-accelerated GEMM).
+
+The only option that stays inside this arc rather than reaching back into Arc 1/Arc 2 — worth choosing if distributed training and compute-intensive AI workflows specifically are what you're optimizing this curriculum for. Take W12's 2-worker ring-allreduce training loop and replace the MLP's NumPy matrix multiplies with your W14 tiled CUDA GEMM kernel, so gradient exchange still happens over real TCP sockets between workers, but the compute inside each worker is GPU-accelerated instead of CPU NumPy. Benchmark per-epoch wall time, W12's CPU-only baseline vs. this GPU-accelerated version, and break down where time actually goes: compute or network.
+
+**No GPU?** Use W14's cache-blocked/AVX2 C kernel via `ctypes` instead of CUDA — same comparison, CPU-baseline vs. optimized-kernel, without requiring hardware you may not have.
+
+**Minimum bar:** the 2-worker ring-allreduce loop runs end-to-end with the GPU (or SIMD C) kernel doing the matmuls, converges to comparable accuracy to W12, and your writeup names where wall-clock time goes at each worker count.
+
+---
+
 ## Deliverables
 
 - [ ] Working code in `code/capstone/`

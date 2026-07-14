@@ -42,7 +42,7 @@ Project: `code/cpu-gemm/` (C, gcc/clang)
 
 **Go automation tool:**
 
-- [ ] `tools/bench_runner.go`: a small Go CLI that runs the benchmark subprocess, parses GFLOPS from stdout, and appends results as a row to `results.csv`. Usage: `go run bench_runner.go --kernel naive --runs 20`. This is your first Go program; keep it under 80 lines.
+- [ ] `tools/bench_runner.go`: a small Go CLI that runs the benchmark subprocess, parses GFLOPS from stdout, and appends results as a row to `results.csv`. Usage: `go run bench_runner.go --kernel naive --runs 20`. Keep it under 80 lines — a quick return to Go, not new territory; you last wrote it for W12's gradient server.
 
 ---
 

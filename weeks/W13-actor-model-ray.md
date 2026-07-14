@@ -14,7 +14,7 @@ A Ray-based actor system in Python that retrains the same data-parallel MNIST jo
 
 ## Read
 - [ ] [A Universal Modular ACTOR Formalism for Artificial Intelligence](https://www.ijcai.org/Proceedings/73/Papers/027B.pdf) (Hewitt, Bishop, Steiger, IJCAI 1973): read Sections 1–3. This is the original actor model paper, no Erlang or Akka involved. The core claim: an actor is a computational primitive that has private state, communicates only via asynchronous messages, and processes one message at a time. Everything Ray does with actors is this idea, 45 years later.
-- [ ] [Ray: A Distributed Framework for Emerging AI Applications](https://www.usenix.org/system/files/osdi18-moritz.pdf) (Moritz et al., OSDI 2018): read Section 3 (Programming Model) closely, skim the rest. Focus on how Ray unifies stateless *tasks* and stateful *actors* under one API, and why that distinction exists at all.
+- [ ] [Ray: A Distributed Framework for Emerging AI Applications](https://www.usenix.org/system/files/osdi18-moritz.pdf) (Moritz et al., OSDI 2018): read Section 3 (Programming Model) closely, skim the rest. Focus on how Ray unifies stateless *tasks* and stateful *actors* under one API, and why that distinction exists at all. Ray is Anyscale's product — this week is hands-on with a target company's core framework, not a paper read at a distance.
 
 **Key question:** Ray's programming model gives you both stateless tasks and stateful actors. Why does distributed training specifically need actors and not just tasks? Concretely, what state would you lose between calls if every worker were a stateless task instead of an actor?
 

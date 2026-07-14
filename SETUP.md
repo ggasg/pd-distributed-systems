@@ -127,11 +127,11 @@ pip install numpy torch           # torch for MNIST loading only
 pip install "ray[default]" torch  # torch for the CNN, Ray for actors
 ```
 
-**W14 (GPU compute), requires NVIDIA GPU:**
+**W14 (GPU compute), requires NVIDIA GPU for the CUDA path:**
 ```bash
-pip install numba cupy-cuda12x matplotlib
+pip install numba numpy matplotlib
 ```
-No GPU? The week includes a C fallback. Numba's CPU JIT still demonstrates the roofline model.
+No GPU? Skip this install — use the C fallback (`code/cpu-gemm/`) instead: cache-blocked + AVX2 SIMD GEMM, no Python dependencies beyond a working gcc/clang.
 
 **W15 (attention):**
 ```bash

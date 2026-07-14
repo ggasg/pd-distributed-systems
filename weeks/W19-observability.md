@@ -61,7 +61,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 **Part 3: Go log aggregator — wire it into the W18 operator**
 
 - [ ] `tools/log-aggregator/main.go`: HTTP server that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a ring buffer protected by a `sync.RWMutex`. ~80 lines.
-- [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.23-alpine` builder → `alpine` runtime), `EXPOSE 8080`.
+- [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.22-alpine` builder → `alpine` runtime, same as W00's), `EXPOSE 8080`.
 - [ ] Build and load into the kind cluster from W18:
   ```bash
   docker build -t log-aggregator:latest tools/log-aggregator
