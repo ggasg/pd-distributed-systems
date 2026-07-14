@@ -17,7 +17,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W00: Infrastructure Setup
 
-- **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications — read before anything else in the curriculum, not tied to this week's build specifically
+- **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications. Read before anything else in the curriculum; it isn't tied to this week's build specifically.
 - [kind docs](https://kind.sigs.k8s.io/): Kubernetes in Docker
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack): Helm chart for Prometheus + Grafana
 - [Prometheus Go client library](https://github.com/prometheus/client_golang)
@@ -42,7 +42,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W03: MapReduce and Its Limits
 
-- **DDIA Chapter 10**: Batch Processing — read this first; it tells the MapReduce-to-Spark story as one continuous narrative and frames it as a point on a spectrum, not a standalone system
+- **DDIA Chapter 10**: Batch Processing. Read this first: it tells the MapReduce-to-Spark story as one continuous narrative and frames it as a point on a spectrum, not a standalone system.
 - [MapReduce: Simplified Data Processing on Large Clusters](https://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf): Dean & Ghemawat, OSDI 2004 (**free PDF**)
 - [Resilient Distributed Datasets (Spark)](https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf): Zaharia et al., NSDI 2012 (**free PDF**), the "why MapReduce isn't enough" paper
 - [Spark: Cluster Computing with Working Sets](https://people.csail.mit.edu/matei/papers/2010/hotcloud_spark.pdf): Zaharia et al. (2010) (**free PDF**), shorter, read first
@@ -69,21 +69,21 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 ## W06: Naiad and Timely Dataflow
 
 - [Naiad: A Timely Dataflow System](https://dl.acm.org/doi/10.1145/2517349.2522738): Murray et al., SOSP 2013 (**ACM DL**; also [free via MSR](https://www.microsoft.com/en-us/research/wp-content/uploads/2013/11/naiad_sosp2013.pdf))
-- [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): `timely-toy/` was originally planned as a simplified version of this, in the same language. Since Arc 2 moved to C++, this stays a conceptual reference only — no build target reads it anymore.
-- [PyTorch Autograd Engine source](https://github.com/pytorch/pytorch/blob/main/torch/csrc/autograd/engine.cpp): the actual C++ reference for `timely-toy/` — a production dependency-counted DAG scheduler, the closest real analogue to Naiad's progress tracking in a language you're writing this arc in
-- [Ray source: `core_worker.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/core_worker.cc) and [`task_manager.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/task_manager.cc): Ray's `CoreWorker` (C++) fires tasks once their dependencies are satisfied — a second, directly target-company-relevant analogue (Anyscale), read from source rather than a third-party summary
+- [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): `timely-toy/` was originally planned as a simplified version of this, in the same language. Since Arc 2 moved to C++, this stays a conceptual reference only; no build target reads it anymore.
+- [PyTorch Autograd Engine source](https://github.com/pytorch/pytorch/blob/main/torch/csrc/autograd/engine.cpp): the actual C++ reference for `timely-toy/`, a production dependency-counted DAG scheduler and the closest real analogue to Naiad's progress tracking in a language you're writing this arc in
+- [Ray source: `core_worker.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/core_worker.cc) and [`task_manager.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/task_manager.cc): Ray's `CoreWorker` (C++) fires tasks once their dependencies are satisfied: a second, directly target-company-relevant analogue (Anyscale), read from source rather than a third-party summary
 
 ---
 
 ## W07: Differential Dataflow and Incremental View Maintenance
 
 - [Differential Dataflow](https://github.com/frankmcsherry/blog/blob/master/posts/2015-09-29.md): McSherry (2013/2015), blog post (**free**), more accessible than the formal paper
-- [Differential Dataflow (formal paper)](https://dl.acm.org/doi/10.1145/2588555.2610364): McSherry, Murray et al., CIDR 2013 — Part 1 reading, Sections 1–2 only
-- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): optional, for context — your `Update`/`Collection` types in `dd-scratch/` were originally planned as simplified versions of `collection.rs`. No maintained C++ continuation of this lineage exists, so this stays a reading-only reference.
-- [ClickHouse Materialized Views](https://clickhouse.com/docs/en/guides/developer/cascading-materialized-views): Part 2 required reading — an insert trigger, not a retraction-aware incrementally maintained view. You'll install ClickHouse locally and build one yourself in the exercise.
-- [Spark Structured Streaming: arbitrary stateful operations](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#arbitrary-stateful-operations): Part 2 required reading — per-key state maintained and updated incrementally between micro-batches. Runs entirely in local mode via `pip install pyspark`, no Databricks account or proprietary docs needed.
-- [Snowflake Dynamic Tables](https://docs.snowflake.com/en/user-guide/dynamic-tables-about): optional, not required — closed-source SaaS with no self-hosted option, so it's excluded from the hands-on comparison the same way ClickHouse would have been if it weren't locally installable
-- [pg_ivm](https://github.com/sraoss/pg_ivm): optional stretch — a real, actively maintained PostgreSQL extension for true incremental view maintenance, closer in spirit to DD than ClickHouse or Spark's approach, but requires building a Postgres extension from source (PGXS) rather than a single-binary or `pip install`
+- [Differential Dataflow (formal paper)](https://dl.acm.org/doi/10.1145/2588555.2610364): McSherry, Murray et al., CIDR 2013 (Part 1 reading, Sections 1–2 only)
+- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): optional, for context. Your `Update`/`Collection` types in `dd-scratch/` were originally planned as simplified versions of `collection.rs`. No maintained C++ continuation of this lineage exists, so this stays a reading-only reference.
+- [ClickHouse Materialized Views](https://clickhouse.com/docs/en/guides/developer/cascading-materialized-views): Part 2 required reading. An insert trigger, not a retraction-aware incrementally maintained view. You'll install ClickHouse locally and build one yourself in the exercise.
+- [Spark Structured Streaming: arbitrary stateful operations](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#arbitrary-stateful-operations): Part 2 required reading. Per-key state maintained and updated incrementally between micro-batches. Runs entirely in local mode via `pip install pyspark`, no Databricks account or proprietary docs needed.
+- [Snowflake Dynamic Tables](https://docs.snowflake.com/en/user-guide/dynamic-tables-about): optional, not required. Closed-source SaaS with no self-hosted option, so it's excluded from the hands-on comparison the same way ClickHouse would have been if it weren't locally installable.
+- [pg_ivm](https://github.com/sraoss/pg_ivm): optional stretch. A real, actively maintained PostgreSQL extension for true incremental view maintenance, closer in spirit to DD than ClickHouse or Spark's approach, but requires building a Postgres extension from source (PGXS) rather than a single-binary or `pip install`.
 
 ---
 
@@ -92,9 +92,9 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032): Graefe (1994), the iterator model; skim for the `open/next/close` interface
 - [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf): Boncz, Zukowski, Nes, CIDR 2005 (**free PDF**), the vectorized execution paper
 - [An Overview of Query Optimization in Relational Systems](https://dl.acm.org/doi/10.1145/275487.275492): Chaudhuri (1998), optional background
-- [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended — a real, actively maintained vectorized query engine in C++, already in your stack via W11's feature store
-- [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html): optional, context only (a free public blog post, not something you install or test against) — Databricks' vectorized engine, written from the ground up in C++, built to replace JVM-based Spark execution for the exact row-vs-vectorized reasons this week benchmarks
-- [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional — `IProcessor` and `Chunk`-based batching, a second C++ production reference with a different pipeline design than DuckDB or Photon
+- [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended. A real, actively maintained vectorized query engine in C++, already in your stack via W11's feature store.
+- [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html): optional, context only (a free public blog post, not something you install or test against). Databricks' vectorized engine, written from the ground up in C++, built to replace JVM-based Spark execution for the exact row-vs-vectorized reasons this week benchmarks.
+- [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional. `IProcessor` and `Chunk`-based batching, a second C++ production reference with a different pipeline design than DuckDB or Photon.
 
 ---
 
@@ -106,9 +106,9 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W10: Aggregation Algebra — Monoids and Semigroups
+## W10: Aggregation Algebra: Monoids and Semigroups
 
-- [Algebird `Semigroup.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Semigroup.scala) and [`Monoid.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Monoid.scala): Twitter's real Scala library built around this idea, published for Scala 2.13 — the same version W10 targets, so it's directly usable, not just readable. The exercise builds its own typeclass from scratch on purpose; read Algebird as prior art, not a dependency.
+- [Algebird `Semigroup.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Semigroup.scala) and [`Monoid.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Monoid.scala): Twitter's real Scala library built around this idea, published for Scala 2.13, the same version W10 targets, so it's directly usable, not just readable. The exercise builds its own typeclass from scratch on purpose; read Algebird as prior art, not a dependency.
 - [Of Algebirds, Monoids, Monads, and Other Bestiary for Large-Scale Data Analytics](https://www.michael-noll.com/blog/2013/12/02/twitter-algebird-monoid-monad-for-large-scala-data-analytics/): Michael Noll, an accessible walkthrough with concrete MapReduce-shaped examples
 
 ---
@@ -159,13 +159,13 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 - [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456): Chandy & Lamport (1985), 10 pages; read all of it
 - [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603): Carbone et al. (2015) (**free on arXiv**), Flink's ABS algorithm
-- **DDIA Chapter 9** (optional): Consistency and Consensus — the linearizability section specifically, to sharpen the distinction between "consistent cut" (what Chandy-Lamport gives you) and linearizability (a stronger guarantee it doesn't)
+- **DDIA Chapter 9** (optional): Consistency and Consensus, the linearizability section specifically. It sharpens the distinction between "consistent cut" (what Chandy-Lamport gives you) and linearizability (a stronger guarantee it doesn't).
 
 ---
 
 ## W17: Capstone
 
-No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 5**, Replication — read "Leaders and Followers" before writing `promote()`.
+No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 5**, Replication. Read "Leaders and Followers" before writing `promote()`.
 
 ---
 
@@ -191,7 +191,7 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 
 ## W20: Grand Capstone (optional)
 
-No required reading tied to this week's build. This week synthesizes W11, W12, W15, W16, W18, and W19 — revisit those weeks' resources as needed. **DDIA Chapter 12** (The Future of Data Systems), optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
+No required reading tied to this week's build. This week synthesizes W11, W12, W15, W16, W18, and W19; revisit those weeks' resources as needed. **DDIA Chapter 12** (The Future of Data Systems) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
 
 ---
 

@@ -15,9 +15,9 @@ A vectorized query executor in C++: columnar filter + hash join + projection ove
 ## Read
 - [ ] [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032) (Graefe, 1994): read Sections 1–3. This defines the iterator model (the `next()` interface) that every query engine for 20 years was built on.
 - [ ] [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf) (Boncz et al., CIDR 2005): read Sections 1–3. This is the argument for vectorized execution and why Volcano is CPU-cache unfriendly.
-- [ ] [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it — a real, actively maintained vectorized query engine in C++, and one you already depend on via W11's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this week.
-- [ ] Optional, context only (a free public blog post, not something you install or test against): [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html). Photon is "written from the ground up in C++" specifically to replace the JVM-based Spark execution engine for exactly this reason — columnar batches, tight vectorized loops, SIMD. Your actual hands-on comparison this week is DuckDB (and optionally ClickHouse) below; this is just confirmation the same technique is load-bearing in production.
-- [ ] [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional — ClickHouse is C++ end to end; skim `IProcessor` and how the pull-based pipeline batches rows into `Chunk`s. A second real reference point alongside DuckDB and Photon, from a different target company with a different pipeline design.
+- [ ] [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++, and one you already depend on via W11's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this week.
+- [ ] Optional, context only (a free public blog post, not something you install or test against): [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html). Photon is "written from the ground up in C++" specifically to replace the JVM-based Spark execution engine for exactly this reason: columnar batches, tight vectorized loops, SIMD. Your actual hands-on comparison this week is DuckDB (and optionally ClickHouse) below; this is just confirmation the same technique is load-bearing in production.
+- [ ] [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional: ClickHouse is C++ end to end; skim `IProcessor` and how the pull-based pipeline batches rows into `Chunk`s. A second real reference point alongside DuckDB and Photon, from a different target company with a different pipeline design.
 
 **Key question:** Why does calling `next()` once per row hurt CPU performance even when the logic is simple? What does processing a batch of 1024 rows at a time fix?
 
@@ -44,9 +44,9 @@ Data model: a table of 1M rows with columns `std::vector<int32_t> id, dept, sala
   cmake --build build
   ./build/benchmark
   ```
-  **The Release build type is not optional here** — same reason `cargo run --release` mattered in the original plan. A default CMake build has no `-O2`/`-O3` and minimal inlining; an unoptimized debug build will make the comparison meaningless.
+  **The Release build type is not optional here**, same reason `cargo run --release` mattered in the original plan. A default CMake build has no `-O2`/`-O3` and minimal inlining; an unoptimized debug build will make the comparison meaningless.
 
-**Expected outcome:** vectorized should be 3–8x faster. If the gap is smaller, the first thing to check is whether you actually configured `-DCMAKE_BUILD_TYPE=Release` — that's the single most common reason a C++ benchmark looks flat.
+**Expected outcome:** vectorized should be 3–8x faster. If the gap is smaller, the first thing to check is whether you actually configured `-DCMAKE_BUILD_TYPE=Release`; that's the single most common reason a C++ benchmark looks flat.
 
 ---
 
@@ -103,6 +103,6 @@ assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
 
 **What does this tell you about how query execution works in a system you know?**
 
-**Where did mutation buy you speed?** Your vectorized executor builds and fills `std::vector`s directly for performance. Notice this is actually less of a tension in C++ than it would have been in Rust — nothing here forced immutability on you the way the borrow checker did in W05 and W07, so this trade-off was always available and always invisible until you looked for it. Point to one specific place in `column_filter.cpp` or `hash_join.cpp` where you mutated a vector in place (`push_back` into a pre-sized buffer, writing through an index, etc.) and estimate what it would've cost you in speed to instead allocate a fresh vector per step and chain functional-style transforms, the way `map`/`filter` in W07 do by construction.
+**Where did mutation buy you speed?** Your vectorized executor builds and fills `std::vector`s directly for performance. Notice this is actually less of a tension in C++ than it would have been in Rust: nothing here forced immutability on you the way the borrow checker did in W05 and W07, so this trade-off was always available and always invisible until you looked for it. Point to one specific place in `column_filter.cpp` or `hash_join.cpp` where you mutated a vector in place (`push_back` into a pre-sized buffer, writing through an index, etc.) and estimate what it would've cost you in speed to instead allocate a fresh vector per step and chain functional-style transforms, the way `map`/`filter` in W07 do by construction.
 
 **What I'd do differently:**

@@ -19,7 +19,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 ## Structure
 
-20 weeks across 4 arcs (plus a W00 setup week), and an optional W20 grand capstone. 2h/day, 5 days/week — roughly 4.6 months for the core curriculum, 4.8 with the optional capstone.
+20 weeks across 4 arcs (plus a W00 setup week), and an optional W20 grand capstone. 2h/day, 5 days/week: roughly 4.6 months for the core curriculum, 4.8 with the optional capstone.
 
 | Arc | Weeks | Focus | Language |
 |-----|-------|-------|----------|
@@ -43,10 +43,10 @@ This isn't for people who want to pass system design interviews. It's for engine
 **After Arc 2 (W05–W10):**
 - Build a streaming windowed aggregator with watermarks; explain what "late data" means
 - Implement Naiad's timestamp and progress-tracking model from the paper
-- Build the core of a Differential Dataflow engine from scratch (incremental word count), then build and benchmark an incremental materialized view against a full-recompute baseline — the same trade-off ClickHouse and Spark Structured Streaming make in production
+- Build the core of a Differential Dataflow engine from scratch (incremental word count), then build and benchmark an incremental materialized view against a full-recompute baseline, the same trade-off ClickHouse and Spark Structured Streaming make in production
 - Benchmark vectorized vs. row-at-a-time query execution; explain the 3–8x gap
 - Build a toy rule-based query optimizer in Scala (case classes + pattern matching + a `transform` combinator), the same technique Spark's real Catalyst optimizer uses
-- Implement a `Semigroup`/`Monoid` typeclass hierarchy from scratch and explain why associativity — not commutativity — is what makes a distributed reduction safe to compute as a tree instead of strictly left-to-right
+- Implement a `Semigroup`/`Monoid` typeclass hierarchy from scratch and explain why associativity, not commutativity, is what makes a distributed reduction safe to compute as a tree instead of strictly left-to-right
 
 **After Arc 3 (W11–W17):**
 - Design and implement a versioned ML feature store with Parquet + DuckDB
@@ -80,8 +80,8 @@ Every week has:
 |-------|----------|-----|
 | W00 | Go | Service + k8s deployment; Prometheus metrics |
 | W01–W04 | Go | Storage engines and coordination logic; goroutines/channels for the concurrent parts, plain structs and interfaces for the data structures |
-| W05–W08 | C++ | This is the substrate of the systems the curriculum's actual target (distributed model training, compute-intensive AI workflows) runs on — PyTorch's `c10d`/ATen, NCCL, gRPC's core, and DuckDB's execution engine are all C++. The dataflow papers this arc is built around (Naiad, Differential Dataflow) have no maintained C++ reference implementation the way they do a Rust one (`timely-dataflow`/`differential-dataflow`), so this arc leans on the papers directly and points at adjacent production C++ codebases (PyTorch's autograd engine, DuckDB) instead of a source-level companion |
-| W09–W10 | Scala | Spark itself is Scala, and its query optimizer (Catalyst) and its "abstract algebra for big data" aggregation story (Algebird) are both genuinely built the way these two weeks have you build toy versions — case classes, pattern matching, typeclasses. Low ramp cost given prior production Spark/Scala experience; this is a formalization of existing intuition, not a fresh language investment |
+| W05–W08 | C++ | This is the substrate of the systems the curriculum's actual target (distributed model training, compute-intensive AI workflows) runs on: PyTorch's `c10d`/ATen, NCCL, gRPC's core, and DuckDB's execution engine are all C++. The dataflow papers this arc is built around (Naiad, Differential Dataflow) have no maintained C++ reference implementation the way they do a Rust one (`timely-dataflow`/`differential-dataflow`), so this arc leans on the papers directly and points at adjacent production C++ codebases (PyTorch's autograd engine, DuckDB) instead of a source-level companion |
+| W09–W10 | Scala | Spark itself is Scala, and its query optimizer (Catalyst) and its "abstract algebra for big data" aggregation story (Algebird) are both genuinely built the way these two weeks have you build toy versions: case classes, pattern matching, typeclasses. Low ramp cost given prior production Spark/Scala experience; this is a formalization of existing intuition, not a fresh language investment |
 | W11–W15 | Python | ML ecosystem, numerical computing, Ray for distributed actors, Numba for GPU |
 | W16 | Go | Native channels are FIFO by construction, a direct fit for Chandy-Lamport's marker protocol |
 | W17 | Go / C++ / Python | Depends on capstone option |
@@ -122,7 +122,7 @@ Every week has:
 - [W07: Differential Dataflow](weeks/W07-differential-dataflow.md)
 - [W08: Query Execution](weeks/W08-query-execution.md)
 - [W09: Rule-Based Query Planning in Scala](weeks/W09-query-planning.md)
-- [W10: Aggregation Algebra — Monoids and Semigroups](weeks/W10-aggregation-algebra.md)
+- [W10: Aggregation Algebra: Monoids and Semigroups](weeks/W10-aggregation-algebra.md)
 - [W11: ML Data Pipelines](weeks/W11-ml-pipelines.md)
 - [W12: Distributed Training](weeks/W12-distributed-training.md)
 - [W13: The Actor Model and Ray](weeks/W13-actor-model-ray.md)
@@ -146,17 +146,17 @@ Every week has:
 
 **Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers. See the Branch Workflow section in [CONTEXT.md](CONTEXT.md) for how to merge updates between them.
 
-**Different languages?** The algorithms are language-agnostic. This curriculum is built around four languages, each for a specific reason: Go as the one genuinely new language to gain fluency in; C++ as a deliberate refresh into modern idioms (smart pointers, move semantics, RAII, templates) rather than a cold start; Scala for a short, focused module where the real production system (Spark) is itself written in Scala, making it worth the two-week investment even given prior Scala familiarity; and Python for the ML-native arc. Substitutions: the Go weeks could be Java if you'd rather stay on a GC'd/OOP-familiar language; the C++ weeks could be Rust if you'd rather trade manual memory management for a borrow-checked model (Rust is in fact the closer conceptual fit for W05–W08, since ownership and algebraic enums map naturally onto dataflow and incremental computation — it was the original choice here, dropped in favor of C++ for tighter alignment with this curriculum's actual target of distributed training and compute-intensive AI workflows, not because it's the wrong tool for the topic); the Python weeks could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
+**Different languages?** The algorithms are language-agnostic. This curriculum is built around four languages, each for a specific reason: Go as the one genuinely new language to gain fluency in; C++ as a deliberate refresh into modern idioms (smart pointers, move semantics, RAII, templates) rather than a cold start; Scala for a short, focused module where the real production system (Spark) is itself written in Scala, making it worth the two-week investment even given prior Scala familiarity; and Python for the ML-native arc. Substitutions: the Go weeks could be Java if you'd rather stay on a GC'd/OOP-familiar language; the C++ weeks could be Rust if you'd rather trade manual memory management for a borrow-checked model (Rust is in fact the closer conceptual fit for W05–W08, since ownership and algebraic enums map naturally onto dataflow and incremental computation; it was the original choice here, dropped in favor of C++ for tighter alignment with this curriculum's actual target of distributed training and compute-intensive AI workflows, not because it's the wrong tool for the topic); the Python weeks could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
 
 ---
 
 ## Prerequisites
 
-- Comfortable programming in at least one language, in any paradigm — this curriculum is explicitly meant to be your on-ramp into Go, and a refresh back into modern C++ and Scala, not something that assumes you already know them
+- Comfortable programming in at least one language, in any paradigm. This curriculum is explicitly meant to be your on-ramp into Go, and a refresh back into modern C++ and Scala, not something that assumes you already know them
 - Knows what a hash map and B-tree are
 - Has written concurrent code before (threads, async, actors, etc.) in whatever language you already know
 - Familiar with basic algorithms (sorting, BFS, binary search)
 
 No PhD required. No ML background required for the early arcs.
 
-**New to Go? Rusty on C++? Already know Scala?** Go is the genuinely new language here — see its ramp notes in [SETUP.md](SETUP.md) before W00, and don't try to learn it and LSM-trees simultaneously on day one. C++ is different: if you learned it years ago (school, an earlier job) and haven't touched it since, W05 is a refresh into modern idioms, not a cold start — budget real time regardless, both for the idioms that changed and for CMake, which has no equivalent to Cargo's zero-config build experience. Scala (W09–W10) is the lowest-ramp of the three if you already have production Spark/Scala experience — these two weeks are meant to formalize FP intuition you likely already use, not teach the language from zero. See the language-specific sections of [SETUP.md](SETUP.md) for what to review before each.
+**New to Go? Rusty on C++? Already know Scala?** Go is the genuinely new language here: see its ramp notes in [SETUP.md](SETUP.md) before W00, and don't try to learn it and LSM-trees simultaneously on day one. C++ is different: if you learned it years ago (school, an earlier job) and haven't touched it since, W05 is a refresh into modern idioms, not a cold start; budget real time regardless, both for the idioms that changed and for CMake, which has no equivalent to Cargo's zero-config build experience. Scala (W09–W10) is the lowest-ramp of the three if you already have production Spark/Scala experience: these two weeks are meant to formalize FP intuition you likely already use, not teach the language from zero. See the language-specific sections of [SETUP.md](SETUP.md) for what to review before each.
