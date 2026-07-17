@@ -2,12 +2,6 @@ MIT License
 
 Copyright (c) 2026 Gaston Guitart
 
-This license covers the code in this directory (code/) and in tools/ at
-the repository root: exercise scaffolding, reference implementations,
-and supporting tooling. The curriculum's written content (weeks/,
-README.md, CONTEXT.md, RESOURCES.md, SETUP.md, and similar) is licensed
-separately under CC BY 4.0; see the LICENSE file at the repository root.
-
 Permission is hereby granted, free of charge, to any person obtaining a
 copy of this software and associated documentation files (the
 "Software"), to deal in the Software without restriction, including
