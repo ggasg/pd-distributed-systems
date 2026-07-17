@@ -3,7 +3,8 @@ message: >-
   If you use, adapt, or build on this curriculum (including derivative
   training material, courses, or videos), please cite it as below. This
   citation format is the attribution requested under the CC BY 4.0
-  license that covers this repository's written content; see LICENSE.
+  license that covers this repository's written content; see
+  LICENSES/CC-BY-4.0.md.
 title: >-
   Distributed, Data-Intensive Systems: Engineering Curriculum
 authors:
