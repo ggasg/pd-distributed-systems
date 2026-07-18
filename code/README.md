@@ -130,7 +130,21 @@ code/
 │   # Optional: generate_events_large.py, memory_naive.py, memory_chunked.py,
 │   # memory_columnar.py (evidence-based memory exercise, no new dependencies)
 │
-├── distributed-training/   # W12: Python + Go tool
+├── spark-lang-bench/       # W12: Scala (sbt) + Python (PySpark)
+│   ├── scala/
+│   │   ├── build.sbt             # pins the same Spark release as python/requirements.txt
+│   │   └── src/main/scala/
+│   │       ├── DataFrameBenchmark.scala
+│   │       └── UdfBenchmark.scala
+│   ├── python/
+│   │   ├── dataframe_benchmark.py
+│   │   ├── udf_benchmark.py
+│   │   ├── pandas_udf_benchmark.py   # optional stretch
+│   │   └── requirements.txt
+│   ├── generate_orders.py            # shared data, reused by both languages
+│   └── data/                         # orders_100k.parquet, orders_1m.parquet, orders_5m.parquet
+│
+├── distributed-training/   # W13: Python + Go tool
 │   ├── mlp.py
 │   ├── ring_allreduce.py
 │   ├── worker.py
@@ -138,15 +152,15 @@ code/
 │   └── requirements.txt
 │   # Go tool lives in tools/grad_server/
 │
-├── actor-training/         # W13: Python + Ray
+├── actor-training/         # W14: Python + Ray
 │   ├── model.py             # PyTorch CNN
 │   ├── worker_actor.py      # @ray.remote TrainerWorker
 │   ├── parameter_server_actor.py  # @ray.remote ParameterServer
 │   ├── train.py
-│   ├── compare.py           # sequential vs W12 ring-allreduce vs Ray actors
+│   ├── compare.py           # sequential vs W13 ring-allreduce vs Ray actors
 │   └── requirements.txt
 │
-├── gpu-gemm/               # W14: Python/Numba + C fallback
+├── gpu-gemm/               # W15: Python/Numba + C fallback
 │   ├── naive_gemm.py
 │   ├── tiled_gemm.py
 │   ├── benchmark.py
@@ -154,13 +168,13 @@ code/
 │   ├── gemm_fallback.c     # no-GPU fallback
 │   └── requirements.txt
 │
-├── attention/              # W15: Python
+├── attention/              # W16: Python
 │   ├── attention.py        # MultiHeadAttention
 │   ├── kv_cache.py
 │   ├── benchmark.py
 │   └── requirements.txt
 │
-├── snapshot/                # W16: Go
+├── snapshot/                # W17: Go
 │   ├── channel.go
 │   ├── message.go
 │   ├── node.go
@@ -168,11 +182,11 @@ code/
 │   ├── snapshot_test.go
 │   └── go.mod
 │
-├── capstone/                # W17: your choice of language
+├── capstone/                # W18: your choice of language
 │   ├── README.md           # required: design doc
 │   └── ...
 │
-├── operator/                # W18: Go
+├── operator/                # W19: Go
 │   ├── api/v1/
 │   │   ├── types.go
 │   │   └── register.go
@@ -184,7 +198,7 @@ code/
 │   ├── main.go
 │   └── go.mod
 │
-├── dd-scratch/             # W19: extends W07 (C++)
+├── dd-scratch/             # W20: extends W07 (C++)
 │   ├── include/dd_scratch/
 │   │   ├── metrics.hpp          # prometheus-cpp
 │   │   ├── tracing_setup.hpp    # opentelemetry-cpp, ScopedSpan RAII helper
@@ -193,13 +207,13 @@ code/
 │       ├── metrics.cpp
 │       ├── tracing_setup.cpp
 │       └── logging.cpp
-│   # Go sidecar lives in tools/log-aggregator/, wired into the W18 operator's DistributedJob
+│   # Go sidecar lives in tools/log-aggregator/, wired into the W19 operator's DistributedJob
 │
-└── capstone-platform/      # W20 (optional): Go + Python, combines W11+W12+W15+W16+W18+W19
+└── capstone-platform/      # W21 (optional): Go + Python, combines W11+W13+W16+W17+W19+W20
     ├── train_worker.py
     ├── checkpoint_coordinator.py
     ├── serve.py
-    ├── operator/            # extends code/operator/ from W18
+    ├── operator/            # extends code/operator/ from W19
     └── README.md            # required: design doc
 ```
 
@@ -245,5 +259,5 @@ go build -o bin/app .
 - Keep each project buildable in isolation. No shared parent build file.
 - Code in this directory is the "lab." It's meant to be written, broken, and rewritten.
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
-- C++ projects (W05–W08, W19) keep tests in a separate `tests/` directory using GoogleTest, the CMake-project convention. Unlike Rust's inline `#[cfg(test)] mod tests`, C++ test files are separate translation units registered in `CMakeLists.txt` via `gtest_discover_tests`
-- Scala projects (W09–W10) follow the standard sbt layout (`src/main/scala`, `src/test/scala`) rather than Rust's inline-test or C++'s separate-`tests/`-directory conventions; that's just how sbt expects things laid out
+- C++ projects (W05–W08, W20) keep tests in a separate `tests/` directory using GoogleTest, the CMake-project convention. Unlike Rust's inline `#[cfg(test)] mod tests`, C++ test files are separate translation units registered in `CMakeLists.txt` via `gtest_discover_tests`
+- Scala projects (W09–W10, W12) follow the standard sbt layout (`src/main/scala`, `src/test/scala`) rather than Rust's inline-test or C++'s separate-`tests/`-directory conventions; that's just how sbt expects things laid out

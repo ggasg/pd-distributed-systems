@@ -8,13 +8,13 @@ status: not-started
 > **Pre-week:** Complete before W01 begins · **Language:** Go + shell
 
 ## What you'll build
-A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By end of week, you can deploy any of your weekly code artifacts to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W18 and W19.
+A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By end of week, you can deploy any of your weekly code artifacts to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W19 and W20.
 
 ---
 
 ## Read (before anything else)
 
-- [ ] **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications. Not tied to this week's build; read it because it's the vocabulary the entire rest of the curriculum assumes. "Reliable," "scalable," and "maintainable" get used loosely everywhere; Kleppmann defines each precisely in about 20 pages, and every later week's design trade-offs (why W07 trims a corner ClickHouse also trims, why W16 cares about a *consistent* snapshot, why W18's reconcile loop is level-triggered) are instances of these three properties in tension. Read once here, then let it recede into the background.
+- [ ] **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications. Not tied to this week's build; read it because it's the vocabulary the entire rest of the curriculum assumes. "Reliable," "scalable," and "maintainable" get used loosely everywhere; Kleppmann defines each precisely in about 20 pages, and every later week's design trade-offs (why W07 trims a corner ClickHouse also trims, why W17 cares about a *consistent* snapshot, why W19's reconcile loop is level-triggered) are instances of these three properties in tension. Read once here, then let it recede into the background.
 
 ---
 
@@ -164,4 +164,4 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
 
 **What Helm does that raw kubectl apply doesn't:**
 
-**What metrics you'd expose on a real distributed system component (you'll instrument one for real in W19):**
+**What metrics you'd expose on a real distributed system component (you'll instrument one for real in W20):**

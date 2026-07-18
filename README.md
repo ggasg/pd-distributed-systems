@@ -19,16 +19,16 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 ## Structure
 
-20 weeks across 4 arcs (plus a W00 setup week), and an optional W20 grand capstone. 2h/day, 5 days/week: roughly 4.6 months for the core curriculum, 4.8 with the optional capstone.
+21 weeks across 4 arcs (plus a W00 setup week), and an optional W21 grand capstone. 2h/day, 5 days/week: roughly 4.8 months for the core curriculum, 5.1 with the optional capstone.
 
 | Arc | Weeks | Focus | Language |
 |-----|-------|-------|----------|
 | Setup | W00 | Local k8s, Prometheus, Grafana | Go |
 | Data Systems Internals | W01–W04 | Storage engines, encoding, MapReduce, causality | Go |
 | Streaming, Dataflow, and Query Planning | W05–W10 | Stream processing, Naiad, Differential Dataflow, query execution, rule-based query planning, aggregation algebra | C++ (W05–W08) / Scala (W09–W10) |
-| Distributed ML & Compute | W11–W17 | ML pipelines, distributed training, actor model (Ray), GPU compute, transformers, fault tolerance | Python / Go (W16) |
-| Infrastructure | W18–W19 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / C++ |
-| Capstone (optional) | W20 | Distributed training + serving platform, fully observed (synthesizes W11, W12, W15, W16, W18, W19) | Go / Python |
+| Distributed ML & Compute | W11–W18 | ML pipelines, PySpark vs. Scala Spark performance, distributed training, actor model (Ray), GPU compute, transformers, fault tolerance | Python / Scala + Python (W12) / Go (W17) |
+| Infrastructure | W19–W20 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / C++ |
+| Capstone (optional) | W21 | Distributed training + serving platform, fully observed (synthesizes W11, W13, W16, W17, W19, W20) | Go / Python |
 
 ---
 
@@ -48,8 +48,9 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Build a toy rule-based query optimizer in Scala (case classes + pattern matching + a `transform` combinator), the same technique Spark's real Catalyst optimizer uses
 - Implement a `Semigroup`/`Monoid` typeclass hierarchy from scratch and explain why associativity, not commutativity, is what makes a distributed reduction safe to compute as a tree instead of strictly left-to-right
 
-**After Arc 3 (W11–W17):**
+**After Arc 3 (W11–W18):**
 - Design and implement a versioned ML feature store with Parquet + DuckDB
+- Measure, not guess, where PySpark's performance actually diverges from Scala Spark, and explain the mechanism (JVM boundary crossings in row-at-a-time UDFs) rather than just the folklore
 - Implement ring-allreduce over raw TCP sockets; explain the bandwidth math
 - Build a stateful actor system with Ray; explain why actors (not stateless tasks) are the right abstraction for coordinating training workers
 - Write a tiled CUDA matmul with Numba; read a roofline chart
@@ -57,7 +58,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Implement Chandy-Lamport distributed snapshots; explain what "consistent cut" means
 - Complete a capstone that combines at least two arcs
 
-**After Arc 4 (W18–W19):**
+**After Arc 4 (W19–W20):**
 - Write a Kubernetes Operator in Go with a custom CRD and reconcile loop
 - Instrument a distributed system with Prometheus metrics and OpenTelemetry traces
 - Build a Grafana dashboard from scratch; explain the four golden signals
@@ -69,7 +70,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 Every week has:
 - **Read**: one or two named papers or chapters, with specific sections called out
 - **Code**: a concrete implementation task with named files and a clear deliverable
-- **🐍 Python DSA Review**: optional, a short Python warmup of the underlying algorithm (W01–W08, W12, W15)
+- **🐍 Python DSA Review**: optional, a short Python warmup of the underlying algorithm (W01–W08, W13, W14, W17)
 - **Reflect**: what you built, what surprised you, what you'd do differently
 
 ---
@@ -82,12 +83,14 @@ Every week has:
 | W01–W04 | Go | Storage engines and coordination logic; goroutines/channels for the concurrent parts, plain structs and interfaces for the data structures |
 | W05–W08 | C++ | This is the substrate of the systems the curriculum's actual target (distributed model training, compute-intensive AI workflows) runs on: PyTorch's `c10d`/ATen, NCCL, gRPC's core, and DuckDB's execution engine are all C++. The dataflow papers this arc is built around (Naiad, Differential Dataflow) have no maintained C++ reference implementation the way they do a Rust one (`timely-dataflow`/`differential-dataflow`), so this arc leans on the papers directly and points at adjacent production C++ codebases (PyTorch's autograd engine, DuckDB) instead of a source-level companion |
 | W09–W10 | Scala | Spark itself is Scala, and its query optimizer (Catalyst) and its "abstract algebra for big data" aggregation story (Algebird) are both genuinely built the way these two weeks have you build toy versions: case classes, pattern matching, typeclasses. Low ramp cost given prior production Spark/Scala experience; this is a formalization of existing intuition, not a fresh language investment |
-| W11–W15 | Python | ML ecosystem, numerical computing, Ray for distributed actors, Numba for GPU |
-| W16 | Go | Native channels are FIFO by construction, a direct fit for Chandy-Lamport's marker protocol |
-| W17 | Go / C++ / Python | Depends on capstone option |
-| W18 | Go | Operators are almost exclusively written in Go |
-| W19 | C++ + Go | Instrument existing C++ code (the W07 DD engine) with `prometheus-cpp` and `opentelemetry-cpp`; Go log-aggregator built and wired in as a sidecar on the W18 operator |
-| W03, W12, W14, W17 | Go (secondary) | Automation tools, coordination services |
+| W11 | Python | ML ecosystem, numerical computing |
+| W12 | Scala + Python (PySpark) | Direct continuation of W09–W10: runs real Spark, in both languages, on the identical job, to measure where the host language actually costs you (UDFs) and where it doesn't (the DataFrame API, same Catalyst plan either way) |
+| W13–W16 | Python | ML ecosystem, numerical computing, Ray for distributed actors, Numba for GPU |
+| W17 | Go | Native channels are FIFO by construction, a direct fit for Chandy-Lamport's marker protocol |
+| W18 | Go / C++ / Python | Depends on capstone option |
+| W19 | Go | Operators are almost exclusively written in Go |
+| W20 | C++ + Go | Instrument existing C++ code (the W07 DD engine) with `prometheus-cpp` and `opentelemetry-cpp`; Go log-aggregator built and wired in as a sidecar on the W19 operator |
+| W03, W13, W15 | Go (secondary) | Automation tools, coordination services |
 
 ---
 
@@ -101,7 +104,7 @@ Every week has:
 ├── SETUP.md              # Environment setup (Go, C++, Scala, Python, Docker, Obsidian)
 ├── RESOURCES.md          # All papers and books, by week, with free links
 ├── CONTEXT.md            # Session context for AI-assisted study sessions
-├── weeks/                # One .md file per week (W00–W19)
+├── weeks/                # One .md file per week (W00–W20)
 ├── code/                 # Your implementations, see code/README.md
 ├── posts/                # Weekly blog posts, see posts/TEMPLATE.md
 ├── tools/                # Go automation tools (plan-dates, job_coordinator, grad_server)
@@ -124,23 +127,24 @@ Every week has:
 - [W09: Rule-Based Query Planning in Scala](weeks/W09-query-planning.md)
 - [W10: Aggregation Algebra: Monoids and Semigroups](weeks/W10-aggregation-algebra.md)
 - [W11: ML Data Pipelines](weeks/W11-ml-pipelines.md)
-- [W12: Distributed Training](weeks/W12-distributed-training.md)
-- [W13: The Actor Model and Ray](weeks/W13-actor-model-ray.md)
-- [W14: GPU Memory and Compute](weeks/W14-gpu-compute.md)
-- [W15: Attention and KV Cache](weeks/W15-attention.md)
-- [W16: Fault Tolerance and Snapshots](weeks/W16-fault-tolerance.md)
-- [W17: Capstone](weeks/W17-capstone.md)
-- [W18: Kubernetes Operators](weeks/W18-kubernetes-operators.md)
-- [W19: Observability: Metrics, Tracing, Logging](weeks/W19-observability.md)
-- [W20: Grand Capstone: Distributed Training & Serving Platform (optional)](weeks/W20-capstone-platform.md)
+- [W12: PySpark vs. Scala Spark: Where the JVM Boundary Costs You](weeks/W12-spark-lang-bench.md)
+- [W13: Distributed Training](weeks/W13-distributed-training.md)
+- [W14: The Actor Model and Ray](weeks/W14-actor-model-ray.md)
+- [W15: GPU Memory and Compute](weeks/W15-gpu-compute.md)
+- [W16: Attention and KV Cache](weeks/W16-attention.md)
+- [W17: Fault Tolerance and Snapshots](weeks/W17-fault-tolerance.md)
+- [W18: Capstone](weeks/W18-capstone.md)
+- [W19: Kubernetes Operators](weeks/W19-kubernetes-operators.md)
+- [W20: Observability: Metrics, Tracing, Logging](weeks/W20-observability.md)
+- [W21: Grand Capstone: Distributed Training & Serving Platform (optional)](weeks/W21-capstone-platform.md)
 
 ---
 
 ## Adapting This Curriculum
 
-**Only 1h/day?** Focus on Read + Reflect each week; treat Code as optional. Prioritize W01, W03, W05, W07, W13, W15; those give the most conceptual leverage.
+**Only 1h/day?** Focus on Read + Reflect each week; treat Code as optional. Prioritize W01, W03, W05, W07, W14, W16; those give the most conceptual leverage.
 
-**Skip the infrastructure arc?** W00, W18, W19 are independent. You can complete W01–W17 without touching Kubernetes, and come back to Arc 4 when it's relevant to your work.
+**Skip the infrastructure arc?** W00, W19, W20 are independent. You can complete W01–W18 without touching Kubernetes, and come back to Arc 4 when it's relevant to your work.
 
 **Add your own week?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically.
 

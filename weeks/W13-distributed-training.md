@@ -1,9 +1,9 @@
 ---
-week_number: 12
+week_number: 13
 status: not-started
 ---
 
-# W12: Distributed Training
+# W13: Distributed Training
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
 
@@ -42,7 +42,7 @@ Model: 2-layer MLP on MNIST (784 → 128 → 10). Implemented in NumPy only.
 
 **Go gradient server (secondary tool):**
 
-- [ ] `tools/grad_server/main.go`: replace the raw socket allreduce with a Go HTTP gradient aggregation server. Python workers POST their gradients as JSON arrays to `POST /gradients` (include `{"rank": 0, "gradients": [[...]]})`); once all workers have posted, the server averages them and returns the result. Python workers GET `/gradients/averaged` to fetch the result. Use `sync.WaitGroup` and a `Mutex`-protected map to collect worker submissions. Keep under 100 lines.
+- [ ] `tools/grad_server/main.go`: replace the raw-socket allreduce with a Go HTTP gradient aggregation server. Python workers POST their gradients as JSON arrays to `POST /gradients` (include `{"rank": 0, "gradients": [[...]]})`); once all workers have posted, the server averages them and returns the result. Python workers GET `/gradients/averaged` to fetch the result. Use `sync.WaitGroup` and a `Mutex`-protected map to collect worker submissions. Keep under 100 lines.
 
 This is a realistic pattern: Go handles the coordination service, Python handles the ML compute.
 
@@ -95,7 +95,7 @@ def ring_indices(rank: int, n_workers: int, n_steps: int) -> list[int]:
 assert ring_indices(0, 4, 4) == [0, 3, 2, 1]
 ```
 
-**Connection:** `ring_allreduce.py` sends gradient chunks in exactly this circular pattern. The ring buffer is also the right data structure for the log-aggregator sidecar in W19: fixed memory, O(1) push/pop.
+**Connection:** `ring_allreduce.py` sends gradient chunks in exactly this circular pattern. The ring buffer is also the right data structure for the log-aggregator sidecar in W20: fixed memory, O(1) push/pop.
 
 ---
 

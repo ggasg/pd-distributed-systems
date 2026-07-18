@@ -26,9 +26,9 @@ go version   # go1.22.x
 # Or download from https://go.dev/dl/
 ```
 
-**W00–W04, W16, W18, and secondary tooling in W03/W12/W14/W17/W19** use Go: this is the backbone language of the curriculum alongside C++. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
+**W00–W04, W17, W19, and secondary tooling in W03/W13/W15/W20** use Go: this is the backbone language of the curriculum alongside C++. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
 
-**W18 (Kubernetes Operators) requires Go**: this isn't optional the way secondary tooling elsewhere is. Install `controller-runtime`:
+**W19 (Kubernetes Operators) requires Go**: this isn't optional the way secondary tooling elsewhere is. Install `controller-runtime`:
 ```bash
 go get sigs.k8s.io/controller-runtime@v0.18.0
 ```
@@ -47,7 +47,7 @@ brew install cmake ninja vcpkg
 cmake --version                # 3.25+ recommended
 clang++ --version               # or g++ --version if you prefer GCC
 
-# vcpkg (C++ package manager, used for prometheus-cpp / opentelemetry-cpp / GoogleTest in W05–W08, W19)
+# vcpkg (C++ package manager, used for prometheus-cpp / opentelemetry-cpp / GoogleTest in W05–W08, W20)
 git clone https://github.com/microsoft/vcpkg ~/vcpkg
 ~/vcpkg/bootstrap-vcpkg.sh
 export VCPKG_ROOT=~/vcpkg
@@ -59,7 +59,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROO
 cmake --build build
 ctest --test-dir build      # GoogleTest suite, where the project has one
 ```
-Most Arc 2 weeks (W05–W07) declare zero or one dependency (GoogleTest); W19's Prometheus/OTel instrumentation is the one place this arc pulls in real external libraries.
+Most Arc 2 weeks (W05–W07) declare zero or one dependency (GoogleTest); W20's Prometheus/OTel instrumentation is the one place this arc pulls in real external libraries.
 
 **W05–W08** target C++20 (structured bindings, `std::variant`, concepts where useful), modern enough to be relevant to the codebases W06 and W08 point you at (PyTorch's autograd engine, DuckDB's execution engine), most of which build against C++17/20 themselves. No nightly/experimental compiler flags needed; mainline `clang` or `gcc` from Homebrew is current enough.
 
@@ -91,6 +91,8 @@ Recommended IDE: IntelliJ IDEA with the Scala plugin, the standard choice for Sp
 
 **New to Scala, or want a warm-up before W09 specifically?** See the drill in [W09](weeks/W09-query-planning.md)'s "Before you start" section: a 15–20 minute case-class-and-pattern-matching exercise scoped to exactly what that week needs, meant to be done the day you start W09, not months ahead of it.
 
+**W12's Scala project is different from W09/W10's:** those two are dependency-free toy projects; W12's `scala/build.sbt` pulls in real Spark (`libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.5.1"`), so the first `sbt compile` there downloads Spark's full dependency tree and will take noticeably longer than anything in W09/W10. Any JDK 8/11/17 works (the same one `cs setup` installed, or the `openjdk@17` installed for W07 below both satisfy Spark 3.5.x). Pin the identical version string in `python/requirements.txt` (`pyspark==3.5.1`); the whole point of the week is comparing two runtimes on the same Spark release, not two different releases.
+
 ---
 
 ## Python 3.11+
@@ -107,7 +109,7 @@ python --version   # 3.11.x
 
 Install dependencies per arc:
 
-**Arc 3 base (W11–W15):**
+**Arc 3 Python base (W11, W13–W16):**
 ```bash
 pip install numpy torch torchvision duckdb pyarrow pandas "ray[default]"
 ```
@@ -117,32 +119,38 @@ pip install numpy torch torchvision duckdb pyarrow pandas "ray[default]"
 pip install duckdb pyarrow pandas
 ```
 
-**W12 (distributed training):**
+**W12 (PySpark vs. Scala Spark):**
+```bash
+pip install pyspark==3.5.1        # match the exact version in scala/build.sbt
+```
+Same Spark install as the ClickHouse + PySpark section below; if you already set that up for W07, you only need to confirm the version matches what W12's `build.sbt` pins, not reinstall from scratch.
+
+**W13 (distributed training):**
 ```bash
 pip install numpy torch           # torch for MNIST loading only
 ```
 
-**W13 (actor model / Ray):**
+**W14 (actor model / Ray):**
 ```bash
 pip install "ray[default]" torch  # torch for the CNN, Ray for actors
 ```
 
-**W14 (GPU compute), requires NVIDIA GPU for the CUDA path:**
+**W15 (GPU compute), requires NVIDIA GPU for the CUDA path:**
 ```bash
 pip install numba numpy matplotlib
 ```
 No GPU? Skip this install; use the C fallback (`code/cpu-gemm/`) instead: cache-blocked + AVX2 SIMD GEMM, no Python dependencies beyond a working gcc/clang.
 
-**W15 (attention):**
+**W16 (attention):**
 ```bash
 pip install numpy                 # NumPy only, no PyTorch for this week
 ```
 
 ---
 
-## ClickHouse + PySpark (W07 only)
+## ClickHouse + PySpark (W07, PySpark reused in W12)
 
-W07's Part 2 comparison exercise runs two real local systems alongside your C++ build; both single-machine, no account, no cluster.
+W07's Part 2 comparison exercise runs two real local systems alongside your C++ build; both single-machine, no account, no cluster. The PySpark install here is reused for W12; just confirm the version matches what W12's `scala/build.sbt` pins (see the Python section above), reinstalling with `pip install pyspark==<version>` if it doesn't.
 
 ```bash
 # ClickHouse: single local server, no cluster
@@ -167,7 +175,7 @@ Neither tool is needed outside W07; uninstall or ignore afterward if you'd rathe
 
 ---
 
-## Docker + kind (W00, W18, W19)
+## Docker + kind (W00, W19, W20)
 
 ```bash
 # Docker Desktop: https://www.docker.com/products/docker-desktop/
@@ -184,7 +192,7 @@ kind delete cluster --name pd-systems
 
 ---
 
-## GPU Setup (W14, optional)
+## GPU Setup (W15, optional)
 
 **NVIDIA GPU required.** If you don't have one, skip the Numba CUDA path and use the C fallback.
 

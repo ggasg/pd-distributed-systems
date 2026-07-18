@@ -1,9 +1,9 @@
 ---
-week_number: 14
+week_number: 15
 status: not-started
 ---
 
-# W14: GPU Memory and Compute
+# W15: GPU Memory and Compute
 
 > **Arc:** Distributed ML & Compute · **Language:** Python (Numba) · **Fallback:** C
 
@@ -42,7 +42,7 @@ Project: `code/cpu-gemm/` (C, gcc/clang)
 
 **Go automation tool:**
 
-- [ ] `tools/bench_runner.go`: a small Go CLI that runs the benchmark subprocess, parses GFLOPS from stdout, and appends results as a row to `results.csv`. Usage: `go run bench_runner.go --kernel naive --runs 20`. Keep it under 80 lines: a quick return to Go, not new territory; you last wrote it for W12's gradient server.
+- [ ] `tools/bench_runner.go`: a small Go CLI that runs the benchmark subprocess, parses GFLOPS from stdout, and appends results as a row to `results.csv`. Usage: `go run bench_runner.go --kernel naive --runs 20`. Keep it under 80 lines: a quick return to Go, not new territory; you last wrote it for W13's gradient server.
 
 ---
 

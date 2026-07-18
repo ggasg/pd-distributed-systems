@@ -1,9 +1,9 @@
 ---
-week_number: 19
+week_number: 20
 status: not-started
 ---
 
-# W19: Observability: Metrics, Tracing, Logging
+# W20: Observability: Metrics, Tracing, Logging
 
 > **Arc:** Infrastructure · **Language:** C++ + Go
 
@@ -58,11 +58,11 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   - `active_keys`: gauge value over time (graph)
 - [ ] Export the dashboard as `config/grafana-dashboard.json` (Grafana → Share → Export)
 
-**Part 3: Go log aggregator, wired into the W18 operator**
+**Part 3: Go log aggregator, wired into the W19 operator**
 
 - [ ] `tools/log-aggregator/main.go`: HTTP server that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a ring buffer protected by a `sync.RWMutex`. ~80 lines.
 - [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.22-alpine` builder → `alpine` runtime, same as W00's), `EXPOSE 8080`.
-- [ ] Build and load into the kind cluster from W18:
+- [ ] Build and load into the kind cluster from W19:
   ```bash
   docker build -t log-aggregator:latest tools/log-aggregator
   kind load docker-image log-aggregator:latest --name pd-systems
@@ -91,7 +91,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
 **What tracing reveals that metrics alone can't (think: which operator is slow for which specific inputs):**
 
-**How you'd extend this instrumentation to W12's distributed training setup:**
+**How you'd extend this instrumentation to W13's distributed training setup:**
 
 **What you'd change to have the DD engine actually ship its JSON log lines to the sidecar over `localhost:8080/log` instead of stdout (the exercise above only proves connectivity via a synthetic curl, not the real log path):**
 

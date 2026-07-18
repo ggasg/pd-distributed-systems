@@ -8,10 +8,10 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 | Book | Author | Weeks | Notes |
 |------|--------|-------|-------|
-| [Designing Data-Intensive Applications (DDIA)](https://dataintensive.net) | Kleppmann (2017) | W00, W01, W02, W03, W04, W05, W16 (optional), W17 (Option A), W20 (optional) | The single most useful book for this curriculum. Buy it. |
-| [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W16 | For concurrency primitives and correctness |
-| [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W19 | O'Reilly; pairs well with the Google SRE chapter |
-| [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W19 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
+| [Designing Data-Intensive Applications (DDIA)](https://dataintensive.net) | Kleppmann (2017) | W00, W01, W02, W03, W04, W05, W17 (optional), W18 (Option A), W21 (optional) | The single most useful book for this curriculum. Buy it. |
+| [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W17 | For concurrency primitives and correctness |
+| [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W20 | O'Reilly; pairs well with the Google SRE chapter |
+| [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W20 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
 
 ---
 
@@ -123,7 +123,15 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W12: Distributed Training
+## W12: PySpark vs. Scala Spark: Where the JVM Boundary Costs You
+
+- [Introducing Pandas UDF for PySpark](https://www.databricks.com/blog/2017/10/30/introducing-vectorized-udfs-for-pyspark.html): Databricks engineering blog (2017), names the py4j-serialization mechanism before you go measure it yourself
+- [Apache Spark docs: Pandas UDFs (a.k.a. Vectorized UDFs)](https://spark.apache.org/docs/latest/api/python/user_guide/sql/arrow_pandas.html): current reference for `pandas_udf`, needed for the optional stretch arm
+- Recall W09's Spark SQL/Catalyst paper (Armbrust et al., SIGMOD 2015): this week runs the physical plan you read about there
+
+---
+
+## W13: Distributed Training
 
 - [Horovod: fast and easy distributed deep learning in TensorFlow](https://arxiv.org/abs/1802.05799): Sergeev & Del Balso (2018) (**free on arXiv**), focus on Section 3 (ring-allreduce)
 - [PyTorch Distributed: Experiences on Accelerating Data Parallel Training](https://arxiv.org/abs/2006.15704): Li et al. (2020) (**free on arXiv**), how DDP actually works
@@ -131,7 +139,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W13: The Actor Model and Ray
+## W14: The Actor Model and Ray
 
 - [A Universal Modular ACTOR Formalism for Artificial Intelligence](https://www.ijcai.org/Proceedings/73/Papers/027B.pdf): Hewitt, Bishop, Steiger, IJCAI 1973 (**free PDF**), the original actor model paper
 - [Ray: A Distributed Framework for Emerging AI Applications](https://www.usenix.org/system/files/osdi18-moritz.pdf): Moritz et al., OSDI 2018 (**free PDF via USENIX**), Section 3 is the unified task/actor programming model
@@ -139,7 +147,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W14: GPU Memory and Compute
+## W15: GPU Memory and Compute
 
 - [CUDA C++ Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/): NVIDIA docs; read Chapters 1–3 (Architecture, Programming Model, Memory Hierarchy)
 - [Roofline: An Insightful Visual Performance Model](https://people.eecs.berkeley.edu/~kubitron/cs252/handouts/papers/RooflineVyNoYellow.pdf): Williams, Waterman, Patterson, CACM 2009 (**free PDF**)
@@ -147,7 +155,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W15: Attention and KV Cache
+## W16: Attention and KV Cache
 
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762): Vaswani et al. (2017) (**free on arXiv**), the transformer paper
 - [FlashAttention: Fast and Memory-Efficient Exact Attention](https://arxiv.org/abs/2205.14135): Dao et al. (2022) (**free on arXiv**), read the intro and Section 2
@@ -156,7 +164,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W16: Fault Tolerance and Snapshots
+## W17: Fault Tolerance and Snapshots
 
 - [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456): Chandy & Lamport (1985), 10 pages; read all of it
 - [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603): Carbone et al. (2015) (**free on arXiv**), Flink's ABS algorithm
@@ -164,13 +172,13 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W17: Capstone
+## W18: Capstone
 
 No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 5**, Replication. Read "Leaders and Followers" before writing `promote()`.
 
 ---
 
-## W18: Kubernetes Operators
+## W19: Kubernetes Operators
 
 - [Kubernetes Operators docs](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): official k8s docs
 - [controller-runtime](https://pkg.go.dev/sigs.k8s.io/controller-runtime): Go library for writing operators
@@ -179,7 +187,7 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 
 ---
 
-## W19: Observability: Metrics, Tracing, Logging
+## W20: Observability: Metrics, Tracing, Logging
 
 - [Prometheus data model](https://prometheus.io/docs/concepts/data_model/) + [metric types](https://prometheus.io/docs/concepts/metric_types/)
 - [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/)
@@ -190,9 +198,9 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 
 ---
 
-## W20: Grand Capstone (optional)
+## W21: Grand Capstone (optional)
 
-No required reading tied to this week's build. This week synthesizes W11, W12, W15, W16, W18, and W19; revisit those weeks' resources as needed. **DDIA Chapter 12** (The Future of Data Systems) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
+No required reading tied to this week's build. This week synthesizes W11, W13, W16, W17, W19, and W20; revisit those weeks' resources as needed. **DDIA Chapter 12** (The Future of Data Systems) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
 
 ---
 

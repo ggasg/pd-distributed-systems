@@ -1,9 +1,9 @@
 ---
-week_number: 17
+week_number: 18
 status: not-started
 ---
 
-# W17: Capstone
+# W18: Capstone
 
 > **Arc:** Distributed ML & Compute · **Language:** Go, C++, or Python, your choice
 
@@ -28,7 +28,7 @@ A 3-node key-value store in Go where writes are replicated via a simple primary-
 ---
 
 ### Option B: Streaming Pipeline with Exactly-Once (C++)
-Combine W05 (stream processing) + W16 (snapshots).
+Combine W05 (stream processing) + W17 (snapshots).
 
 A stateful streaming word count in C++ that periodically checkpoints using Chandy-Lamport snapshots. On simulated failure: restore from the latest snapshot, replay messages from that point, verify the final word count matches a non-failing run.
 
@@ -46,13 +46,13 @@ Extend your W07 DD engine with vectorized operator execution from W08: `filter` 
 ---
 
 ### Option D: GPU-Accelerated Distributed Training (Python)
-Combine W12 (ring-allreduce) + W14 (GPU-accelerated GEMM).
+Combine W13 (ring-allreduce) + W15 (GPU-accelerated GEMM).
 
-The only option that stays inside this arc rather than reaching back into Arc 1/Arc 2, worth choosing if distributed training and compute-intensive AI workflows specifically are what you're optimizing this curriculum for. Take W12's 2-worker ring-allreduce training loop and replace the MLP's NumPy matrix multiplies with your W14 tiled CUDA GEMM kernel, so gradient exchange still happens over real TCP sockets between workers, but the compute inside each worker is GPU-accelerated instead of CPU NumPy. Benchmark per-epoch wall time, W12's CPU-only baseline vs. this GPU-accelerated version, and break down where time actually goes: compute or network.
+The only option that stays inside this arc rather than reaching back into Arc 1/Arc 2, worth choosing if distributed training and compute-intensive AI workflows specifically are what you're optimizing this curriculum for. Take W13's 2-worker ring-allreduce training loop and replace the MLP's NumPy matrix multiplies with your W15 tiled CUDA GEMM kernel, so gradient exchange still happens over real TCP sockets between workers, but the compute inside each worker is GPU-accelerated instead of CPU NumPy. Benchmark per-epoch wall time, W13's CPU-only baseline vs. this GPU-accelerated version, and break down where time actually goes: compute or network.
 
-**No GPU?** Use W14's cache-blocked/AVX2 C kernel via `ctypes` instead of CUDA: same comparison, CPU-baseline vs. optimized-kernel, without requiring hardware you may not have.
+**No GPU?** Use W15's cache-blocked/AVX2 C kernel via `ctypes` instead of CUDA: same comparison, CPU-baseline vs. optimized-kernel, without requiring hardware you may not have.
 
-**Minimum bar:** the 2-worker ring-allreduce loop runs end-to-end with the GPU (or SIMD C) kernel doing the matmuls, converges to comparable accuracy to W12, and your writeup names where wall-clock time goes at each worker count.
+**Minimum bar:** the 2-worker ring-allreduce loop runs end-to-end with the GPU (or SIMD C) kernel doing the matmuls, converges to comparable accuracy to W13, and your writeup names where wall-clock time goes at each worker count.
 
 ---
 
@@ -60,7 +60,7 @@ The only option that stays inside this arc rather than reaching back into Arc 1/
 
 - [ ] Working code in `code/capstone/`
 - [ ] `code/capstone/README.md`: explains what it does, the design decisions, what you'd do differently, what breaks at scale
-- [ ] `posts/W17-capstone.md`: a technical post (500–1000 words) for a dev blog or GitHub. Explain the system to a fellow engineer who hasn't done this curriculum.
+- [ ] `posts/W18-capstone.md`: a technical post (500–1000 words) for a dev blog or GitHub. Explain the system to a fellow engineer who hasn't done this curriculum.
 
 ---
 
