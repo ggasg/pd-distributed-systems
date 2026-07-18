@@ -165,6 +165,6 @@ No PhD required. No ML background required for the early arcs.
 
 ## Licensing
 
-This curriculum's written content (everything under `weeks/`, `Templates/`, `posts/`, and this documentation) is licensed under [CC BY 4.0](LICENSES/CC-BY-4.0.md): free to use, adapt, and build on, including for your own trainings, courses, or videos, provided you credit Gaston Guitart as the original author. See [CITATION.cff](CITATION.cff) for the exact attribution format.
+This curriculum's written content (everything under `weeks/`, `Templates/`, `posts/`, and this documentation) is licensed under [CC BY 4.0](LICENSE): free to use, adapt, and build on, including for your own trainings, courses, or videos, provided you credit Gaston Guitart as the original author. See [CITATION.cff](CITATION.cff) for the exact attribution format.
 
-Code under `code/` and `tools/` is licensed separately under the [MIT License](LICENSES/MIT.md), permissive with no attribution requirement beyond keeping the copyright notice intact.
+Code under `code/` and `tools/` is licensed separately under the [MIT License](LICENSE-MIT), permissive with no attribution requirement beyond keeping the copyright notice intact.
