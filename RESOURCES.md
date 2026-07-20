@@ -8,10 +8,11 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 | Book | Author | Weeks | Notes |
 |------|--------|-------|-------|
-| [Designing Data-Intensive Applications (DDIA)](https://dataintensive.net) | Kleppmann (2017) | W00, W01, W02, W03, W04, W05, W17 (optional), W18 (Option A), W21 (optional) | The single most useful book for this curriculum. Buy it. |
+| [Designing Data-Intensive Applications (DDIA)](https://dataintensive.net) | Kleppmann (2017) | W00, W01, W02, W03, W04, W05, W09 (optional), W17 (optional), W18 (Option A, plus optional companion), W21 (optional) | The single most useful book for this curriculum. Buy it. |
 | [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W17 | For concurrency primitives and correctness |
 | [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W20 | O'Reilly; pairs well with the Google SRE chapter |
 | [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W20 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
+| [Designing Distributed Systems, 2nd ed.](https://info.microsoft.com/rs/157-GQE-382/images/EN-CNTNT-eBook-DesigningDistributedSystems.pdf) | Burns (2024) | W16 (optional), W19, W20 | O'Reilly; free PDF via Microsoft's sponsored download. Kubernetes-native pattern catalog: sidecar, ambassador, adapter, plus a new AI Inference and Serving chapter in the 2nd edition |
 
 ---
 
@@ -100,6 +101,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W09: Rule-Based Query Planning in Scala
 
+- **DDIA Chapter 2** (optional): Data Models and Query Languages. Read "Query Languages for Data": the declarative-vs-imperative distinction it draws is exactly why `LogicalPlan` can be rewritten by `PushDownFilter` before anything executes.
 - [Spark SQL: Relational Data Processing in Spark](https://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf): Armbrust et al., SIGMOD 2015 (**free PDF**), Section 4 describes Catalyst directly
 - [Catalyst source: `TreeNode.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/trees/TreeNode.scala): the real `transform`/`transformDown`/`transformUp` combinators
 - [Catalyst source: `Optimizer.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/optimizer/Optimizer.scala): search for `PushDownPredicates`, the production version of this week's rewrite rule
@@ -157,6 +159,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W16: Attention and KV Cache
 
+- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 15** (optional): AI Inference and Serving. "Hosting a Model" and "Distributing a Model" give the production-serving framing for why the KV cache tradeoff this week measures matters outside a benchmark script.
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762): Vaswani et al. (2017) (**free on arXiv**), the transformer paper
 - [FlashAttention: Fast and Memory-Efficient Exact Attention](https://arxiv.org/abs/2205.14135): Dao et al. (2022) (**free on arXiv**), read the intro and Section 2
 - [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180): Kwon et al. (2023) (**free on arXiv**)
@@ -174,12 +177,13 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W18: Capstone
 
-No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 5**, Replication. Read "Leaders and Followers" before writing `promote()`.
+No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 5**, Replication. Read "Leaders and Followers" before writing `promote()`. Optional companion: **DDIA Chapter 6**, Partitioning, the other half of the scaling story, not implemented by this exercise but worth reading for the concept.
 
 ---
 
 ## W19: Kubernetes Operators
 
+- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2**: Important Distributed System Concepts. Read "Idempotency" and "Orchestration and Kubernetes" before writing `Reconcile()`; the chapter argues directly for why a reconcile loop has to be idempotent, the same claim this week's Reflect section asks you to defend.
 - [Kubernetes Operators docs](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): official k8s docs
 - [controller-runtime](https://pkg.go.dev/sigs.k8s.io/controller-runtime): Go library for writing operators
 - [Kubebuilder Book](https://book.kubebuilder.io/): Chapters 1–3 only
@@ -189,6 +193,7 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 
 ## W20: Observability: Metrics, Tracing, Logging
 
+- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3**: The Sidecar Pattern. Read before Part 3; names the pattern your log-aggregator sidecar already implements.
 - [Prometheus data model](https://prometheus.io/docs/concepts/data_model/) + [metric types](https://prometheus.io/docs/concepts/metric_types/)
 - [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/)
 - [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): **free online**
@@ -208,6 +213,7 @@ No required reading tied to this week's build. This week synthesizes W11, W13, W
 
 These aren't required but give you broader context:
 
+- **DDIA Chapter 7**, Transactions. No week in this curriculum implements isolation levels or multi-object transactions, so there's no clean place to attach it as required reading, but it's the one DDIA chapter this curriculum otherwise skips entirely, and it's foundational enough to be worth reading on its own rather than forced into an unrelated week.
 - [The Google File System](https://dl.acm.org/doi/10.1145/945445.945450): Ghemawat et al., SOSP 2003, the original scale-out storage paper
 - [Bigtable: A Distributed Storage System for Structured Data](https://dl.acm.org/doi/10.1145/1365815.1365816): Chang et al., OSDI 2006
 - [Spanner](https://dl.acm.org/doi/10.1145/2491245): Corbett et al. (2012), full read after W04

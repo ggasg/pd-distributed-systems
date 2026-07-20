@@ -23,6 +23,8 @@ A 3-node key-value store in Java where writes are replicated via a simple primar
 
 **If you pick this option, read first: DDIA Chapter 5** (Replication), specifically "Leaders and Followers." Primary-backup *is* the leader-based replication Ch. 5 describes; the chapter names the failure modes worth designing around before you write `promote()` (replication lag, what happens to in-flight writes when the leader dies mid-forward) rather than discovering them by hand.
 
+**Optional companion: DDIA Chapter 6** (Partitioning). Your 3-node store only replicates, it doesn't partition the keyspace, but Ch. 6 is the other half of the scaling story Ch. 5 started: replication makes each copy of the data more available, partitioning is what lets the dataset grow past what one node holds. Worth reading for the concept even though this exercise doesn't implement it; the "What you'd add with another week" Reflect question is a natural place to sketch how you'd combine the two.
+
 **Minimum bar:** 3-node cluster, primary-backup replication works, one node can fail and the system continues.
 
 ---

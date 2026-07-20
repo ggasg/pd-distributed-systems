@@ -19,6 +19,8 @@ Multi-head self-attention forward pass, then extend it with a KV cache for autor
 
 **Key question:** Naive attention is O(N²) in memory. Where exactly does this quadratic memory come from? Draw the computation graph and label which tensors are the bottleneck.
 
+**Optional: Burns, *Designing Distributed Systems*, 2nd ed., Chapter 15** (AI Inference and Serving). The three papers above are about the compute and memory mechanics inside one forward pass; Burns' chapter is the layer above that, hosting and distributing a model as a service. "Hosting a Model" and "Distributing a Model" are the production framing for what your `KVCache` and its memory/latency tradeoff exist to support.
+
 ---
 
 ## Code

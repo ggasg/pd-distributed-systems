@@ -62,6 +62,7 @@ If this all felt obvious, skip straight to the Read section below; you don't nee
 ---
 
 ## Read
+- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2** (Important Distributed System Concepts): read the "Idempotency" and "Orchestration and Kubernetes" sections specifically. Idempotency is the one property this week's Reflect section already asks you to justify ("why idempotency is not optional"); Burns gives you the vocabulary and failure examples before you're asked to explain it in your own words, rather than after.
 - [ ] [Kubernetes Operators](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): k8s docs. Read "Motivation" and "Deploying operators". (~10 min)
 - [ ] [controller-runtime pkg docs](https://pkg.go.dev/sigs.k8s.io/controller-runtime): focus on `Reconciler` interface and `ctrl.Manager`. (~20 min)
 - [ ] [Kubebuilder Book](https://book.kubebuilder.io/), Chapters 1–3: read for concepts, not the `kubebuilder generate` commands. Understand what the reconcile loop does and why it's level-triggered, not edge-triggered. (~45 min)
