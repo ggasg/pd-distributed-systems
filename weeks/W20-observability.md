@@ -61,7 +61,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
 **Part 3: Java log aggregator, wired into W19's RayCluster**
 
-- [ ] `tools/log-aggregator/LogAggregator.java`: HTTP server (`com.sun.net.httpserver.HttpServer`, same JDK-only approach as W00 and W03) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W13's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `ReentrantReadWriteLock` or wrapped in `Collections.synchronizedList`. ~80 lines. The cluster it plugs into is managed by KubeRay, a real operator you didn't write; that boundary is deliberate, this is a language-agnostic sidecar contract, a container image with two HTTP routes, wired in by editing a Pod template the same way any production sidecar gets attached.
+- [ ] `tools/log-aggregator/LogAggregator.java`: HTTP server (`com.sun.net.httpserver.HttpServer`, same JDK-only approach as W00 and W03, handlers dispatched on virtual threads the same way W13's gradient server assumes) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W13's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `ReentrantReadWriteLock`, not `Collections.synchronizedList`. That's not a stylistic preference: `synchronizedList` guards every call with a `synchronized` block internally, and a `synchronized` block **pins** the calling virtual thread to its carrier (platform) thread for as long as it's held, silently defeating the reason you're using virtual threads at all. Under enough concurrent requests, a pinned handler can starve the carrier pool the same way a blocked platform thread used to, just with a less obvious cause. `ReentrantReadWriteLock` is a `java.util.concurrent` lock, not a `synchronized` block, so it doesn't pin. ~80 lines. The cluster it plugs into is managed by KubeRay, a real operator you didn't write; that boundary is deliberate, this is a language-agnostic sidecar contract, a container image with two HTTP routes, wired in by editing a Pod template the same way any production sidecar gets attached.
 - [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`maven:3.9-eclipse-temurin-21` builder → `eclipse-temurin:21-jre-alpine` runtime, same shape as W00's), `EXPOSE 8080`.
 - [ ] Build and load into the kind cluster from W19:
   ```bash
@@ -107,5 +107,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 **What you'd change to have the DD engine actually ship its JSON log lines to the sidecar over `localhost:8080/log` instead of stdout (the exercise above only proves connectivity via a synthetic curl, not the real log path):**
 
 **How does the `ScopedSpan` RAII pattern compare to Rust's `#[instrument]` macro? What did you lose, and did the C++ version teach you anything about span lifetimes the macro was hiding?**
+
+**What virtual thread pinning is, concretely, in terms of your `LogAggregator`'s ring buffer lock, and why it wouldn't show up as a correctness bug in testing, only as a throughput problem under load:**
 
 **What I'd do differently:**

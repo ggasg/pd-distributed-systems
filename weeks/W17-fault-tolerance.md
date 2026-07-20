@@ -26,14 +26,14 @@ Chandy-Lamport distributed snapshot in Java: 3 simulated nodes with FIFO channel
 Project: `code/snapshot/` (Java 21, Maven)
 
 - [ ] `Channel.java`: a FIFO channel between two nodes. Java's `LinkedBlockingQueue` already gives you FIFO delivery for free, thread-safe, no extra locking required. Wrap it in a small `Channel` type only if you need to intercept messages for the snapshot-recording logic (recording what arrives after a marker but before the channel's own marker). Don't reinvent a queue the JDK already gives you natively.
-- [ ] `Message.java`: this is the one place this week gets to fix something the Go version of this exercise explicitly calls out as a real weakness: no compiler-enforced exhaustiveness over message types. Java 21 gives you a genuine sum type here: `sealed interface Message permits DataMessage, Marker {}`, with `record DataMessage(String fromNode, String toNode, int value) implements Message {}` and `record Marker(String fromNode, String toNode, int snapshotId) implements Message {}`. Dispatch with an exhaustive pattern-matching `switch`:
+- [ ] `Message.java`: this is the one place this week gets to fix something the Go version of this exercise explicitly calls out as a real weakness: no compiler-enforced exhaustiveness over message types. Java 21 gives you a genuine sum type here: `sealed interface Message permits DataMessage, Marker {}`, with `record DataMessage(String fromNode, String toNode, int value) implements Message {}` and `record Marker(String fromNode, String toNode, int snapshotId) implements Message {}`. Dispatch with an exhaustive pattern-matching `switch`, and use record patterns (JEP 440, finalized in the same Java 21 release as the switch itself) to deconstruct each message directly in the case label instead of binding the whole object and calling accessors on the next line:
   ```java
   switch (msg) {
-      case DataMessage d -> handleData(d);
-      case Marker m -> handleMarker(m);
+      case DataMessage(var from, var to, var value) -> handleData(from, to, value);
+      case Marker(var from, var to, var snapshotId) -> handleMarker(from, to, snapshotId);
   }
   ```
-  Because `Message` is `sealed` and permits exactly these two types, the compiler requires the `switch` to cover both, no `default` branch, and no way to compile the program if you add a third message type later and forget to update every switch over `Message`. That's not a stylistic nicety, it's exactly the cost the Go version of this week names directly and asks you to notice by its absence; here you get it enforced instead of merely noticed.
+  Because `Message` is `sealed` and permits exactly these two types, the compiler requires the `switch` to cover both, no `default` branch, and no way to compile the program if you add a third message type later and forget to update every switch over `Message`. That's not a stylistic nicety, it's exactly the cost the Go version of this week names directly and asks you to notice by its absence; here you get it enforced instead of merely noticed. The record pattern is the same idea one level deeper: `DataMessage` and `Marker` are both records, so the compiler already knows their exact shape, and the pattern lets you say so directly in the case label rather than writing `d.fromNode()`, `d.toNode()`, `d.value()` by hand.
 - [ ] `Node.java`: each node runs on its own virtual thread with:
   - Local state: a running integer sum (incremented by incoming `DataMessage.value()`)
   - Snapshot logic: when a `Marker` arrives on channel C, if this is the *first* marker: record local state, start recording all other incoming channels; when markers arrive on all other channels: finalize snapshot (record channel states)
@@ -94,5 +94,7 @@ assert not all_nodes_recorded(ring, 0, {0, 1})  # node 2 missed
 **How fault tolerance is handled in a system you know (checkpointing vs replay vs idempotency):**
 
 **Now that `Message` is a sealed interface with exhaustive `switch`, try commenting out the `Marker` case and rebuilding. What does the compiler do, and how does that compare to what would have happened in a language without sum types?**
+
+**What did deconstructing `DataMessage`/`Marker` directly in the switch's case labels (record patterns) save you from writing, compared to binding the whole object and calling accessors?**
 
 **What I'd do differently:**
