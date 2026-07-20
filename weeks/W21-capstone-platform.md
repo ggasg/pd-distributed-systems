@@ -5,14 +5,14 @@ status: not-started
 
 # W21: Grand Capstone: Distributed Training & Serving Platform
 
-> **Arc:** Optional capstone · **Language:** Go, Python, C++, reuses W11, W13, W16, W17, W19, W20
+> **Arc:** Optional capstone · **Language:** Python (+ Helm/YAML), reuses W11, W13, W16, W17, W20; deploys to KubeRay from W19
 > **Status:** Optional / stretch week. Not required to finish the core curriculum (W00–W20).
 
 **Prerequisite:** W11 (feature pipeline), W13 (distributed training), W16 (attention + KV cache), W17 (Chandy-Lamport snapshots), W19 (Kubernetes Operators), and W20 (Observability) all completed.
 
 ## What you'll build
 
-A small end-to-end distributed ML platform on your kind cluster: a versioned feature pipeline feeds a tiny attention-based model that trains across multiple worker Pods via ring-allreduce, checkpoints itself so a killed worker resumes instead of retraining from scratch, is orchestrated by a Kubernetes Operator extended from W18, and is served afterward through a KV-cached inference endpoint, all instrumented with the Prometheus/Grafana stack from W19.
+A small end-to-end distributed ML platform on your kind cluster: a versioned feature pipeline feeds a tiny attention-based model that trains across multiple worker Pods via ring-allreduce, checkpoints itself so a killed worker resumes instead of retraining from scratch, runs on the KubeRay cluster you stood up in W19 (you're operating a real operator here, not extending one you wrote), and is served afterward through a KV-cached inference endpoint, all instrumented with the Prometheus/Grafana stack from W20.
 
 **Why this week exists:** W18 combines two arcs. This one chains six weeks into a single working system, end to end, on your own cluster: data in, model trained, failure survived, model served, everything observed. It's the closest thing in this curriculum to what you'd actually build on the job.
 
@@ -36,7 +36,7 @@ One genuinely new read, if you want it: **DDIA Chapter 12**, The Future of Data 
 
 ## Code
 
-Project: `code/capstone-platform/` (Go for the operator and serving layer, Python for training, reusing your W11/W13/W16 code directly)
+Project: `code/capstone-platform/` (Python for training, coordination, and serving; Helm/YAML for deploying to the KubeRay cluster from W19; reusing your W11/W13/W16 code directly)
 
 **Part 1: Data (reuse W11)**
 
@@ -52,11 +52,12 @@ Project: `code/capstone-platform/` (Go for the operator and serving layer, Pytho
 - [ ] `checkpoint_coordinator.py`: adapt the Chandy-Lamport idea from W17: when a checkpoint is triggered, the coordinator waits until all workers have paused at the *same* training step (not mid-allreduce) before recording state. This is what makes the recorded checkpoint a genuinely consistent cut across workers, rather than N independent snapshots that disagree with each other.
 - [ ] Kill a worker process mid-training (`kill -9`). Verify: the operator (Part 4) restarts it, it loads the last consistent checkpoint, and training resumes without corrupting the other workers' state.
 
-**Part 4: Orchestration (extend W19)**
+**Part 4: Orchestration (operate KubeRay from W19)**
 
-- [ ] Extend your `DistributedJob` CRD (or add a new `TrainingJob` CRD) with a `checkpointPath` field
-- [ ] Update `reconciler.go`: on detecting a crashed worker Pod (not Ready), recreate it with an env var pointing at the last known-good checkpoint path instead of always starting fresh
-- [ ] `status.Phase` gains a new value, `Recovering`, set while a restarted worker is loading its checkpoint
+- [ ] Deploy your Part 2 training workers as a `RayCluster` worker group instead of raw Pods or `multiprocessing.Process`: each worker container runs `train_worker.py`, with `spec.workerGroupSpecs[0].replicas` set to your worker count. Reuse the KubeRay install from W19 if it's still on your cluster.
+- [ ] `kill -9` a worker process inside its container, or `kubectl delete pod` on one worker Pod directly, the same test you ran in W19 Part 1. KubeRay's own reconcile loop recreates the Pod; you write zero orchestration code for this. That's the actual point of operating a real operator here instead of hand-rolling one: the "restart a dead worker" mechanism already exists and already works.
+- [ ] The recovery logic that matters is entirely at the application layer, not the operator layer: on startup, `train_worker.py` checks `checkpoints/worker-{rank}/` for the latest checkpoint written by `checkpoint_coordinator.py` (Part 3) and resumes from it instead of starting at step 0. KubeRay's job is only "keep N worker Pods running"; your code's job is "come back correctly when one of them restarts." Keeping those two responsibilities separate, rather than teaching the operator about your checkpoint format, is itself the lesson: it's the same division of labor a real managed training platform uses.
+- [ ] Track restart events yourself for the Part 5 dashboard: increment a `worker_restarts_total` Prometheus counter from inside `train_worker.py` the moment it detects it's resuming from a checkpoint rather than starting cold, rather than trying to read Pod restart counts back out of Kubernetes.
 
 **Part 5: Serving + observability (extend W16 and W20)**
 

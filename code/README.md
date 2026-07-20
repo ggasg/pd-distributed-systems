@@ -188,17 +188,12 @@ code/
 │   ├── README.md           # required: design doc
 │   └── ...
 │
-├── operator/                # W19: Go
-│   ├── api/v1/
-│   │   ├── types.go
-│   │   └── register.go
-│   ├── controllers/
-│   │   └── reconciler.go
-│   ├── config/
-│   │   ├── crd.yaml
-│   │   └── sample.yaml
-│   ├── main.go
-│   └── go.mod
+├── operator/                # W19: deployment configs only, no code built. KubeRay and Kubeflow's Spark
+│   │                        # Operator are both installed via Helm (see SETUP.md); you deploy CRs
+│   │                        # against them, not author a controller
+│   └── config/
+│       ├── ray-cluster.yaml   # RayCluster CR (KubeRay); W20 edits this to add a sidecar container
+│       └── spark-pi.yaml      # SparkApplication CR (Kubeflow Spark Operator)
 │
 ├── dd-scratch/             # W20: extends W07 (C++)
 │   ├── include/dd_scratch/
@@ -209,13 +204,14 @@ code/
 │       ├── metrics.cpp
 │       ├── tracing_setup.cpp
 │       └── logging.cpp
-│   # Java sidecar lives in tools/log-aggregator/, wired into the W19 operator's DistributedJob
+│   # Java sidecar lives in tools/log-aggregator/, wired into the W19 RayCluster's worker Pod template
 │
-└── capstone-platform/      # W21 (optional): Go + Python, combines W11+W13+W16+W17+W19+W20
+└── capstone-platform/      # W21 (optional): Python, combines W11+W13+W16+W17+W20, deploys to KubeRay from W19
     ├── train_worker.py
     ├── checkpoint_coordinator.py
     ├── serve.py
-    ├── operator/            # extends code/operator/ from W19
+    ├── config/
+    │   └── ray-cluster.yaml   # training workers as a RayCluster worker group; reuses W19's KubeRay install
     └── README.md            # required: design doc
 ```
 
@@ -255,13 +251,14 @@ pip install -r requirements.txt
 python main.py
 ```
 
-**Go:**
+**Kubernetes (W19, W21):**
 ```bash
-go mod tidy
-go run main.go
-go test ./...
-go build -o bin/app .
+helm install kuberay-operator kuberay/kuberay-operator --version 1.6.0
+helm install spark-operator spark-operator/spark-operator --namespace spark-operator --create-namespace
+kubectl apply -f code/operator/config/ray-cluster.yaml
+kubectl apply -f code/operator/config/spark-pi.yaml -n spark-operator
 ```
+No `go build` in this curriculum: W19 and W21 deploy CRs against operators you installed, not code you compiled.
 
 ---
 

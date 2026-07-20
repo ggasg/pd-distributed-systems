@@ -3,137 +3,114 @@ week_number: 19
 status: not-started
 ---
 
-# W19: Kubernetes Operators
+# W19: Operating Kubernetes Operators: KubeRay and Spark Operator
 
-> **Arc:** Infrastructure · **Language:** Go
+> **Arc:** Infrastructure · **Language:** Helm/YAML; you'll read Go, not write it
 
 ## What you'll build
-A Kubernetes Operator in Go that manages a custom `DistributedJob` resource. When a `DistributedJob` is created, the operator creates worker Pods and a coordinator Service. When it's deleted, GC cleans up everything via owner references. This is the pattern behind Kafka operators, Spark operators, Flink operators, and every managed ML training job on k8s.
 
-The Pod builder also supports an optional sidecar container (`spec.sidecarImage`), the same mechanism Kubeflow's training operator uses to attach log/metric shippers to each worker Pod. You wire the field in now; W20 builds the actual sidecar image and plugs it in.
+Not build, operate. Deploy two real, production-grade Kubernetes operators to your kind cluster: KubeRay (what Ray, and Anyscale's platform, runs on) and Kubeflow's Spark Operator (what Databricks- and Cloudera-adjacent Spark-on-Kubernetes deployments run on). Create a `RayCluster` and a `SparkApplication`, watch each one reconcile, break each on purpose, and debug it the way you'd debug someone else's operator in production. Then read, don't write, each operator's real reconcile loop: the production version of the level-triggered control loop this week is actually about.
+
+**Why not hand-write a custom operator from scratch, the way this week used to?** Writing your own CRD types and a `controller-runtime` reconciler is the skill set of someone *building* a new operator, which is a narrow platform-infrastructure specialization. It's not what a Staff Data Platform Engineer, a Field/Customer/Professional Services Engineer, or a Developer Advocate does day to day; those roles *operate* operators someone else wrote: install via Helm, configure a CR, read logs, debug a stuck reconcile loop. This week now teaches that instead, using two operators that are directly relevant to the companies this curriculum's job search targets, at close to none of the Go-authoring cost the from-scratch version required.
 
 **Prerequisite:** W00 stack (kind cluster + monitoring) must be running.
 
 ---
 
-## Before you start: Go Warm-Up (recommended if goroutines and channels are new or rusty)
-
-20–30 minutes, separate from the operator build below. This is the one week in the entire curriculum that asks you to write Go: everything from W01 through W17 has been Java. `controller-runtime` below is real, idiomatic Go, so rather than meet goroutines and channels for the first time inside an actual reconciler, this drill gets that syntax and the one genuinely new mechanic (channels, not the sequential parts, which will feel familiar from any C-family language) out of the way on a problem simple enough that the channel mechanics are the only thing you're thinking about.
-
-Build a tiny worker pool: N goroutines pull ints off an input channel, double them, and send the result to an output channel.
-
-```go
-func doubler(in <-chan int, out chan<- int, wg *sync.WaitGroup) {
-    defer wg.Done()
-    for n := range in {
-        out <- n * 2
-    }
-}
-
-func main() {
-    in, out := make(chan int), make(chan int)
-    var wg sync.WaitGroup
-
-    for i := 0; i < 3; i++ { // 3 workers
-        wg.Add(1)
-        go doubler(in, out, &wg)
-    }
-    go func() { wg.Wait(); close(out) }() // close AFTER all workers finish
-
-    go func() {
-        for i := 1; i <= 10; i++ {
-            in <- i
-        }
-        close(in) // tells workers' `range in` to stop
-    }()
-
-    sum := 0
-    for n := range out {
-        sum += n
-    }
-    fmt.Println(sum) // 110: doubled 1..10
-}
-```
-
-Run it, then break it on purpose once: move `close(out)` outside the `wg.Wait()` goroutine and call it directly after the loop that starts workers. Watch it panic ("send on closed channel") or deadlock, depending on timing. That failure mode, closing a channel before everyone writing to it is done, has no equivalent in the Java concurrency you've been using so far (an `ExecutorService` handles this lifecycle for you); it's a genuinely new footgun, worth seeing in eleven lines before you meet it, less legibly, inside `reconciler.go` below.
-
-If this all felt obvious, skip straight to the Read section below; you don't need it. If `close(in)` / `range in` / the two-goroutine close pattern felt new, this was worth the 20 minutes.
-
----
-
 ## Read
-- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2** (Important Distributed System Concepts): read the "Idempotency" and "Orchestration and Kubernetes" sections specifically. Idempotency is the one property this week's Reflect section already asks you to justify ("why idempotency is not optional"); Burns gives you the vocabulary and failure examples before you're asked to explain it in your own words, rather than after.
+- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2** (Important Distributed System Concepts): read the "Idempotency" and "Orchestration and Kubernetes" sections. Idempotency is the property this week's Reflect section asks you to observe directly: KubeRay and Spark Operator both re-run their reconcile logic constantly, and neither breaks anything by doing so.
 - [ ] [Kubernetes Operators](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): k8s docs. Read "Motivation" and "Deploying operators". (~10 min)
-- [ ] [controller-runtime pkg docs](https://pkg.go.dev/sigs.k8s.io/controller-runtime): focus on `Reconciler` interface and `ctrl.Manager`. (~20 min)
-- [ ] [Kubebuilder Book](https://book.kubebuilder.io/), Chapters 1–3: read for concepts, not the `kubebuilder generate` commands. Understand what the reconcile loop does and why it's level-triggered, not edge-triggered. (~45 min)
+- [ ] [KubeRay architecture overview](https://ray-project.github.io/kuberay/): read "Introduction" and skim the CRD list (`RayCluster`, `RayJob`, `RayService`). Understand what each of the three is for before you deploy one. (~15 min)
+- [ ] [Kubeflow Spark Operator: quick start guide](https://kubeflow.github.io/spark-operator/docs/quick-start-guide.html): read through the `SparkApplication` example. Note that a `SparkApplication` describes a finite, completing job, not a standing cluster, that's the core design difference from `RayCluster` you'll be comparing later. (~15 min)
 
-**Key question:** What does "level-triggered" mean for a Kubernetes controller, and why is it safer than edge-triggered for distributed systems correctness?
+**Key question:** Both controllers are level-triggered reconcilers: they don't react to the delete-a-Pod event directly, they notice "actual state doesn't match desired state" on their next pass and correct it. Predict what happens if you `kubectl delete` a `RayCluster` worker Pod directly instead of deleting the `RayCluster` itself. Then test it in Part 1 below and see if you were right.
 
 ---
 
 ## Code
 
-Project: `code/operator/` (Go, `sigs.k8s.io/controller-runtime`)
+**Part 1: KubeRay**
 
-Write it from scratch, no `kubebuilder generate`. Every file is small and intentional.
-
-- [ ] `go.mod`: module `github.com/you/pd-operator`, dependencies: `sigs.k8s.io/controller-runtime`, `k8s.io/api`, `k8s.io/apimachinery`, `k8s.io/client-go`
-- [ ] `api/v1/types.go`: define CRD structs:
-  ```go
-  type DistributedJobSpec struct {
-      Workers      int32  `json:"workers"`
-      Image        string `json:"image"`
-      Command      string `json:"command"`
-      SidecarImage string `json:"sidecarImage,omitempty"` // optional; wired up in W20
-  }
-  type DistributedJobStatus struct {
-      Phase        string `json:"phase"` // Pending | Running | Complete
-      ReadyWorkers int32  `json:"readyWorkers"`
-  }
-  type DistributedJob struct {
-      metav1.TypeMeta   `json:",inline"`
-      metav1.ObjectMeta `json:"metadata,omitempty"`
-      Spec   DistributedJobSpec   `json:"spec,omitempty"`
-      Status DistributedJobStatus `json:"status,omitempty"`
-  }
-  ```
-- [ ] `api/v1/register.go`: register the type with the scheme (`SchemeBuilder.Register`)
-- [ ] `config/crd.yaml`: hand-write the `CustomResourceDefinition` YAML:
-  - group: `pd.systems`, version: `v1`, kind: `DistributedJob`, scope: `Namespaced`
-  - Include `spec.versions[].schema.openAPIV3Schema` for basic field validation
-  - Fields: `workers` (integer), `image` (string), `command` (string), `sidecarImage` (string, optional)
-- [ ] `controllers/reconciler.go`: implement `Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error)`:
-  1. Fetch `DistributedJob` by name, return if not found (deleted)
-  2. List existing worker Pods labelled `job-name=<name>`
-  3. If len(pods) < spec.Workers: create the missing Pods (set owner reference to DistributedJob). Build `pod.Spec.Containers` as a slice: always append the main container (`spec.Image`, `spec.Command`, name `"main"`); if `spec.SidecarImage != ""`, append a second container (name `"sidecar"`) running that image. Both containers share the Pod's network namespace and lifecycle: the main container reaches the sidecar at `localhost:<port>`, and the sidecar terminates when the Pod does.
-  4. Count Ready pods, update `status.ReadyWorkers`
-  5. If readyWorkers == spec.Workers: set `status.Phase = "Running"`; else `"Pending"`
-  6. Patch status subresource
-- [ ] `main.go`: set up `ctrl.Manager`, register scheme, start `DistributedJobReconciler` with `ctrl.SetupWithManager`
-- [ ] `config/sample.yaml`: a `DistributedJob` with `workers: 3`, image `busybox:latest`, command `sleep 30`. Leave `sidecarImage` unset for now; W20 builds the image and sets it.
-- [ ] Deploy and test:
+- [ ] Install the KubeRay operator and its CRDs via Helm:
   ```bash
-  kubectl apply -f config/crd.yaml
-  go run main.go   # runs controller locally, talks to kind cluster
-  # in another terminal:
-  kubectl apply -f config/sample.yaml
-  kubectl get pods -l job-name=my-job          # should see 3 pods
-  kubectl get distributedjob my-job -o yaml    # check status.phase
-  kubectl delete distributedjob my-job         # pods should GC via owner refs
+  helm repo add kuberay https://ray-project.github.io/kuberay-helm/
+  helm repo update
+  helm install kuberay-operator kuberay/kuberay-operator --version 1.6.0
+  kubectl get pods   # kuberay-operator-... should be Running
   ```
+- [ ] `code/operator/config/ray-cluster.yaml`: a small `RayCluster` CR, `apiVersion: ray.io/v1`, one head + two workers, minimal resource requests (`cpu: "500m"`, `memory: "1Gi"` is enough for kind):
+  ```yaml
+  apiVersion: ray.io/v1
+  kind: RayCluster
+  metadata:
+    name: pd-cluster
+  spec:
+    rayVersion: "2.9.0"
+    headGroupSpec:
+      rayStartParams: {}
+      template:
+        spec:
+          containers:
+            - name: ray-head
+              image: rayproject/ray:2.9.0
+              resources:
+                requests: { cpu: "500m", memory: "1Gi" }
+    workerGroupSpecs:
+      - groupName: small-group
+        replicas: 2
+        rayStartParams: {}
+        template:
+          spec:
+            containers:
+              - name: ray-worker
+                image: rayproject/ray:2.9.0
+                resources:
+                  requests: { cpu: "500m", memory: "1Gi" }
+  ```
+- [ ] Apply it, watch it converge:
+  ```bash
+  kubectl apply -f code/operator/config/ray-cluster.yaml
+  kubectl get raycluster pd-cluster -w
+  kubectl get pods -l ray.io/cluster=pd-cluster   # expect 1 head + 2 workers
+  ```
+- [ ] **Break it, on purpose:** `kubectl delete pod <one-of-the-worker-pods>` directly, without touching the `RayCluster`. Watch `kubectl get pods -w`; the operator should notice the mismatch between `spec.workerGroupSpecs[0].replicas: 2` and actual worker count, and recreate the Pod without you doing anything. This is the answer to the Key Question above, and it's the entire value of a reconcile loop demonstrated in one command.
+- [ ] Skim the real reconciler: [`raycluster_controller.go`](https://github.com/ray-project/kuberay/blob/master/ray-operator/controllers/ray/raycluster_controller.go) in the `ray-project/kuberay` repo. Find the top-level `Reconcile` function; you don't need to read the whole file. Compare its shape (fetch object, compute desired state, diff against actual, patch the difference) against what you predicted for the Key Question.
 
-**Minimum bar:** create event creates 3 Pods; delete event GCs the Pods; status reflects ready count.
+**Part 2: Spark Operator**
+
+- [ ] Install Kubeflow's Spark Operator via Helm:
+  ```bash
+  helm repo add spark-operator https://kubeflow.github.io/spark-operator
+  helm repo update
+  helm install spark-operator spark-operator/spark-operator --namespace spark-operator --create-namespace
+  kubectl get pods -n spark-operator   # controller and webhook pods should be Running
+  ```
+- [ ] `code/operator/config/spark-pi.yaml`: a `SparkApplication` CR running the operator's built-in SparkPi example (`apiVersion: sparkoperator.k8s.io/v1beta2`; copy the example from the quick-start guide you read above rather than hand-writing the full spec, it's long and none of it is new to you after W12).
+- [ ] Apply it, watch it run to completion:
+  ```bash
+  kubectl apply -f code/operator/config/spark-pi.yaml -n spark-operator
+  kubectl get sparkapplication spark-pi -n spark-operator -w   # State: SUBMITTED -> RUNNING -> COMPLETED
+  kubectl logs <driver-pod-name> -n spark-operator   # should print an estimate of Pi
+  ```
+- [ ] **Break it, on purpose:** apply a second `SparkApplication` with a deliberately wrong image tag (`image: apache/spark:not-a-real-tag`). Watch it go to `State: FAILED` or get stuck in `ImagePullBackOff`. Find the reason two ways: `kubectl describe sparkapplication` (check `status` and `Events`) and `kubectl logs` on the spark-operator controller Pod itself. This is the actual debugging workflow for a production Spark-on-k8s failure, not a simulation of one.
+- [ ] Skim the reconciler: browse [`kubeflow/spark-operator`](https://github.com/kubeflow/spark-operator) for the `SparkApplication` reconcile logic (the exact package path has moved between releases; look under `internal/controller/` or `controllers/` depending on which tag you're viewing, and search for `SparkApplicationReconciler`). You're looking for the same shape as KubeRay's: fetch, diff, patch. You don't need to understand the submission-runner mechanics, just confirm the control loop pattern is the same one you just watched KubeRay run.
+
+**Comparing the two:**
+
+- [ ] In your notes: `RayCluster` is a long-running resource (the head/worker Pods stay up until you delete the CR); `SparkApplication` is a job-shaped resource (its own Pods terminate on completion, and the CR's `status` records a terminal state). Both use the same reconcile-loop mechanics underneath. Write two or three sentences on why the CRD shape differs even though the control-loop shape doesn't, think about what "desired state" means for a cluster you keep running versus a job you run once.
+
+**Minimum bar:** both `RayCluster` and `SparkApplication` reach a healthy running state on your kind cluster; you've triggered and diagnosed one real failure in each (the deleted worker Pod for KubeRay, the bad image tag for Spark Operator) using `kubectl describe`/`logs`, not by reading about what the failure would look like.
 
 ---
 
 ## Reflect
 
-**What "reconcile loop" means and why idempotency is not optional:**
+**What "level-triggered" means for a Kubernetes controller, demonstrated concretely by the worker-Pod-delete test in Part 1, not just defined:**
 
-**How owner references enable garbage collection without the controller doing explicit cleanup:**
+**Where you saw idempotency in practice this week (a reconcile pass that ran and changed nothing, because nothing needed to change):**
 
-**How this maps to real systems (Kafka operator, Flink operator, Kubeflow training operator):**
+**How owner references and garbage collection worked when you deleted each CR entirely (`kubectl delete raycluster pd-cluster` / `kubectl delete sparkapplication spark-pi`), versus what you had to clean up by hand:**
 
-**Why the sidecar container goes in the same Pod as the main container instead of a separate Pod or Deployment (think: network namespace, lifecycle, scheduling):**
+**Which of your target companies' platforms you're most likely to actually operate one of these two on, and what that changes about how deep you'd go here if this were your job starting Monday:**
 
-**What you'd add to make this production-ready (finalizers, leader election, webhook validation, metrics):**
+**What surprised you about reading a real reconciler's source after only ever reading about the pattern in the abstract:**

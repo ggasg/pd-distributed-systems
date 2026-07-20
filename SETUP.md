@@ -30,7 +30,7 @@ java --version    # openjdk 21.x
 mvn --version     # Apache Maven 3.9.x, and confirms it's picking up JDK 21
 ```
 
-**W00–W04, W17, and secondary tooling in W03/W13/W15/W20** use Java: this is the backbone language of the curriculum alongside C++. Each project is its own Maven project (`pom.xml` per directory, no shared parent build file, same isolation principle as the C++/Scala/Go projects); `mvn compile`/`mvn test`/`mvn package` fetch whatever the project's `pom.xml` declares.
+**W00–W04, W17, and secondary tooling in W03/W13/W15/W20** use Java: this is the backbone language of the curriculum alongside C++. Each project is its own Maven project (`pom.xml` per directory, no shared parent build file, same isolation principle as the C++/Scala projects); `mvn compile`/`mvn test`/`mvn package` fetch whatever the project's `pom.xml` declares.
 
 **Already know Java?** If your Java is production-grade (per Gaston's own background, "advanced" and already used for Map/Reduce-style big-data work), this is close to a zero-ramp module: the only genuinely new surface is Java 21 itself, not the language you already know. Skim before W01: `record` types for immutable data (they auto-generate `equals`/`hashCode`/`toString`, but field-by-field, which matters for array-typed fields, see W01's callout), virtual threads (`Thread.ofVirtual()`, `Executors.newVirtualThreadPerTaskExecutor()`, cheap enough to use one per task instead of pooling), and `sealed` interfaces with exhaustive pattern-matching `switch` (W17 uses this directly). [What's New in Java 21](https://openjdk.org/projects/jdk/21/) (official release notes) covers all three in about 20 minutes. No Spring, no Kafka anywhere in this curriculum, by design: every HTTP service uses the JDK's own `com.sun.net.httpserver.HttpServer`, deliberately avoiding framework overhead for services this small.
 
@@ -38,24 +38,16 @@ mvn --version     # Apache Maven 3.9.x, and confirms it's picking up JDK 21
 
 ---
 
-## Go 1.22+
+## Kubernetes Operators: KubeRay + Spark Operator (W19)
 
+No language toolchain to install for this one, no Go, no SDK. W19 has you deploy two real operators to the kind cluster via Helm (installed below in Docker + kind) and read their source on GitHub; nothing here gets compiled locally. Register both chart repos ahead of time so W19 itself is just `helm install`:
 ```bash
-# macOS
-brew install go
-go version   # go1.22.x
-
-# Or download from https://go.dev/dl/
+helm repo add kuberay https://ray-project.github.io/kuberay-helm/
+helm repo add spark-operator https://kubeflow.github.io/spark-operator
+helm repo update
 ```
 
-**Go is scoped to W19 (required) and the optional W21 grand capstone** (which extends W19's operator). It isn't the curriculum's backbone the way it once was; every other week that used to be Go now runs on Java, see the Java section above. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
-
-**W19 (Kubernetes Operators) requires Go**: `controller-runtime`, the ecosystem-standard library for writing operators, has no comparable-maturity Java equivalent, which is the specific, checked reason Go survives in this curriculum at all rather than being replaced everywhere. Install it:
-```bash
-go get sigs.k8s.io/controller-runtime@v0.18.0
-```
-
-**New to Go?** You don't need to ramp before this curriculum starts. Unlike the old W00-era warmup, the goroutines-and-channels drill now lives inside **W19 itself** ("Before you start" section), scoped to exactly what that week needs and done the day you start it, the same "warm up right before, not months ahead" placement W09 uses for its Scala drill. If you want a broader pass first anyway, [A Tour of Go](https://go.dev/tour/) (free, interactive, ~2–3 hours) covers the language; [Effective Go](https://go.dev/doc/effective_go)'s sections on goroutines, channels, and error handling (~1 hour) cover the concurrency idioms W19's warmup exercises. The one habit worth knowing going in: Go returns errors as values (`result, err := doThing()`) instead of throwing exceptions; get comfortable checking `err != nil` everywhere, it's idiomatic, not boilerplate to work around.
+**Never touched Go?** That's fine, this curriculum never asks you to write any. W19 links you to specific files inside `ray-project/kuberay` and `kubeflow/spark-operator`; GitHub's web view is enough to read them. If you'd rather browse and grep the source locally instead, `brew install go` gets you a working `go doc`/`gofmt`-aware setup, but it's entirely optional, install it only if reading on GitHub feels limiting.
 
 ---
 
@@ -230,7 +222,6 @@ kind delete cluster --name pd-systems
 ```bash
 java --version       # openjdk 21.x
 mvn --version        # Apache Maven 3.9.x
-go version           # 1.22.x
 cmake --version      # 3.25.x or later
 clang++ --version    # or g++ --version
 sbt --version        # 1.9.x or later, builds Scala 2.13 per-project via build.sbt
@@ -238,8 +229,9 @@ python --version     # 3.11.x or 3.12.x
 docker --version     # 25.x or later
 kind --version       # 0.22.x or later
 kubectl version      # 1.29.x or later
-helm version         # 3.14.x or later
+helm version         # 3.14.x or later, needed for W19's KubeRay + Spark Operator installs
 ```
+`go version` is only relevant if you chose to install Go for local source browsing (see the Kubernetes Operators section above); it isn't part of the required toolchain.
 
 ---
 
@@ -248,7 +240,7 @@ helm version         # 3.14.x or later
 | Language | IDE |
 |----------|-----|
 | Java | IntelliJ IDEA (Community is fine), or VS Code + Extension Pack for Java |
-| Go | VS Code + Go extension, or GoLand |
+| Go (optional, source-reading only) | GitHub's web view is enough; VS Code + Go extension if you installed Go locally |
 | C++ | VS Code + clangd extension, or CLion |
 | Scala | IntelliJ IDEA + Scala plugin |
 | Python | VS Code + Pylance, or PyCharm Community |

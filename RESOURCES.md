@@ -181,13 +181,14 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 
 ---
 
-## W19: Kubernetes Operators
+## W19: Operating Kubernetes Operators (KubeRay + Spark Operator)
 
-- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2**: Important Distributed System Concepts. Read "Idempotency" and "Orchestration and Kubernetes" before writing `Reconcile()`; the chapter argues directly for why a reconcile loop has to be idempotent, the same claim this week's Reflect section asks you to defend.
+- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2**: Important Distributed System Concepts. Read "Idempotency" and "Orchestration and Kubernetes" before deploying either operator; the chapter argues directly for why a reconcile loop has to be idempotent, the same claim this week's Reflect section asks you to defend.
 - [Kubernetes Operators docs](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): official k8s docs
-- [controller-runtime](https://pkg.go.dev/sigs.k8s.io/controller-runtime): Go library for writing operators
-- [Kubebuilder Book](https://book.kubebuilder.io/): Chapters 1–3 only
-- [Programming Kubernetes](https://www.oreilly.com/library/view/programming-kubernetes/9781492047094/): Hausenblas & Schimanski (O'Reilly), optional deep dive
+- [KubeRay documentation](https://ray-project.github.io/kuberay/): architecture overview and the `RayCluster`/`RayJob`/`RayService` CRDs; also has the Helm install instructions this week uses
+- [Kubeflow Spark Operator documentation](https://kubeflow.github.io/spark-operator/): quick-start guide and the `SparkApplication` API reference
+- [KubeRay reconciler source: `raycluster_controller.go`](https://github.com/ray-project/kuberay/blob/master/ray-operator/controllers/ray/raycluster_controller.go): the real reconcile loop this week has you read, not write
+- [Programming Kubernetes](https://www.oreilly.com/library/view/programming-kubernetes/9781492047094/): Hausenblas & Schimanski (O'Reilly), optional. Covers how operators like these two are actually built; useful context even though this week has you operate one rather than author one
 
 ---
 
