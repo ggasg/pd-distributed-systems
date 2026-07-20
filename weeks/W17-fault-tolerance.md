@@ -5,10 +5,10 @@ status: not-started
 
 # W17: Fault Tolerance and Snapshots
 
-> **Arc:** Distributed ML & Compute · **Language:** Go
+> **Arc:** Distributed ML & Compute · **Language:** Java
 
 ## What you'll build
-Chandy-Lamport distributed snapshot in Go: 3 simulated nodes with FIFO channels, one node triggers a snapshot, all nodes record their local state and in-flight channel contents. Assert the recorded global state is consistent.
+Chandy-Lamport distributed snapshot in Java: 3 simulated nodes with FIFO channels, one node triggers a snapshot, all nodes record their local state and in-flight channel contents. Assert the recorded global state is consistent.
 
 ---
 
@@ -23,18 +23,25 @@ Chandy-Lamport distributed snapshot in Go: 3 simulated nodes with FIFO channels,
 
 ## Code
 
-Project: `code/snapshot/` (Go, module)
+Project: `code/snapshot/` (Java 21, Maven)
 
-- [ ] `channel.go`: a FIFO channel between two nodes. Go's built-in `chan Message` already gives you FIFO delivery for free. Wrap it in a small `Channel` type only if you need to intercept messages for the snapshot-recording logic (recording what arrives after a marker but before the channel's own marker). Don't reinvent a queue Go already gives you natively.
-- [ ] `message.go`: Go has no sum types, so this is the one place its type system is honestly weaker than what you'd get elsewhere: no compiler-enforced exhaustiveness. Define an interface `Message interface { isMessage() }` and two structs implementing it, `DataMessage{FromNode, ToNode, Value int}` and `Marker{FromNode, ToNode, SnapshotID int}`. Dispatch with a type switch: `switch m := msg.(type) { case DataMessage: ...; case Marker: ... }`. If you add a third message type later, nothing forces you to update every switch; that's a real cost of this approach, worth noticing rather than glossing over.
-- [ ] `node.go`: each node is a goroutine with:
-  - Local state: a running integer sum (incremented by incoming `DataMessage.Value`)
+- [ ] `Channel.java`: a FIFO channel between two nodes. Java's `LinkedBlockingQueue` already gives you FIFO delivery for free, thread-safe, no extra locking required. Wrap it in a small `Channel` type only if you need to intercept messages for the snapshot-recording logic (recording what arrives after a marker but before the channel's own marker). Don't reinvent a queue the JDK already gives you natively.
+- [ ] `Message.java`: this is the one place this week gets to fix something the Go version of this exercise explicitly calls out as a real weakness: no compiler-enforced exhaustiveness over message types. Java 21 gives you a genuine sum type here: `sealed interface Message permits DataMessage, Marker {}`, with `record DataMessage(String fromNode, String toNode, int value) implements Message {}` and `record Marker(String fromNode, String toNode, int snapshotId) implements Message {}`. Dispatch with an exhaustive pattern-matching `switch`:
+  ```java
+  switch (msg) {
+      case DataMessage d -> handleData(d);
+      case Marker m -> handleMarker(m);
+  }
+  ```
+  Because `Message` is `sealed` and permits exactly these two types, the compiler requires the `switch` to cover both, no `default` branch, and no way to compile the program if you add a third message type later and forget to update every switch over `Message`. That's not a stylistic nicety, it's exactly the cost the Go version of this week names directly and asks you to notice by its absence; here you get it enforced instead of merely noticed.
+- [ ] `Node.java`: each node runs on its own virtual thread with:
+  - Local state: a running integer sum (incremented by incoming `DataMessage.value()`)
   - Snapshot logic: when a `Marker` arrives on channel C, if this is the *first* marker: record local state, start recording all other incoming channels; when markers arrive on all other channels: finalize snapshot (record channel states)
   - When initiating a snapshot: record own state, send markers on all outgoing channels
-- [ ] `coordinator.go`: wires 3 nodes in a ring (0 → 1 → 2 → 0), starts a goroutine per node, injects a sequence of data messages, then triggers a snapshot from node 0, and waits (via a `sync.WaitGroup` or a completion channel) for all nodes to report their recorded states
-- [ ] `snapshot_test.go`: inject 10 data messages (total sum = 55), trigger a snapshot mid-stream, assert: (1) sum of all recorded local states + sum of all in-flight channel states = total messages sent so far; (2) snapshot completes without deadlock; run with `go test -race` to catch any channel misuse
+- [ ] `Coordinator.java`: wires 3 nodes in a ring (0 → 1 → 2 → 0), starts a virtual thread per node, injects a sequence of data messages, then triggers a snapshot from node 0, and waits (via a `CountDownLatch` or by joining the virtual threads) for all nodes to report their recorded states
+- [ ] `SnapshotTest.java`: JUnit 5: inject 10 data messages (total sum = 55), trigger a snapshot mid-stream, assert: (1) sum of all recorded local states + sum of all in-flight channel states = total messages sent so far; (2) snapshot completes without deadlock. Java has no single built-in flag equivalent to `go test -race`; using immutable messages (records) and a proper concurrent queue instead of hand-rolled shared mutable state eliminates most of that bug class by construction rather than by detecting it after the fact, which is worth noting as a different, not strictly worse, way of getting to the same confidence.
 
-**Constraints:** no third-party concurrency libraries: `chan`, `sync.WaitGroup`, and `select` are enough for this. Focus on correctness of the marker protocol, not performance.
+**Constraints:** no third-party concurrency libraries: `java.util.concurrent` (`BlockingQueue`, virtual threads, `CountDownLatch`) is enough for this. Focus on correctness of the marker protocol, not performance.
 
 ---
 
@@ -45,7 +52,7 @@ Project: `code/snapshot/` (Go, module)
 ```python
 from collections import deque
 
-# fifo_channel.py: what channel.go wraps a Go `chan` around, a FIFO queue with O(1) ops
+# fifo_channel.py: what Channel.java wraps a LinkedBlockingQueue around, a FIFO queue with O(1) ops
 channel: deque = deque()
 channel.append("msg1")   # enqueue, O(1)
 channel.append("msg2")
@@ -72,7 +79,7 @@ assert all_nodes_recorded(ring, 0, {0, 1, 2})
 assert not all_nodes_recorded(ring, 0, {0, 1})  # node 2 missed
 ```
 
-**Connection:** Go's native `chan` already is this `deque`, with thread safety built in for free. The BFS is how you'd write `snapshot_test.go`'s consistency assertion if you wanted to do it graph-theoretically rather than just summing integers.
+**Connection:** Java's `LinkedBlockingQueue` already is this `deque`, with thread safety built in for free. The BFS is how you'd write `SnapshotTest.java`'s consistency assertion if you wanted to do it graph-theoretically rather than just summing integers.
 
 ---
 
@@ -86,6 +93,6 @@ assert not all_nodes_recorded(ring, 0, {0, 1})  # node 2 missed
 
 **How fault tolerance is handled in a system you know (checkpointing vs replay vs idempotency):**
 
-**Where the lack of exhaustiveness checking on your `Message` type switch actually bit you, if it did:**
+**Now that `Message` is a sealed interface with exhaustive `switch`, try commenting out the `Marker` case and rebuilding. What does the compiler do, and how does that compare to what would have happened in a language without sum types?**
 
 **What I'd do differently:**

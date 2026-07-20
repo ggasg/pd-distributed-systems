@@ -5,7 +5,7 @@ status: not-started
 
 # W00: Infrastructure Setup
 
-> **Pre-week:** Complete before W01 begins · **Language:** Go + shell
+> **Pre-week:** Complete before W01 begins · **Language:** Java + shell
 
 ## What you'll build
 A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By end of week, you can deploy any of your weekly code artifacts to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W19 and W20.
@@ -24,51 +24,6 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 - [ ] `brew install kind kubectl helm`
 - [ ] Create cluster: `kind create cluster --name pd-systems`
 - [ ] Verify: `kubectl cluster-info --context kind-pd-systems`
-
----
-
-## Go Warm-Up (recommended if goroutines and channels are new or rusty)
-
-20–30 minutes, separate from the observability build below. Go's sequential syntax (structs, slices, `if err != nil`) tends to feel familiar fast if you know any C-family language; goroutines and channels are the part that's actually new, and W03 (MapReduce) throws you into them for real, mid-task, with a warning that a small mistake there costs "an hour of confusing debugging instead of teaching you anything." This drill gets that mistake out of the way now, on a problem simple enough that the channel mechanics are the only thing you're thinking about.
-
-Build a tiny worker pool: N goroutines pull ints off an input channel, double them, and send the result to an output channel. This is the exact fan-out/fan-in shape W03's `runner.go` uses, isolated from any MapReduce logic.
-
-```go
-func doubler(in <-chan int, out chan<- int, wg *sync.WaitGroup) {
-    defer wg.Done()
-    for n := range in {
-        out <- n * 2
-    }
-}
-
-func main() {
-    in, out := make(chan int), make(chan int)
-    var wg sync.WaitGroup
-
-    for i := 0; i < 3; i++ { // 3 workers
-        wg.Add(1)
-        go doubler(in, out, &wg)
-    }
-    go func() { wg.Wait(); close(out) }() // close AFTER all workers finish
-
-    go func() {
-        for i := 1; i <= 10; i++ {
-            in <- i
-        }
-        close(in) // tells workers' `range in` to stop
-    }()
-
-    sum := 0
-    for n := range out {
-        sum += n
-    }
-    fmt.Println(sum) // 110: doubled 1..10
-}
-```
-
-Run it, then break it on purpose once: move `close(out)` outside the `wg.Wait()` goroutine and call it directly after the loop that starts workers. Watch it panic ("send on closed channel") or deadlock, depending on timing. That failure mode, closing a channel before everyone writing to it is done, is the one W03 calls out by name; seeing it here, in eleven lines, is cheaper than seeing it there, in the middle of a shuffle phase.
-
-If this all felt obvious, skip straight to the observability stack below; you don't need it. If `close(in)` / `range in` / the two-goroutine close pattern felt new, this was worth the 20 minutes; W01–W04 build on it being second nature.
 
 ---
 
@@ -92,28 +47,27 @@ If this all felt obvious, skip straight to the observability stack below; you do
 
 ## Code
 
-Project: `code/hello-metrics/` (Go)
+Project: `code/hello-metrics/` (Java 21, Maven)
 
-A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every service you build from here on can follow.
+A minimal Java HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every service you build from here on can follow.
 
-- [ ] `go.mod`: module `hello-metrics`. Run `go get github.com/prometheus/client_golang` to add the one external dependency this project needs, before writing `main.go`.
-- [ ] `main.go`: Go HTTP server with two routes, plus two metric objects shared by both routes.
+- [ ] `pom.xml`: a single dependency on the current Prometheus Java client (check [the client's GitHub](https://github.com/prometheus/client_java) for the current artifact coordinates and add it to `pom.xml`; the exact group/artifact has changed as the library evolved, worth confirming rather than assuming). No web framework: the HTTP server itself comes from the JDK, not a dependency.
+- [ ] `Main.java`: uses `com.sun.net.httpserver.HttpServer` (built into the JDK, `jdk.httpserver` module, no Spring, no external web framework needed for two routes) with two registered contexts, plus two metric objects shared by both routes.
 
   **Setup: two shared metrics**
-  Before either route runs, create two objects once, at startup, using `github.com/prometheus/client_golang/prometheus/promauto`:
-  - a Counter named `request_count_total`, via `promauto.NewCounter(prometheus.CounterOpts{Name: "request_count_total"})`
-  - a Histogram named `request_duration_seconds`, via `promauto.NewHistogram(prometheus.HistogramOpts{Name: "request_duration_seconds", Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5}})`, seven boundaries spanning 5ms to 500ms
+  Before either route runs, create two objects once, at startup, using the Prometheus client library:
+  - a Counter named `request_count_total`
+  - a Histogram named `request_duration_seconds`, with bucket boundaries spanning roughly 5ms to 500ms (seven boundaries: `0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5`)
 
-  `promauto` registers each metric with Prometheus's default registry the instant you create it, so there's no separate registration call to make. Store the two returned objects as package-level variables (or fields on a struct) and reuse those same objects on every request. Never call `promauto.NewCounter` or `promauto.NewHistogram` inside a handler function; a fresh object on every request would reset to zero each time and nothing would ever accumulate.
+  Store both as `final` fields, created exactly once, and reuse those same objects on every request. Never construct a new Counter or Histogram inside a handler; a fresh object on every request would reset to zero each time and nothing would ever accumulate. This is the same discipline the Go version of this exercise required, and the same mistake (rebuilding the metric per request) produces the same silent bug in any language: a `/metrics` endpoint that always reads zero.
 
   **`GET /`**
   - Response: `{"status":"ok"}`
-  - Format: JSON, written with the standard library. The Counter and Histogram from Setup aren't involved in building this response body.
-  - Side effect: increments the shared Counter, and observes its own response time into the shared Histogram (start a timer when the request comes in, call `.Observe(duration.Seconds())` right before responding). This is why the program needs `github.com/prometheus/client_golang/prometheus` even though the response above is plain JSON: `.Inc()` and `.Observe()` are methods on that package's types.
+  - Format: JSON, written by hand (a two-key object doesn't need a JSON library). The Counter and Histogram from Setup aren't involved in building this response body.
+  - Side effect: increments the shared Counter, and observes its own response time into the shared Histogram (record a start time when the request comes in, observe the elapsed seconds right before responding).
 
   **`GET /metrics`**
-  - Response: the current value of both metrics created in Setup, meaning `request_count_total` and `request_duration_seconds`
-  - Format: Prometheus's plain-text exposition format, not JSON. Example output for those two metrics:
+  - Response: the current value of both metrics created in Setup, `request_count_total` and `request_duration_seconds`, rendered in Prometheus's plain-text exposition format, not JSON. Example output for those two metrics:
     ```
     # TYPE request_count_total counter
     request_count_total 42
@@ -130,20 +84,20 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
     request_duration_seconds_count 42
     ```
     Notice the Histogram alone takes ten lines: one per bucket boundary from Setup (seven), plus `+Inf`, plus `_sum` and `_count`. There is no single field or single JSON value that represents it.
-  - Package: `github.com/prometheus/client_golang/prometheus/promhttp`. Call `promhttp.Handler()` and mount it at `/metrics`; it reads the registry from Setup and writes this text for you. You never construct the response by hand.
+  - The Prometheus client library ships a writer that renders its registry in this exact text format; call it from inside your `/metrics` handler rather than building the text yourself. You wire it into your own `HttpServer` route, the same shape as the Go version wiring `promhttp.Handler()` into its own router: the library hands you the response body, you own the route.
 
-**The full pipeline:** your Go code registers and updates the two metrics → they render as text at `/metrics` → the `ServiceMonitor` (below) tells Prometheus to scrape that text every 15s and store it as a time series → Grafana panels (later in this week) query Prometheus (never your Go service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
+**The full pipeline:** your Java code registers and updates the two metrics → they render as text at `/metrics` → the `ServiceMonitor` (below) tells Prometheus to scrape that text every 15s and store it as a time series → Grafana panels (later in this week) query Prometheus (never your Java service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
 - [ ] `Dockerfile`: multi-stage build:
   ```dockerfile
-  FROM golang:1.22-alpine AS builder
+  FROM maven:3.9-eclipse-temurin-21 AS builder
   WORKDIR /app
   COPY . .
-  RUN go build -o hello-metrics .
+  RUN mvn -q package
 
-  FROM alpine:latest
-  COPY --from=builder /app/hello-metrics /hello-metrics
+  FROM eclipse-temurin:21-jre-alpine
+  COPY --from=builder /app/target/hello-metrics.jar /hello-metrics.jar
   EXPOSE 8080
-  CMD ["/hello-metrics"]
+  CMD ["java", "-jar", "/hello-metrics.jar"]
   ```
 - [ ] `k8s/deployment.yaml`: `Deployment` (1 replica, image `hello-metrics:latest`, imagePullPolicy: Never) + `Service` (ClusterIP, port 8080)
 - [ ] `k8s/service-monitor.yaml`: `ServiceMonitor` resource (so Prometheus scrapes `/metrics` every 15s)
@@ -153,7 +107,7 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
   kind load docker-image hello-metrics:latest --name pd-systems
   kubectl apply -f k8s/
   ```
-- [ ] Verify: port-forward the service, send 20 requests with `curl`, query `request_count_total` in Prometheus, and see the counter. Also query `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`; confirm it returns a real number, not an empty result. An empty result means `.Observe()` is never actually being called.
+- [ ] Verify: port-forward the service, send 20 requests with `curl`, query `request_count_total` in Prometheus, and see the counter. Also query `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`; confirm it returns a real number, not an empty result. An empty result means the Histogram's observe call is never actually being reached.
 - [ ] In Grafana, create two panels: `rate(request_count_total[1m])` and `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`. Save the dashboard.
 
 ---

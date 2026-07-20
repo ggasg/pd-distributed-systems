@@ -5,7 +5,7 @@ status: not-started
 
 # W20: Observability: Metrics, Tracing, Logging
 
-> **Arc:** Infrastructure · **Language:** C++ + Go
+> **Arc:** Infrastructure · **Language:** C++ + Java
 
 ## What you'll build
 Instrument your W07 Differential Dataflow engine (C++) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
@@ -58,10 +58,10 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   - `active_keys`: gauge value over time (graph)
 - [ ] Export the dashboard as `config/grafana-dashboard.json` (Grafana → Share → Export)
 
-**Part 3: Go log aggregator, wired into the W19 operator**
+**Part 3: Java log aggregator, wired into the W19 operator**
 
-- [ ] `tools/log-aggregator/main.go`: HTTP server that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a ring buffer protected by a `sync.RWMutex`. ~80 lines.
-- [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.22-alpine` builder → `alpine` runtime, same as W00's), `EXPOSE 8080`.
+- [ ] `tools/log-aggregator/LogAggregator.java`: HTTP server (`com.sun.net.httpserver.HttpServer`, same JDK-only approach as W00 and W03) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W13's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `ReentrantReadWriteLock` or wrapped in `Collections.synchronizedList`. ~80 lines. The operator it plugs into is still Go, that boundary is deliberate: this is a language-agnostic sidecar contract, a container image with two HTTP routes, and the `DistributedJob` CRD only ever references it by image name, never by language.
+- [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`maven:3.9-eclipse-temurin-21` builder → `eclipse-temurin:21-jre-alpine` runtime, same shape as W00's), `EXPOSE 8080`.
 - [ ] Build and load into the kind cluster from W19:
   ```bash
   docker build -t log-aggregator:latest tools/log-aggregator

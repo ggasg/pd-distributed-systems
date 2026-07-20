@@ -16,6 +16,51 @@ The Pod builder also supports an optional sidecar container (`spec.sidecarImage`
 
 ---
 
+## Before you start: Go Warm-Up (recommended if goroutines and channels are new or rusty)
+
+20–30 minutes, separate from the operator build below. This is the one week in the entire curriculum that asks you to write Go: everything from W01 through W17 has been Java. `controller-runtime` below is real, idiomatic Go, so rather than meet goroutines and channels for the first time inside an actual reconciler, this drill gets that syntax and the one genuinely new mechanic (channels, not the sequential parts, which will feel familiar from any C-family language) out of the way on a problem simple enough that the channel mechanics are the only thing you're thinking about.
+
+Build a tiny worker pool: N goroutines pull ints off an input channel, double them, and send the result to an output channel.
+
+```go
+func doubler(in <-chan int, out chan<- int, wg *sync.WaitGroup) {
+    defer wg.Done()
+    for n := range in {
+        out <- n * 2
+    }
+}
+
+func main() {
+    in, out := make(chan int), make(chan int)
+    var wg sync.WaitGroup
+
+    for i := 0; i < 3; i++ { // 3 workers
+        wg.Add(1)
+        go doubler(in, out, &wg)
+    }
+    go func() { wg.Wait(); close(out) }() // close AFTER all workers finish
+
+    go func() {
+        for i := 1; i <= 10; i++ {
+            in <- i
+        }
+        close(in) // tells workers' `range in` to stop
+    }()
+
+    sum := 0
+    for n := range out {
+        sum += n
+    }
+    fmt.Println(sum) // 110: doubled 1..10
+}
+```
+
+Run it, then break it on purpose once: move `close(out)` outside the `wg.Wait()` goroutine and call it directly after the loop that starts workers. Watch it panic ("send on closed channel") or deadlock, depending on timing. That failure mode, closing a channel before everyone writing to it is done, has no equivalent in the Java concurrency you've been using so far (an `ExecutorService` handles this lifecycle for you); it's a genuinely new footgun, worth seeing in eleven lines before you meet it, less legibly, inside `reconciler.go` below.
+
+If this all felt obvious, skip straight to the Read section below; you don't need it. If `close(in)` / `range in` / the two-goroutine close pattern felt new, this was worth the 20 minutes.
+
+---
+
 ## Read
 - [ ] [Kubernetes Operators](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): k8s docs. Read "Motivation" and "Deploying operators". (~10 min)
 - [ ] [controller-runtime pkg docs](https://pkg.go.dev/sigs.k8s.io/controller-runtime): focus on `Reconciler` interface and `ctrl.Manager`. (~20 min)

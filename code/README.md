@@ -4,41 +4,43 @@ One subdirectory per week. Each is a self-contained project with its own build f
 
 ```
 code/
-├── hello-metrics/          # W00: Go service + k8s manifests
-│   ├── main.go
+├── hello-metrics/          # W00: Java service (Maven) + k8s manifests
+│   ├── pom.xml
+│   ├── Main.java
 │   ├── Dockerfile
 │   └── k8s/
 │       ├── deployment.yaml
 │       └── service-monitor.yaml
 │
-├── lsm/                    # W01: Go
-│   ├── memtable.go
-│   ├── sstable.go
-│   ├── lsm_tree.go
-│   ├── lsm_tree_test.go
-│   └── go.mod
+├── lsm/                    # W01: Java (Maven)
+│   ├── MemTable.java
+│   ├── SSTable.java
+│   ├── LSMTree.java
+│   ├── LSMTreeTest.java
+│   └── pom.xml
 │
-├── encoding/               # W02: Go
-│   ├── varint.go
-│   ├── row_store.go
-│   ├── column_store.go
-│   ├── benchmark.go        # or cmd/benchmark/main.go
-│   └── go.mod
+├── encoding/               # W02: Java (Maven)
+│   ├── Varint.java
+│   ├── RowStore.java
+│   ├── ColumnStore.java
+│   ├── Benchmark.java
+│   └── pom.xml
 │
-├── mapreduce/              # W03: Go
-│   ├── mapreduce.go        # Mapper/Reducer interfaces
-│   ├── runner.go
-│   ├── word_count.go
-│   ├── pagerank.go
-│   └── go.mod
+├── mapreduce/              # W03: Java (Maven)
+│   ├── MapReduce.java      # Mapper/Reducer functional interfaces
+│   ├── Runner.java
+│   ├── WordCount.java
+│   ├── PageRank.java
+│   ├── PageRankRunner.java
+│   └── pom.xml
 │   # HTTP coordinator lives in tools/job_coordinator/
 │
-├── clocks/                 # W04: Go
-│   ├── vector_clock.go
-│   ├── message.go
-│   ├── node.go
-│   ├── causal_delivery_test.go
-│   └── go.mod
+├── clocks/                 # W04: Java (Maven)
+│   ├── VectorClock.java
+│   ├── Message.java
+│   ├── Node.java
+│   ├── CausalDeliveryTest.java
+│   └── pom.xml
 │
 ├── streaming/               # W05: C++ (CMake)
 │   ├── include/streaming/
@@ -144,13 +146,13 @@ code/
 │   ├── generate_orders.py            # shared data, reused by both languages
 │   └── data/                         # orders_100k.parquet, orders_1m.parquet, orders_5m.parquet
 │
-├── distributed-training/   # W13: Python + Go tool
+├── distributed-training/   # W13: Python + Java tool
 │   ├── mlp.py
 │   ├── ring_allreduce.py
 │   ├── worker.py
 │   ├── train.py
 │   └── requirements.txt
-│   # Go tool lives in tools/grad_server/
+│   # Java tool lives in tools/grad_server/
 │
 ├── actor-training/         # W14: Python + Ray
 │   ├── model.py             # PyTorch CNN
@@ -174,13 +176,13 @@ code/
 │   ├── benchmark.py
 │   └── requirements.txt
 │
-├── snapshot/                # W17: Go
-│   ├── channel.go
-│   ├── message.go
-│   ├── node.go
-│   ├── coordinator.go
-│   ├── snapshot_test.go
-│   └── go.mod
+├── snapshot/                # W17: Java (Maven)
+│   ├── Channel.java
+│   ├── Message.java
+│   ├── Node.java
+│   ├── Coordinator.java
+│   ├── SnapshotTest.java
+│   └── pom.xml
 │
 ├── capstone/                # W18: your choice of language
 │   ├── README.md           # required: design doc
@@ -207,7 +209,7 @@ code/
 │       ├── metrics.cpp
 │       ├── tracing_setup.cpp
 │       └── logging.cpp
-│   # Go sidecar lives in tools/log-aggregator/, wired into the W19 operator's DistributedJob
+│   # Java sidecar lives in tools/log-aggregator/, wired into the W19 operator's DistributedJob
 │
 └── capstone-platform/      # W21 (optional): Go + Python, combines W11+W13+W16+W17+W19+W20
     ├── train_worker.py
@@ -220,6 +222,15 @@ code/
 ---
 
 ## Build Commands
+
+**Java (Maven):**
+```bash
+mvn compile
+mvn test
+mvn package                                          # produces target/<name>.jar
+java -jar target/<name>.jar
+java SomeFile.java                                   # single-file source execution, no build step (used by W15's bench runner)
+```
 
 **C++ (CMake):**
 ```bash
@@ -261,3 +272,4 @@ go build -o bin/app .
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
 - C++ projects (W05–W08, W20) keep tests in a separate `tests/` directory using GoogleTest, the CMake-project convention. Unlike Rust's inline `#[cfg(test)] mod tests`, C++ test files are separate translation units registered in `CMakeLists.txt` via `gtest_discover_tests`
 - Scala projects (W09–W10, W12) follow the standard sbt layout (`src/main/scala`, `src/test/scala`) rather than Rust's inline-test or C++'s separate-`tests/`-directory conventions; that's just how sbt expects things laid out
+- Java projects (W00–W04, W17, and the secondary tools in W03/W13/W15/W20) each have their own `pom.xml`, one Maven project per directory, no shared parent POM, same isolation as every other language here. Source files sit flat in the project root rather than under the conventional `src/main/java/...` package tree; these are small, single-package exercises, and skipping the package hierarchy keeps the file listing above honest about what's actually in each directory

@@ -5,10 +5,10 @@ status: not-started
 
 # W04: Clocks, Causality, and Time
 
-> **Arc:** Data Systems Internals · **Language:** Go
+> **Arc:** Data Systems Internals · **Language:** Java
 
 ## What you'll build
-Vector clocks + causal message delivery in Go. 3 simulated nodes, each its own goroutine. Assert that no node delivers a message before the messages it causally depends on.
+Vector clocks + causal message delivery in Java. 3 simulated nodes, each its own virtual thread. Assert that no node delivers a message before the messages it causally depends on.
 
 ---
 
@@ -23,20 +23,20 @@ Vector clocks + causal message delivery in Go. 3 simulated nodes, each its own g
 
 ## Code
 
-Project: `code/clocks/` (Go, module)
+Project: `code/clocks/` (Java 21, Maven)
 
-- [ ] `vector_clock.go`: `type VectorClock map[string]int`. Implement as functions, not methods that mutate: `Increment(vc VectorClock, node string) VectorClock`, `Merge(a, b VectorClock) VectorClock`, `HappensBefore(a, b VectorClock) bool`, `Concurrent(a, b VectorClock) bool`: each returns a **new** map rather than mutating its input. This matters more in Go than it did conceptually elsewhere: Go maps are reference types, so `vc2 := vc1; vc2["A"]++` would silently mutate `vc1` too. Copy explicitly (`maps.Clone` from the `maps` package, or a manual loop) at the top of every function that "changes" a clock.
-- [ ] `message.go`: `type Message struct { SenderID string; Payload string; Timestamp VectorClock }`
-- [ ] `node.go`: each node is a goroutine with its own inbound `chan Message`; on send: increment own entry, attach clock, send on the recipient's channel; on receive: buffer messages in a local slice, only deliver when causal preconditions are met (all causally-prior messages already delivered); re-check the buffer every time a new message is delivered, since delivering one message can unblock another
-- [ ] `causal_delivery_test.go`: test: node A sends m1; node B receives m1 and sends m2 (causally after m1); node C receives m2 before m1; assert C buffers m2 until m1 arrives, then delivers m1 then m2 in order
+- [ ] `VectorClock.java`: `record VectorClock(Map<String, Integer> counts) {}`. Implement as pure functions that return a new `VectorClock` rather than mutating: `static VectorClock increment(VectorClock vc, String node)`, `static VectorClock merge(VectorClock a, VectorClock b)`, `static boolean happensBefore(VectorClock a, VectorClock b)`, `static boolean concurrent(VectorClock a, VectorClock b)`. In the compact constructor of the record, wrap the incoming map with `Map.copyOf(counts)`: this makes the stored map genuinely immutable, not just conventionally treated as if it were. That's a real, concrete improvement over the discipline this exercise requires in some other languages, where a plain mutable map is a reference type and accidentally sharing one between two clocks is a silent bug you have to remember not to make; here, calling `.put()` on the stored map simply throws `UnsupportedOperationException`, so the mistake is caught immediately instead of corrupting state quietly.
+- [ ] `Message.java`: `record Message(String senderId, String payload, VectorClock timestamp) {}`
+- [ ] `Node.java`: each node runs on its own virtual thread with its own inbound `BlockingQueue<Message>` (a `LinkedBlockingQueue` gives FIFO delivery, the direct equivalent of a channel); on send: increment own entry, attach clock, put the message on the recipient's queue; on receive: buffer messages in a local list, only deliver when causal preconditions are met (all causally-prior messages already delivered); re-check the buffer every time a new message is delivered, since delivering one message can unblock another
+- [ ] `CausalDeliveryTest.java`: JUnit 5 test: node A sends m1; node B receives m1 and sends m2 (causally after m1); node C receives m2 before m1; assert C buffers m2 until m1 arrives, then delivers m1 then m2 in order
 
-**Constraints:** simulate 3 nodes in-process, each a goroutine. Use buffered or unbuffered `chan Message` for channels; try both and see what happens to delivery order when you switch. Reorder message delivery in tests with `time.Sleep` or by controlling send order directly (don't rely on scheduler nondeterminism to prove your test cases; make the reordering explicit).
+**Constraints:** simulate 3 nodes in-process, each a virtual thread (`Thread.ofVirtual().start(...)` or `Executors.newVirtualThreadPerTaskExecutor()`). Reorder message delivery in tests by controlling send order directly, not by inserting sleeps or relying on scheduler nondeterminism to prove your test cases; make the reordering explicit so the test is deterministic.
 
 ---
 
 ## 🐍 Python DSA Review (optional)
 
-**Dicts as vector clocks**: a vector clock is just a dict. Implement the three core operations in Python before building the Go version.
+**Dicts as vector clocks**: a vector clock is just a dict. Implement the three core operations in Python before building the Java version.
 
 ```python
 # vector_clock.py
@@ -71,7 +71,7 @@ assert concurrent(vc2, vc3)      # A and B are causally independent
 assert merge(vc2, vc3) == {"A": 2, "B": 1}
 ```
 
-**Connection:** `vector_clock.go` is this dict, made a `map[string]int` with the same copy-on-write discipline enforced by hand instead of by a language guarantee. Writing it in Python first shows you the data structure is trivial; the subtlety is in `happens_before` and `concurrent`, and in Go, in remembering to copy.
+**Connection:** `VectorClock.java` is this dict, made a `Map<String, Integer>` wrapped in a record, with the copy-on-write discipline enforced by the type system instead of by hand. Writing it in Python first shows you the data structure is trivial; the subtlety is in `happensBefore` and `concurrent`, not in the bookkeeping.
 
 ---
 

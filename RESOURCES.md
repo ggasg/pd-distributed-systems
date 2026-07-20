@@ -20,7 +20,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications. Read before anything else in the curriculum; it isn't tied to this week's build specifically.
 - [kind docs](https://kind.sigs.k8s.io/): Kubernetes in Docker
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack): Helm chart for Prometheus + Grafana
-- [Prometheus Go client library](https://github.com/prometheus/client_golang)
+- [Prometheus Java client library](https://github.com/prometheus/client_java)
 
 ---
 

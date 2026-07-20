@@ -16,6 +16,28 @@ Everything you need installed before starting W00. Set this up once; it covers t
 
 ---
 
+## Java 21 (Maven)
+
+```bash
+# macOS
+brew install openjdk@21 maven
+
+# Point the shell at it (Homebrew doesn't symlink a versioned JDK onto PATH by default)
+echo 'export PATH="/opt/homebrew/opt/openjdk@21/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+java --version    # openjdk 21.x
+mvn --version     # Apache Maven 3.9.x, and confirms it's picking up JDK 21
+```
+
+**W00–W04, W17, and secondary tooling in W03/W13/W15/W20** use Java: this is the backbone language of the curriculum alongside C++. Each project is its own Maven project (`pom.xml` per directory, no shared parent build file, same isolation principle as the C++/Scala/Go projects); `mvn compile`/`mvn test`/`mvn package` fetch whatever the project's `pom.xml` declares.
+
+**Already know Java?** If your Java is production-grade (per Gaston's own background, "advanced" and already used for Map/Reduce-style big-data work), this is close to a zero-ramp module: the only genuinely new surface is Java 21 itself, not the language you already know. Skim before W01: `record` types for immutable data (they auto-generate `equals`/`hashCode`/`toString`, but field-by-field, which matters for array-typed fields, see W01's callout), virtual threads (`Thread.ofVirtual()`, `Executors.newVirtualThreadPerTaskExecutor()`, cheap enough to use one per task instead of pooling), and `sealed` interfaces with exhaustive pattern-matching `switch` (W17 uses this directly). [What's New in Java 21](https://openjdk.org/projects/jdk/21/) (official release notes) covers all three in about 20 minutes. No Spring, no Kafka anywhere in this curriculum, by design: every HTTP service uses the JDK's own `com.sun.net.httpserver.HttpServer`, deliberately avoiding framework overhead for services this small.
+
+**Rusty, or newer to Java?** Budget more time before W01: [Java Records](https://docs.oracle.com/en/java/javase/21/language/records.html) and [Virtual Threads](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html) (official Oracle guides, ~30 min each) cover the two idioms this curriculum leans on hardest. The rest, generics, the Streams API, collections, is unlikely to have changed much from whatever Java you last wrote.
+
+---
+
 ## Go 1.22+
 
 ```bash
@@ -26,14 +48,14 @@ go version   # go1.22.x
 # Or download from https://go.dev/dl/
 ```
 
-**W00–W04, W17, W19, and secondary tooling in W03/W13/W15/W20** use Go: this is the backbone language of the curriculum alongside C++. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
+**Go is scoped to W19 (required) and the optional W21 grand capstone** (which extends W19's operator). It isn't the curriculum's backbone the way it once was; every other week that used to be Go now runs on Java, see the Java section above. `go mod init <name>` scaffolds a project; there's no separate package-manager install step, `go build`/`go run`/`go test` fetch whatever `go.mod` declares.
 
-**W19 (Kubernetes Operators) requires Go**: this isn't optional the way secondary tooling elsewhere is. Install `controller-runtime`:
+**W19 (Kubernetes Operators) requires Go**: `controller-runtime`, the ecosystem-standard library for writing operators, has no comparable-maturity Java equivalent, which is the specific, checked reason Go survives in this curriculum at all rather than being replaced everywhere. Install it:
 ```bash
 go get sigs.k8s.io/controller-runtime@v0.18.0
 ```
 
-**New to Go?** Start here, not at W05. Go's learning curve is short by design (the language spec is deliberately small, and there's no ownership model or macro system to internalize), but it's still worth a dedicated pass before W01 rather than learning it while also learning LSM-trees. Work through [A Tour of Go](https://go.dev/tour/) (free, interactive, ~2–3 hours) end to end, then read [Effective Go](https://go.dev/doc/effective_go)'s sections on goroutines, channels, and error handling (~1 hour). That's enough to be productive in W00–W04. The one habit worth building early: Go returns errors as values (`result, err := doThing()`) instead of throwing exceptions. Get comfortable checking `err != nil` everywhere; it's idiomatic, not boilerplate to work around.
+**New to Go?** You don't need to ramp before this curriculum starts. Unlike the old W00-era warmup, the goroutines-and-channels drill now lives inside **W19 itself** ("Before you start" section), scoped to exactly what that week needs and done the day you start it, the same "warm up right before, not months ahead" placement W09 uses for its Scala drill. If you want a broader pass first anyway, [A Tour of Go](https://go.dev/tour/) (free, interactive, ~2–3 hours) covers the language; [Effective Go](https://go.dev/doc/effective_go)'s sections on goroutines, channels, and error handling (~1 hour) cover the concurrency idioms W19's warmup exercises. The one habit worth knowing going in: Go returns errors as values (`result, err := doThing()`) instead of throwing exceptions; get comfortable checking `err != nil` everywhere, it's idiomatic, not boilerplate to work around.
 
 ---
 
@@ -206,6 +228,8 @@ kind delete cluster --name pd-systems
 ## Verify Everything
 
 ```bash
+java --version       # openjdk 21.x
+mvn --version        # Apache Maven 3.9.x
 go version           # 1.22.x
 cmake --version      # 3.25.x or later
 clang++ --version    # or g++ --version
@@ -223,6 +247,7 @@ helm version         # 3.14.x or later
 
 | Language | IDE |
 |----------|-----|
+| Java | IntelliJ IDEA (Community is fine), or VS Code + Extension Pack for Java |
 | Go | VS Code + Go extension, or GoLand |
 | C++ | VS Code + clangd extension, or CLion |
 | Scala | IntelliJ IDEA + Scala plugin |

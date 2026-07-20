@@ -5,7 +5,7 @@ status: not-started
 
 # W18: Capstone
 
-> **Arc:** Distributed ML & Compute · **Language:** Go, C++, or Python, your choice
+> **Arc:** Distributed ML & Compute · **Language:** Java, C++, or Python, your choice
 
 ## What you'll build
 One system that combines at least two concepts from this curriculum. It should be something you can explain end-to-end, from the data model to the failure behavior. No scaffolding provided; you design it.
@@ -14,12 +14,12 @@ One system that combines at least two concepts from this curriculum. It should b
 
 ## Choose One
 
-### Option A: Distributed KV Store (Go)
+### Option A: Distributed KV Store (Java)
 Combine W01 (LSM storage) + W04 (clocks/ordering).
 
-A 3-node key-value store in Go where writes are replicated via a simple primary-backup protocol (not Raft, keep it tractable). The primary assigns a logical timestamp to each write using a Lamport clock before forwarding to backups. Supports `get`, `put`, `delete`. Test: kill the primary, promote a backup, verify reads are consistent.
+A 3-node key-value store in Java where writes are replicated via a simple primary-backup protocol (not Raft, keep it tractable). The primary assigns a logical timestamp to each write using a Lamport clock before forwarding to backups. Supports `get`, `put`, `delete`. Test: kill the primary, promote a backup, verify reads are consistent.
 
-**Why Go:** goroutines + channels make the node communication natural; Go's stdlib HTTP makes the client API trivial. This is the kind of tool engineers actually write in Go.
+**Why Java:** it's a direct extension of the actual code from W01 and W04, not a rewrite in a third language; virtual threads make the node communication natural, and the JDK's built-in `HttpServer` makes the client API trivial without reaching for a framework.
 
 **If you pick this option, read first: DDIA Chapter 5** (Replication), specifically "Leaders and Followers." Primary-backup *is* the leader-based replication Ch. 5 describes; the chapter names the failure modes worth designing around before you write `promote()` (replication lag, what happens to in-flight writes when the leader dies mid-forward) rather than discovering them by hand.
 

@@ -40,9 +40,9 @@ Project: `code/cpu-gemm/` (C, gcc/clang)
 - [ ] `simd_gemm.c`: use AVX2 intrinsics (`_mm256_fmadd_ps`) for the innermost loop
 - [ ] `benchmark.c`: time all three on 1024×1024 float32, print GFLOPS
 
-**Go automation tool:**
+**Java automation tool:**
 
-- [ ] `tools/bench_runner.go`: a small Go CLI that runs the benchmark subprocess, parses GFLOPS from stdout, and appends results as a row to `results.csv`. Usage: `go run bench_runner.go --kernel naive --runs 20`. Keep it under 80 lines: a quick return to Go, not new territory; you last wrote it for W13's gradient server.
+- [ ] `tools/bench_runner/BenchRunner.java`: a small Java CLI (`ProcessBuilder` to launch the benchmark subprocess and capture its stdout) that parses GFLOPS from the output and appends results as a row to `results.csv`. Usage: `java BenchRunner.java --kernel naive --runs 20` (single-file source-code execution, no build step needed for a program this small, one of Java 21's genuinely beginner-friendly features). Keep it under 80 lines: a quick return to the JDK HttpServer/CLI style, not new territory; you last wrote something this shape for W13's gradient server.
 
 ---
 

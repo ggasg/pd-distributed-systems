@@ -5,7 +5,7 @@ status: not-started
 
 # W02: Encoding and Wire Formats
 
-> **Arc:** Data Systems Internals · **Language:** Go
+> **Arc:** Data Systems Internals · **Language:** Java
 
 ## What you'll build
 Varint encoding/decoding from scratch + a row vs columnar layout benchmark over 1M integer records. Numbers tell the story.
@@ -23,20 +23,20 @@ Varint encoding/decoding from scratch + a row vs columnar layout benchmark over 
 
 ## Code
 
-Project: `code/encoding/` (Go, module)
+Project: `code/encoding/` (Java 21, Maven)
 
-- [ ] `varint.go`: implement protobuf-style variable-length integer encoding: `EncodeVarint(value int64) []byte`, `DecodeVarint(buf []byte, offset int) (int64, int)` (returns decoded value and new offset). Handle sign extension for negative numbers (zigzag encoding: `(n << 1) ^ (n >> 63)`)
-- [ ] `row_store.go`: store 1M records of `[10]int32` in row-major layout (one contiguous `[]int32` slice, stride 10). Implement `ReadColumn(col int) []int32`
-- [ ] `column_store.go`: store the same data in columnar layout (one `[]int32` per column). Implement `ReadColumn(col int) []int32`
-- [ ] `benchmark.go`, exposed as a `cmd/benchmark` binary: use `time.Now()`/`time.Since()` to measure: (1) full column scan in row store vs column store; (2) point lookup by row index in both layouts. Print results. Alternatively, write this as a proper Go benchmark using `testing.B` (`go test -bench=.`) instead of hand-rolled timing; either is fine, but if you go the `testing.B` route note that Go's benchmark framework already handles warm-up iterations for you
+- [ ] `Varint.java`: implement protobuf-style variable-length integer encoding: `static byte[] encodeVarint(long value)`, `static long[] decodeVarint(byte[] buf, int offset)` (return a two-element array: decoded value and new offset, or define a small `record DecodedVarint(long value, int newOffset) {}` if you'd rather have named fields than a bare array). Handle sign extension for negative numbers (zigzag encoding: `(n << 1) ^ (n >> 63)`, identical bit math to every other language, Java's `long` is signed 64-bit just like Go's `int64`)
+- [ ] `RowStore.java`: store 1M records of 10 `int` columns in row-major layout (one contiguous `int[]` array, stride 10; Java's `int` is already a fixed 32-bit signed integer, no separate `int32` type to reach for the way Go needed one). Implement `int[] readColumn(int col)`
+- [ ] `ColumnStore.java`: store the same data in columnar layout (one `int[]` per column). Implement `int[] readColumn(int col)`
+- [ ] `Benchmark.java`: use `System.nanoTime()` to measure: (1) full column scan in row store vs column store; (2) point lookup by row index in both layouts. Print results. Alternatively, use [JMH](https://github.com/openjdk/jmh) (the standard Java microbenchmark harness) instead of hand-rolled timing; either is fine, but if you go the JMH route note that it already handles JIT warm-up iterations for you, the same reason Go's `testing.B` was offered as an alternative in other languages' versions of this exercise, hand-rolled timing on a cold JIT will understate steady-state performance if you're not careful to warm up first
 
-**Expected outcome:** column scan should be ~5–10x faster in columnar layout. If it's not, investigate why (cache effects, whether you accidentally allocated inside the hot loop).
+**Expected outcome:** column scan should be ~5–10x faster in columnar layout. If it's not, investigate why (cache effects, whether you accidentally allocated inside the hot loop, or whether the JIT hasn't warmed up yet if you're using hand-rolled timing).
 
 ---
 
 ## 🐍 Python DSA Review (optional)
 
-**Bit manipulation + byte packing**: implement varint in Python before doing it in Go. The bit ops are the same; Python makes them easy to inspect.
+**Bit manipulation + byte packing**: implement varint in Python before doing it in Java. The bit ops are the same; Python makes them easy to inspect.
 
 ```python
 # varint.py
@@ -55,7 +55,6 @@ def decode_varint(data: bytes, pos: int = 0) -> tuple[int, int]:
         result |= (b & 0x7F) << shift
         if not (b & 0x80):  # no continuation bit, done
             return result, pos
-        shift += 7
 
 # Verify round-trip
 for n in [0, 1, 127, 128, 300, 16383, 2**21 - 1]:
@@ -65,7 +64,7 @@ for n in [0, 1, 127, 128, 300, 16383, 2**21 - 1]:
     print(f"{n:>8} → {list(encoded)} ({len(encoded)} bytes)")
 ```
 
-**Connection:** this IS the week's core topic, but implementing it in Python first lets you verify the bit logic interactively before writing the Go version, where a wrong shift or mask is a silent correctness bug rather than a crash.
+**Connection:** this IS the week's core topic, but implementing it in Python first lets you verify the bit logic interactively before writing the Java version, where a wrong shift or mask is a silent correctness bug rather than a crash.
 
 ---
 

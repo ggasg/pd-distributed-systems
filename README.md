@@ -9,7 +9,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 ## Quick Start
 
 1. Clone the repo and open it as an Obsidian vault
-2. Follow [SETUP.md](SETUP.md) to install Go, C++, Scala, Python, Docker, and Obsidian plugins
+2. Follow [SETUP.md](SETUP.md) to install Java, C++, Scala, Python, Go, Docker, and Obsidian plugins
 3. Skim [RESOURCES.md](RESOURCES.md): most readings are free links, but a few (DDIA, the most-used book) are worth buying before you hit the week that needs them
 4. Set `start_date` in [config.md](config.md), and all week dates recalculate automatically
 5. Open [Home.md](Home.md) as your daily entry point
@@ -23,11 +23,11 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 | Arc | Weeks | Focus | Language |
 |-----|-------|-------|----------|
-| Setup | W00 | Local k8s, Prometheus, Grafana | Go |
-| Data Systems Internals | W01–W04 | Storage engines, encoding, MapReduce, causality | Go |
+| Setup | W00 | Local k8s, Prometheus, Grafana | Java |
+| Data Systems Internals | W01–W04 | Storage engines, encoding, MapReduce, causality | Java |
 | Streaming, Dataflow, and Query Planning | W05–W10 | Stream processing, Naiad, Differential Dataflow, query execution, rule-based query planning, aggregation algebra | C++ (W05–W08) / Scala (W09–W10) |
-| Distributed ML & Compute | W11–W18 | ML pipelines, PySpark vs. Scala Spark performance, distributed training, actor model (Ray), GPU compute, transformers, fault tolerance | Python / Scala + Python (W12) / Go (W17) |
-| Infrastructure | W19–W20 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go / C++ |
+| Distributed ML & Compute | W11–W18 | ML pipelines, PySpark vs. Scala Spark performance, distributed training, actor model (Ray), GPU compute, transformers, fault tolerance | Python / Scala + Python (W12) / Java (W17) |
+| Infrastructure | W19–W20 | Kubernetes Operators, observability (Prometheus, OTel, Grafana) | Go (W19) / C++ + Java (W20) |
 | Capstone (optional) | W21 | Distributed training + serving platform, fully observed (synthesizes W11, W13, W16, W17, W19, W20) | Go / Python |
 
 ---
@@ -37,7 +37,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 **After Arc 1 (W01–W04):**
 - Explain why LSM-trees beat B-trees for write-heavy workloads and when they don't
 - Implement varint encoding and measure column vs. row scan performance
-- Write a MapReduce framework with goroutines; explain why iterative algorithms are slow on it
+- Write a MapReduce framework with virtual threads; explain why iterative algorithms are slow on it
 - Implement vector clocks; reason about causal consistency and concurrent events
 
 **After Arc 2 (W05–W10):**
@@ -79,18 +79,18 @@ Every week has:
 
 | Weeks | Language | Why |
 |-------|----------|-----|
-| W00 | Go | Service + k8s deployment; Prometheus metrics |
-| W01–W04 | Go | Storage engines and coordination logic; goroutines/channels for the concurrent parts, plain structs and interfaces for the data structures |
+| W00 | Java | Service + k8s deployment; Prometheus metrics. JDK's built-in `HttpServer` keeps this framework-free |
+| W01–W04 | Java | Storage engines and coordination logic. Near-zero ramp cost (prior production Java background), and modern Java gives real FP-adjacent tools where they fit: records for immutable data, Streams for the MapReduce shuffle phase, virtual threads for the concurrent parts instead of platform threads or an unfamiliar concurrency model |
 | W05–W08 | C++ | This is the substrate of the systems the curriculum's actual target (distributed model training, compute-intensive AI workflows) runs on: PyTorch's `c10d`/ATen, NCCL, gRPC's core, and DuckDB's execution engine are all C++. The dataflow papers this arc is built around (Naiad, Differential Dataflow) have no maintained C++ reference implementation the way they do a Rust one (`timely-dataflow`/`differential-dataflow`), so this arc leans on the papers directly and points at adjacent production C++ codebases (PyTorch's autograd engine, DuckDB) instead of a source-level companion |
 | W09–W10 | Scala | Spark itself is Scala, and its query optimizer (Catalyst) and its "abstract algebra for big data" aggregation story (Algebird) are both genuinely built the way these two weeks have you build toy versions: case classes, pattern matching, typeclasses. Low ramp cost given prior production Spark/Scala experience; this is a formalization of existing intuition, not a fresh language investment |
 | W11 | Python | ML ecosystem, numerical computing |
 | W12 | Scala + Python (PySpark) | Direct continuation of W09–W10: runs real Spark, in both languages, on the identical job, to measure where the host language actually costs you (UDFs) and where it doesn't (the DataFrame API, same Catalyst plan either way) |
 | W13–W16 | Python | ML ecosystem, numerical computing, Ray for distributed actors, Numba for GPU |
-| W17 | Go | Native channels are FIFO by construction, a direct fit for Chandy-Lamport's marker protocol |
-| W18 | Go / C++ / Python | Depends on capstone option |
-| W19 | Go | Operators are almost exclusively written in Go |
-| W20 | C++ + Go | Instrument existing C++ code (the W07 DD engine) with `prometheus-cpp` and `opentelemetry-cpp`; Go log-aggregator built and wired in as a sidecar on the W19 operator |
-| W03, W13, W15 | Go (secondary) | Automation tools, coordination services |
+| W17 | Java | Chandy-Lamport's `Message` type is exactly the shape a sealed interface and exhaustive pattern-matching `switch` were built for (`DataMessage`/`Marker`, compiler-enforced coverage), a real improvement over a language without sum types, not just a language-consistency choice. `LinkedBlockingQueue` substitutes cleanly for FIFO channels |
+| W18 | Java / C++ / Python | Depends on capstone option; Option A (KV store) is Java to match what it's extending, W01 and W04 |
+| W19 | Go | Operators are almost exclusively written in Go; `controller-runtime` has no comparable Java equivalent. This is the one deliberately-kept exposure to an unfamiliar language in the curriculum, with its own short warm-up drill inside the week itself |
+| W20 | C++ + Java | Instrument existing C++ code (the W07 DD engine) with `prometheus-cpp` and `opentelemetry-cpp`; Java log-aggregator built and wired in as a sidecar on the W19 operator. The sidecar's language is independent of the operator's: the CRD only ever references it by container image |
+| W03, W13, W15 | Java (secondary) | Automation tools, coordination services, all using JDK's built-in `HttpServer`, no framework |
 
 ---
 
@@ -107,7 +107,7 @@ Every week has:
 ├── weeks/                # One .md file per week (W00–W20)
 ├── code/                 # Your implementations, see code/README.md
 ├── posts/                # Weekly blog posts, see posts/TEMPLATE.md
-├── tools/                # Go automation tools (plan-dates, job_coordinator, grad_server)
+├── tools/                # Automation tools: plan-dates.go (Go, unrelated to the curriculum's language choices); job_coordinator, grad_server, bench_runner, log-aggregator (Java)
 └── Templates/            # week-template.md for adding custom weeks
 ```
 
@@ -150,20 +150,20 @@ Every week has:
 
 **Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers. See the Branch Workflow section in [CONTEXT.md](CONTEXT.md) for how to merge updates between them.
 
-**Different languages?** The algorithms are language-agnostic. This curriculum is built around four languages, each for a specific reason: Go as the one genuinely new language to gain fluency in; C++ as a deliberate refresh into modern idioms (smart pointers, move semantics, RAII, templates) rather than a cold start; Scala for a short, focused module where the real production system (Spark) is itself written in Scala, making it worth the two-week investment even given prior Scala familiarity; and Python for the ML-native arc. Substitutions: the Go weeks could be Java if you'd rather stay on a GC'd/OOP-familiar language; the C++ weeks could be Rust if you'd rather trade manual memory management for a borrow-checked model (Rust is in fact the closer conceptual fit for W05–W08, since ownership and algebraic enums map naturally onto dataflow and incremental computation; it was the original choice here, dropped in favor of C++ for tighter alignment with this curriculum's actual target of distributed training and compute-intensive AI workflows, not because it's the wrong tool for the topic); the Python weeks could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
+**Different languages?** The algorithms are language-agnostic. This curriculum is built around four languages, weighted toward depth in what you already know rather than breadth for its own sake: Java carries most of Arc 1 and one week of Arc 3 (near-zero ramp cost against a production Java background, and modern Java's records, sealed interfaces, and Streams give the FP-adjacent style this curriculum favors without a new language to learn); C++ is a deliberate refresh into modern idioms (smart pointers, move semantics, RAII, templates) rather than a cold start; Scala is a short, focused module where the real production system (Spark) is itself written in Scala, making it worth the investment even given prior Scala familiarity; Python covers the ML-native arc. Go is kept, deliberately, to exactly one required week (W19, Kubernetes Operators) plus its optional extension (W21): `controller-runtime` has no real substitute, and every target company running Kubernetes infrastructure writes operators in Go, so this is the one place the curriculum asks you to read and write an unfamiliar language on purpose, with its own short warm-up drill placed immediately before it, not months ahead of it. Substitutions: if you don't have a Java background the way this plan assumes, the Java weeks could go back to Go (the two are close in scope for these exercises) or stay Java with more ramp time budgeted; the C++ weeks could be Rust if you'd rather trade manual memory management for a borrow-checked model (Rust is in fact the closer conceptual fit for W05–W08, since ownership and algebraic enums map naturally onto dataflow and incremental computation; it was the original choice here, dropped in favor of C++ for tighter alignment with this curriculum's actual target of distributed training and compute-intensive AI workflows, not because it's the wrong tool for the topic); the Python weeks could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
 
 ---
 
 ## Prerequisites
 
-- Comfortable programming in at least one language, in any paradigm. This curriculum is explicitly meant to be your on-ramp into Go, and a refresh back into modern C++ and Scala, not something that assumes you already know them
+- Comfortable programming in at least one language, in any paradigm. This curriculum is explicitly meant to be a refresh back into Java, modern C++, and Scala for someone with prior exposure to all three, plus one deliberately scoped exposure to unfamiliar Go, not something that assumes you're starting any of them from zero
 - Knows what a hash map and B-tree are
 - Has written concurrent code before (threads, async, actors, etc.) in whatever language you already know
 - Familiar with basic algorithms (sorting, BFS, binary search)
 
 No PhD required. No ML background required for the early arcs.
 
-**New to Go? Rusty on C++? Already know Scala?** Go is the genuinely new language here: see its ramp notes in [SETUP.md](SETUP.md) before W00, and don't try to learn it and LSM-trees simultaneously on day one. C++ is different: if you learned it years ago (school, an earlier job) and haven't touched it since, W05 is a refresh into modern idioms, not a cold start; budget real time regardless, both for the idioms that changed and for CMake, which has no equivalent to Cargo's zero-config build experience. Scala (W09–W10) is the lowest-ramp of the three if you already have production Spark/Scala experience: these two weeks are meant to formalize FP intuition you likely already use, not teach the language from zero. See the language-specific sections of [SETUP.md](SETUP.md) for what to review before each.
+**Already know Java? Rusty on C++? New to Go?** Java (W00–W04, W17) is the lowest-ramp language in the curriculum against a production Java background: near-zero syntax review, closer to formalizing patterns (records, sealed interfaces, Streams) you may not have named explicitly than learning anything new. C++ is different: if you learned it years ago (school, an earlier job) and haven't touched it since, W05 is a refresh into modern idioms, not a cold start; budget real time regardless, both for the idioms that changed and for CMake, which has no equivalent to Cargo's zero-config build experience. Scala (W09–W10) is similarly low-ramp if you already have production Spark/Scala experience. Go is the one genuinely new language, scoped deliberately to a single required week (W19) plus its optional extension (W21): see its ramp notes in [SETUP.md](SETUP.md), and use the warm-up drill inside W19 itself rather than trying to pick up goroutines and channels for the first time inside a real Kubernetes reconciler. See the language-specific sections of [SETUP.md](SETUP.md) for what to review before each.
 
 ---
 

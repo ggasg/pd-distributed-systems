@@ -40,11 +40,11 @@ Model: 2-layer MLP on MNIST (784 → 128 → 10). Implemented in NumPy only.
 
 **Constraints:** no `torch.nn`, no `torch.optim`, no `torch.distributed`. Use `multiprocessing` not threads (GIL). Sockets must be real TCP, not shared memory.
 
-**Go gradient server (secondary tool):**
+**Java gradient server (secondary tool):**
 
-- [ ] `tools/grad_server/main.go`: replace the raw-socket allreduce with a Go HTTP gradient aggregation server. Python workers POST their gradients as JSON arrays to `POST /gradients` (include `{"rank": 0, "gradients": [[...]]})`); once all workers have posted, the server averages them and returns the result. Python workers GET `/gradients/averaged` to fetch the result. Use `sync.WaitGroup` and a `Mutex`-protected map to collect worker submissions. Keep under 100 lines.
+- [ ] `tools/grad_server/GradServer.java`: replace the raw-socket allreduce with a Java HTTP gradient aggregation server, using `com.sun.net.httpserver.HttpServer` (JDK built-in, no framework). Python workers POST their gradients as JSON arrays to `POST /gradients` (include `{"rank": 0, "gradients": [[...]]})`); once all workers have posted, the server averages them and returns the result. Python workers GET `/gradients/averaged` to fetch the result. Use a `CountDownLatch` (or poll a size check) and a `ConcurrentHashMap` to collect worker submissions safely across the virtual threads handling each request. Keep under 100 lines.
 
-This is a realistic pattern: Go handles the coordination service, Python handles the ML compute.
+This is a realistic pattern: Java handles the coordination service, Python handles the ML compute.
 
 ---
 
