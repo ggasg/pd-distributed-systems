@@ -62,7 +62,6 @@ The only option that stays inside this arc rather than reaching back into Arc 1/
 
 - [ ] Working code in `code/capstone/`
 - [ ] `code/capstone/README.md`: explains what it does, the design decisions, what you'd do differently, what breaks at scale
-- [ ] `posts/W18-capstone.md`: a technical post (500–1000 words) for a dev blog or GitHub. Explain the system to a fellow engineer who hasn't done this curriculum.
 
 ---
 

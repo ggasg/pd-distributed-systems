@@ -74,7 +74,6 @@ Project: `code/capstone-platform/` (Python for training, coordination, and servi
 
 - [ ] Working code in `code/capstone-platform/`
 - [ ] `code/capstone-platform/README.md`: design doc: what it does, where the consistent-checkpoint logic lives, what you'd change for a real multi-node (not single-machine) deployment
-- [ ] `posts/W21-capstone-platform.md`: a technical post (500–1000 words): walk a fellow engineer through the data → train → fail → recover → serve → observe loop
 
 ---
 

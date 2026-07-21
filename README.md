@@ -106,7 +106,6 @@ Every week has:
 ├── CONTEXT.md            # Session context for AI-assisted study sessions
 ├── weeks/                # One .md file per week (W00–W20)
 ├── code/                 # Your implementations, see code/README.md
-├── posts/                # Weekly blog posts, see posts/TEMPLATE.md
 ├── tools/                # Automation tools: plan-dates.go (Go, unrelated to the curriculum's language choices); job_coordinator, grad_server, bench_runner, log-aggregator (Java)
 └── Templates/            # week-template.md for adding custom weeks
 ```
@@ -169,6 +168,6 @@ No PhD required. No ML background required for the early arcs.
 
 ## Licensing
 
-This curriculum's written content (everything under `weeks/`, `Templates/`, `posts/`, and this documentation) is licensed under [CC BY 4.0](LICENSE): free to use, adapt, and build on, including for your own trainings, courses, or videos, provided you credit Gaston Guitart as the original author. See [CITATION.cff](CITATION.cff) for the exact attribution format.
+This curriculum's written content (everything under `weeks/`, `Templates/`, and this documentation) is licensed under [CC BY 4.0](LICENSE): free to use, adapt, and build on, including for your own trainings, courses, or videos, provided you credit Gaston Guitart as the original author. See [CITATION.cff](CITATION.cff) for the exact attribution format.
 
 Code under `code/` and `tools/` is licensed separately under the [MIT License](LICENSE-MIT), permissive with no attribution requirement beyond keeping the copyright notice intact.
