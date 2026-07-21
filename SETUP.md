@@ -51,7 +51,7 @@ helm repo update
 
 ---
 
-## C++ (C++20, CMake)
+## C++ (C++17/20, CMake)
 
 ```bash
 # macOS
@@ -75,13 +75,13 @@ ctest --test-dir build      # GoogleTest suite, where the project has one
 ```
 Most Arc 2 weeks (W05–W07) declare zero or one dependency (GoogleTest); W20's Prometheus/OTel instrumentation is the one place this arc pulls in real external libraries.
 
-**W05–W08** target C++20 (structured bindings, `std::variant`, concepts where useful), modern enough to be relevant to the codebases W06 and W08 point you at (PyTorch's autograd engine, DuckDB's execution engine), most of which build against C++17/20 themselves. No nightly/experimental compiler flags needed; mainline `clang` or `gcc` from Homebrew is current enough.
+**W05–W08** target C++17/20 (structured bindings and `std::variant` from C++17; concepts, the one addition specific to C++20, where useful). This is modern enough to be relevant to the codebases W06 and W08 point you at, PyTorch's autograd engine and DuckDB's execution engine, both of which build against C++17/20 themselves. No nightly/experimental compiler flags needed; mainline `clang` or `gcc` from Homebrew is current enough.
 
-**Already know C++?** If your C++ is from school or an earlier job, most of the syntax will come back fast, but treat this as a refresh into *modern* idioms rather than a cold start. The gap is usually smart pointers (`std::unique_ptr`/`std::shared_ptr` instead of raw `new`/`delete`), move semantics and RAII (resource cleanup tied to scope, the closest thing C++ has to what the borrow checker gave you automatically in a hypothetical Rust track), and STL algorithms/containers (`std::vector`, `std::unordered_map`, `<algorithm>`) instead of hand-rolled arrays and loops. Before starting W05, read [A Tour of C++](https://www.stroustrup.com/tour3.html) (Stroustrup, free chapter previews / short book) Chapters 1 (Basics), 4 (Classes), 5 (Essential Operations, where move semantics and RAII live), and 8 (Templates); pair it with cppreference's pages on [smart pointers](https://en.cppreference.com/w/cpp/memory) and [move semantics](https://en.cppreference.com/w/cpp/language/move_constructor). Budget 4–6 hours: less than a from-scratch language, since the syntax and control flow are already familiar, but real time nonetheless for the idioms that changed since you last wrote C++.
+**Already know C++?** If your C++ is from school or an earlier job, most of the syntax will come back fast, but treat this as a refresh into *modern* idioms rather than a cold start. The gap is usually smart pointers (`std::unique_ptr`/`std::shared_ptr` instead of raw `new`/`delete`), move semantics and RAII (resource cleanup tied to scope, C++'s core answer to manual `new`/`delete` bookkeeping), and STL algorithms/containers (`std::vector`, `std::unordered_map`, `<algorithm>`) instead of hand-rolled arrays and loops. Before starting W05, read [A Tour of C++](https://www.stroustrup.com/tour3.html) (Stroustrup, free chapter previews / short book) Chapters 1 (Basics), 4 (Classes), 5 (Essential Operations, where move semantics and RAII live), and 8 (Templates); pair it with cppreference's pages on [smart pointers](https://en.cppreference.com/w/cpp/memory) and [move semantics](https://en.cppreference.com/w/cpp/language/move_constructor). Budget 4–6 hours: less than a from-scratch language, since the syntax and control flow are already familiar, but real time nonetheless for the idioms that changed since you last wrote C++.
 
-**One thing that has no Rust equivalent to complain about:** C++ won't stop you from writing something that compiles but is wrong; no borrow checker catches a dangling reference or a data race for you here. The weeks' "Constraints" sections call out, explicitly, where you're now responsible for a discipline (encapsulation, immutability of returned collections) that used to be compiler-enforced. Read those callouts; they're not boilerplate.
+**One thing that has no compiler safety net:** C++ won't stop you from writing something that compiles but is wrong; nothing catches a dangling reference or a data race for you at compile time. The weeks' "Constraints" sections call out, explicitly, where you're responsible for a discipline (encapsulation, immutability of returned collections) that no compiler enforces for you here. Read those callouts; they're not boilerplate.
 
-**CMake itself is a real ramp, separate from the language.** Cargo's zero-config "it just builds" experience has no CMake equivalent; expect `CMakeLists.txt` boilerplate and `find_package`/vcpkg wiring to cost real time in W05, even though the C++ language itself is familiar. If a project won't configure, check the vcpkg toolchain file path before anything else; it's the most common first-week failure.
+**CMake itself is a real ramp, separate from the language.** There's no zero-config "it just builds" experience here; expect `CMakeLists.txt` boilerplate and `find_package`/vcpkg wiring to cost real time in W05, even though the C++ language itself is familiar. If a project won't configure, check the vcpkg toolchain file path before anything else; it's the most common first-week failure.
 
 ---
 
@@ -95,7 +95,7 @@ brew install coursier/formulas/coursier && cs setup
 sbt --version    # sbt 1.9.x or later
 ```
 
-Each Scala project (`code/query-planner/`, `code/agg-algebra/`) is its own sbt project: `build.sbt` pins `scalaVersion := "2.13.14"` (or the latest 2.13.x patch), so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, back to the same zero-config experience Cargo had for Rust and unlike CMake's `find_package`/vcpkg wiring for C++.
+Each Scala project (`code/query-planner/`, `code/agg-algebra/`) is its own sbt project: `build.sbt` pins `scalaVersion := "2.13.14"` (or the latest 2.13.x patch), so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, a zero-config experience unlike CMake's `find_package`/vcpkg wiring for C++.
 
 **W09–W10 target Scala 2.13, not 3.** This is a deliberate match, not an oversight. 2.13 is what Apache Spark itself is built and published against today (Spark 4.x still compiles Catalyst and the rest of the codebase on 2.13; there is no Spark-on-Scala-3 build), and it's what Algebird (W10's real-world reference) publishes for. Writing these two weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Algebird source, not a newer dialect neither project has adopted.
 

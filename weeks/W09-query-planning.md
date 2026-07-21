@@ -10,7 +10,7 @@ status: not-started
 ## What you'll build
 A toy version of Spark's Catalyst optimizer: a logical query plan represented as an algebraic data type (Scala case classes), a small set of rewrite rules expressed as pattern-matching partial functions, and a generic `transform` combinator that applies rules recursively across the tree. This is the capstone to Arc 2: W05–W08 built the individual operators (windowed aggregation, dataflow progress tracking, incremental views, vectorized execution); this week builds the thing that arranges and rewrites those operators into an optimized plan, the way a real MPP engine does.
 
-**Note on why Scala, specifically:** this isn't an arbitrary FP-language choice. Spark itself is written in Scala, and Catalyst (its query optimizer) is genuinely built the way this week has you build your toy version: case classes for plan nodes, pattern matching for rewrite rules, a `transform` combinator for tree recursion. Reading Catalyst's real source while writing a toy version in the same language gets back something Arc 2 lost when it moved off Rust for W05–W08: a reference implementation you can actually read in your own build language, not just a paper.
+**Note on why Scala, specifically:** this isn't an arbitrary FP-language choice. Spark itself is written in Scala, and Catalyst (its query optimizer) is genuinely built the way this week has you build your toy version: case classes for plan nodes, pattern matching for rewrite rules, a `transform` combinator for tree recursion. Reading Catalyst's real source while writing a toy version in the same language gets you something W05–W08 don't have: a reference implementation you can actually read in your own build language, not just a paper.
 
 ---
 
