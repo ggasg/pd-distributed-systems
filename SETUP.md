@@ -149,11 +149,11 @@ pip install numpy torch           # torch for MNIST loading only
 pip install "ray[default]" torch  # torch for the CNN, Ray for actors
 ```
 
-**W15 (GPU compute), requires NVIDIA GPU for the CUDA path:**
+**W15 (GPU compute), C is the primary path, no NVIDIA GPU needed:**
 ```bash
-pip install numba numpy matplotlib
+pip install matplotlib   # only for the roofline plot; the kernels themselves are plain C
 ```
-No GPU? Skip this install; use the C fallback (`code/cpu-gemm/`) instead: cache-blocked + AVX2 SIMD GEMM, no Python dependencies beyond a working gcc/clang.
+The `clang`/`gcc` already installed for the C++ section above is all you need to build `code/cpu-gemm/`; no separate toolchain, no ISA-specific intrinsics to hand-write. If you have NVIDIA GPU access and want the optional CUDA path instead, install `pip install numba numpy matplotlib` (see the GPU Setup section below).
 
 **W16 (attention):**
 ```bash
@@ -206,9 +206,9 @@ kind delete cluster --name pd-systems
 
 ---
 
-## GPU Setup (W15, optional)
+## GPU Setup (W15, optional; the default path is CPU-only C, see the Python section above)
 
-**NVIDIA GPU required.** If you don't have one, skip the Numba CUDA path and use the C fallback.
+This section only applies if you have NVIDIA GPU access and want to do W15's optional CUDA path instead of the default C one. The default path needs nothing beyond the `clang`/`gcc` already installed above: compile with `-O3 -march=native` and check `clang -Rpass=loop-vectorize` (or `gcc -fopt-info-vec-optimized`) confirms the blocked loop vectorized, no NVIDIA hardware, no intrinsics API, involved.
 
 1. Install [CUDA Toolkit 12.x](https://developer.nvidia.com/cuda-downloads)
 2. Verify: `nvcc --version`

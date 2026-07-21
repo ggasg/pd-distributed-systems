@@ -5,16 +5,16 @@ status: not-started
 
 # W15: GPU Memory and Compute
 
-> **Arc:** Distributed ML & Compute · **Language:** Python (Numba) · **Fallback:** C
+> **Arc:** Distributed ML & Compute · **Language:** C (primary) · Python/Numba CUDA optional, only if you have NVIDIA GPU access
 
 ## What you'll build
-Two matrix multiplication kernels: (1) naive one-thread-per-output-element, (2) shared memory tiled. Written in Python using Numba's CUDA JIT. Benchmark both on 1024×1024 float32 matrices and plot on a roofline diagram. If no GPU: cache-blocked GEMM in C with SIMD intrinsics.
+Two GEMM kernels in C: naive triple-loop, then cache-blocked (tile size 64, `i-k-j` loop order). Benchmark both on 1024×1024 float32 matrices, compare `-O2` against `-O3 -march=native` to measure what compiler auto-vectorization buys you, and plot the results on a roofline diagram. No GPU needed, and no hand-written SIMD intrinsics either: the compiler's vectorizer does that job portably, on Apple Silicon/NEON as much as on x86/AVX2. If you have NVIDIA GPU access, the same exercise as CUDA kernels via Numba is below, but it's optional and not required to complete this week.
 
 ---
 
 ## Read
-- [ ] [CUDA C Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/): read Chapters 1–3: thread hierarchy, memory hierarchy (registers, shared memory, L1/L2, global). The concepts apply regardless of whether you write CUDA in C or Python.
 - [ ] [Roofline: An Insightful Visual Performance Model for Multicore Architectures](https://people.eecs.berkeley.edu/~kubitron/cs252/handouts/papers/RooflineVyNoYellow.pdf) (Williams et al., 2009): read Sections 1–3. Understand arithmetic intensity and how to place your kernel on the roofline.
+- [ ] Optional, background only: [CUDA C Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/), Chapters 1–3 (thread hierarchy, memory hierarchy). Useful context for how the industry-standard model maps onto what you're doing on CPU, registers/shared/global on GPU versus registers/L1-L2/main memory here, but not required reading if you're only doing the CPU path.
 
 **Key question:** Calculate the arithmetic intensity of a naive matmul (flops per byte of memory traffic). Is it compute-bound or memory-bound on your hardware?
 
@@ -22,7 +22,16 @@ Two matrix multiplication kernels: (1) naive one-thread-per-output-element, (2) 
 
 ## Code
 
-**If you have GPU access:**
+**Primary path (C, no GPU required):**
+
+Project: `code/cpu-gemm/` (C, gcc/clang)
+
+- [ ] `naive_gemm.c`: triple loop, row-major layout
+- [ ] `blocked_gemm.c`: cache-blocked with tile size 64; reorder loops to `i-k-j` for cache-friendliness
+- [ ] `benchmark.c`: time both kernels on 1024×1024 float32, print GFLOPS. Build `blocked_gemm.c` twice, once with `-O2` and once with `-O3 -march=native`, and compare the two GFLOPS numbers to see what auto-vectorization buys you. Confirm it actually vectorized with `clang -Rpass=loop-vectorize` or `gcc -fopt-info-vec-optimized` on the blocked loop, no need to write or verify any ISA-specific intrinsics by hand.
+- [ ] `roofline.py`: small `matplotlib` script, reads the GFLOPS numbers `benchmark.c` prints and plots them against arithmetic intensity, same roofline diagram either path produces.
+
+**If you have NVIDIA GPU access (optional, not required):**
 
 Project: `code/gpu-gemm/` (Python 3.11+, `numba`, `numpy`, `matplotlib`)
 
@@ -30,15 +39,6 @@ Project: `code/gpu-gemm/` (Python 3.11+, `numba`, `numpy`, `matplotlib`)
 - [ ] `tiled_gemm.py`: Numba CUDA kernel with shared memory: use `cuda.shared.array(shape=(32, 32), dtype=float32)` for tiles of A and B; cooperatively load tiles, sync with `cuda.syncthreads()`, accumulate partial results.
 - [ ] `benchmark.py`: allocate 1024×1024 float32 arrays, warm up (5 runs), time 20 runs using `cuda.event_elapsed_time`. Print GFLOPS for both kernels. Verify correctness against `numpy.matmul`.
 - [ ] `roofline.py`: use `matplotlib` to draw the roofline: x-axis arithmetic intensity (flops/byte), y-axis attainable GFLOPS. Plot both kernels as points. Annotate with memory bandwidth and peak compute from `nvidia-smi`.
-
-**If no GPU (fallback):**
-
-Project: `code/cpu-gemm/` (C, gcc/clang)
-
-- [ ] `naive_gemm.c`: triple loop, row-major layout
-- [ ] `blocked_gemm.c`: cache-blocked with tile size 64; reorder loops to `i-k-j` for cache-friendliness
-- [ ] `simd_gemm.c`: use AVX2 intrinsics (`_mm256_fmadd_ps`) for the innermost loop
-- [ ] `benchmark.c`: time all three on 1024×1024 float32, print GFLOPS
 
 **Java automation tool:**
 
@@ -54,10 +54,11 @@ Project: `code/cpu-gemm/` (C, gcc/clang)
 
 **Benchmark results:**
 - Naive: __ GFLOPS
-- Tiled/blocked: __ GFLOPS
-- Speedup: __x
+- Blocked (`-O2`): __ GFLOPS
+- Blocked (`-O3 -march=native`): __ GFLOPS
+- Vectorization speedup: __x
 - Where does your kernel sit on the roofline?
 
-**What cuBLAS / vendor libraries do that your tiled kernel doesn't:**
+**What a vendor-tuned BLAS library (Apple's Accelerate/vDSP, Intel MKL, or cuBLAS on GPU) does that your blocked kernel doesn't:**
 
 **What I'd do differently:**

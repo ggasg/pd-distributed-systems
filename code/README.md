@@ -162,12 +162,17 @@ code/
 │   ├── compare.py           # sequential vs W13 ring-allreduce vs Ray actors
 │   └── requirements.txt
 │
-├── gpu-gemm/               # W15: Python/Numba + C fallback
+├── cpu-gemm/               # W15: C (gcc/clang), primary path, no GPU required
+│   ├── naive_gemm.c
+│   ├── blocked_gemm.c
+│   ├── benchmark.c         # naive vs. blocked, built both -O2 and -O3 -march=native
+│   └── roofline.py         # small matplotlib script, plots benchmark.c's printed GFLOPS
+│
+├── gpu-gemm/               # W15: optional, only if you have NVIDIA GPU access
 │   ├── naive_gemm.py
 │   ├── tiled_gemm.py
 │   ├── benchmark.py
 │   ├── roofline.py
-│   ├── gemm_fallback.c     # no-GPU fallback
 │   └── requirements.txt
 │
 ├── attention/              # W16: Python

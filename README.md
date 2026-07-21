@@ -53,7 +53,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Measure, not guess, where PySpark's performance actually diverges from Scala Spark, and explain the mechanism (JVM boundary crossings in row-at-a-time UDFs) rather than just the folklore
 - Implement ring-allreduce over raw TCP sockets; explain the bandwidth math
 - Build a stateful actor system with Ray; explain why actors (not stateless tasks) are the right abstraction for coordinating training workers
-- Write a tiled CUDA matmul with Numba; read a roofline chart
+- Write a cache-blocked GEMM kernel in C, measure what compiler auto-vectorization buys you, and read a roofline chart
 - Implement multi-head attention and KV cache from scratch in NumPy
 - Implement Chandy-Lamport distributed snapshots; explain what "consistent cut" means
 - Complete a capstone that combines at least two arcs
