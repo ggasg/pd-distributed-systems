@@ -12,6 +12,31 @@ A `Semigroup`/`Monoid` typeclass hierarchy in Scala, built from scratch, then us
 
 ---
 
+## Before you start (optional, 15–20 min)
+
+A warm-up if typeclasses and `implicit` parameters aren't something you reach for often; skip it if `implicit val` and having an instance supplied for you automatically already feels natural.
+
+Write the same mechanism in miniature, no `Semigroup`/`Monoid` names yet, just the parameter-resolution trick this whole week depends on:
+
+```scala
+trait Combinable[A] {
+  def combine(a: A, b: A): A
+}
+
+implicit val intAdd: Combinable[Int] = (a, b) => a + b
+
+def combineAll[A](xs: List[A])(implicit c: Combinable[A]): A =
+  xs.reduce(c.combine)
+
+// combineAll(List(1, 2, 3, 4)) should be 10, with no Combinable passed explicitly
+```
+
+The `(implicit c: Combinable[A])` parameter list is the whole trick: the compiler looks for exactly one `Combinable[Int]` in scope and supplies it, so you never write `combineAll(xs, intAdd)` by hand. `Semigroup`/`Monoid` below are this same shape with one more method (`empty`) and more instances, nothing conceptually new past this point.
+
+If that reads naturally, go straight to `Semigroup.scala` below.
+
+---
+
 ## Read
 - [ ] [Algebird `Semigroup.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Semigroup.scala) and [`Monoid.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Monoid.scala): Twitter's real, production Scala library built entirely around this idea: "abstract algebra for big data." Read the typeclass definitions and a couple of instances (`IntMonoid`, `MaxMonoid`). Algebird publishes for Scala 2.13, the same version this week targets, so nothing here is read-only-but-not-runnable; you could `libraryDependencies += "com.twitter" %% "algebird-core" % "0.13.10"` and use it directly if you wanted to. The exercise builds its own typeclass from scratch instead, on purpose: writing `Semigroup`/`Monoid` yourself is the point, not importing it.
 - [ ] [Of Algebirds, Monoids, Monads, and Other Bestiary for Large-Scale Data Analytics](https://www.michael-noll.com/blog/2013/12/02/twitter-algebird-monoid-monad-for-large-scala-data-analytics/) (Michael Noll): a much more accessible walkthrough of why this matters for MapReduce-shaped systems specifically, with concrete examples.
@@ -34,7 +59,7 @@ Project: `code/agg-algebra/` (Scala 2.13, sbt)
 **The part that isn't just sum and max:**
 
 - [ ] `Average.scala`: implement average as a monoid *without cheating*: a naive `(a + b) / 2` is not associative (verify this with a failing test first, three values combined two different ways give different answers). The correct approach: represent the accumulator as `case class AvgAcc(sum: Double, count: Int)`, with `combine` adding both fields and `empty = AvgAcc(0, 0)`, and only divide `sum / count` at the very end when you read the result out. This is the general pattern: some aggregations need a richer intermediate representation to become associative, and the final "answer" is a projection off of that, computed once at the end, not that they're just left out of the algebra.
-- [ ] `ApproxDistinct.scala`: a deliberately crude approximate-distinct-count monoid using a fixed-size `Set[Int]` capped at, say, 100 elements (`combine` unions and truncates, `empty` is the empty set), not a real HyperLogLog, just enough to demonstrate that even a lossy, bounded-memory aggregation can still be a correct monoid if `combine` is associative over the representation you chose, which is the actual algebraic property production sketches like HyperLogLog rely on.
+- [ ] *(optional, stretch)* `ApproxDistinct.scala`: a deliberately crude approximate-distinct-count monoid using a fixed-size `Set[Int]` capped at, say, 100 elements (`combine` unions and truncates, `empty` is the empty set), not a real HyperLogLog, just enough to demonstrate that even a lossy, bounded-memory aggregation can still be a correct monoid if `combine` is associative over the representation you chose, which is the actual algebraic property production sketches like HyperLogLog rely on. Not required for the minimum bar below; `Average.scala` already carries the week's core "richer representation, associative by construction" lesson.
 
 **Connect it to Arc 2:**
 

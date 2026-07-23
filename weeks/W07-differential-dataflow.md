@@ -5,10 +5,10 @@ status: not-started
 
 # W07: Differential Dataflow and Incremental View Maintenance
 
-> **Arc:** Streaming and Dataflow · **Language:** C++
+> **Arc:** Streaming and Dataflow · **Language:** Java
 
 ## What you'll build
-Two parts this week, deliberately shorter on the from-scratch build than the rest of the arc. Part 1 (1–2 days): the core Differential Dataflow data model in C++: `(key, value, time, diff)` updates and a `map`/`filter`/`consolidate` `Collection`, applied to incremental word count. Part 2 (remaining days): the same "orders → revenue per region" incremental-view problem built four ways: your own C++ benchmark, a real local ClickHouse materialized view, and a real local Spark Structured Streaming stateful aggregation, so the comparison is against systems you actually install and run yourself, not vendor documentation.
+Two parts this week, deliberately shorter on the from-scratch build than the rest of the arc. Part 1 (1–2 days): the core Differential Dataflow data model in Java: `(key, value, time, diff)` updates and a `map`/`filter`/`consolidate` `Collection`, applied to incremental word count. Part 2 (remaining days): the same "orders → revenue per region" incremental-view problem built four ways: your own Java benchmark, a real local ClickHouse materialized view, and a real local Spark Structured Streaming stateful aggregation, so the comparison is against systems you actually install and run yourself, not vendor documentation.
 
 ---
 
@@ -21,15 +21,15 @@ Two parts this week, deliberately shorter on the from-scratch build than the res
 
 ### Code
 
-Project: `code/dd-scratch/` (C++, CMake, header-only where templated)
+Project: `code/dd-scratch/` (Java 21, Maven)
 
-- [ ] `include/dd_scratch/update.hpp`: `template <typename K, typename V> struct Update { K key; V value; int32_t time; int32_t diff; };` where `diff` is `+1` (addition) or `-1` (retraction)
-- [ ] `include/dd_scratch/collection.hpp`: `template <typename K, typename V> class Collection { std::vector<Update<K, V>> updates_; public: ... };` implements:
-  - `Collection<K, V> filter(std::function<bool(const K&, const V&)> p) const`: drop updates where the predicate is false
-  - `Collection<K, V> consolidate() const`: merge updates with the same (key, value, time) via an `unordered_map`, sum their diffs, drop zero-diff entries
-- [ ] `src/word_count.cpp`: given a `Collection<int32_t, std::string>` (document id to document text): flat-map each document into per-word updates, consolidate, group by key and sum diffs to get current count per word. In a loop: add a document at t=1 (diff=+1), print counts; retract it at t=2 (diff=-1), print updated counts. Only print the delta each round, not the full state.
+- [ ] `Update.java`: `record Update<K, V>(K key, V value, int time, int diff) {}` where `diff` is `+1` (addition) or `-1` (retraction). A generic record here is a straightforward, mature fit, Java's generics have handled parameterized types like this since Java 5, nothing experimental about reaching for one.
+- [ ] `Collection.java`: `class Collection<K, V> { private final List<Update<K, V>> updates; ... }` implements:
+  - `Collection<K, V> filter(BiPredicate<K, V> p)`: drop updates where the predicate is false, return a new `Collection`
+  - `Collection<K, V> consolidate()`: merge updates with the same (key, value, time) via a `HashMap`, sum their diffs, drop zero-diff entries, return a new `Collection`
+- [ ] `WordCount.java`: given a `Collection<Integer, String>` (document id to document text): flat-map each document into per-word updates, consolidate, group by key and sum diffs to get current count per word. In a loop: add a document at t=1 (diff=+1), print counts; retract it at t=2 (diff=-1), print updated counts. Only print the delta each round, not the full state.
 
-**Constraints:** zero external dependencies beyond the standard library. `filter`/`consolidate` are `const` methods that return a new `Collection` rather than mutating `*this`. Nothing in C++ enforces that the way the borrow checker would have; treat it as a promise you're keeping by discipline, and notice if you break it.
+**Constraints:** JDK standard library only. `filter`/`consolidate` return a new `Collection` rather than mutating the receiver; keep the backing `List` `private final` and never expose it directly, so nothing outside the class can mutate `updates` behind your back.
 
 One simplification worth naming, not replicating: `filter`/`consolidate` here compute and return a fully materialized new `Collection` immediately, so this is eager function composition, not a lazy dataflow graph. A real Naiad/DD program builds the operator graph first (map, filter, and consolidate all wired together as nodes) and only pushes data through it once, when the computation actually runs; nothing computes at graph-construction time. This toy version skips that indirection so the DD-specific algebra (the diff-based data model) stays the focus of the week, but it's worth knowing the real thing works differently before you assume this `Collection` API is a faithful model of how Naiad or DD actually execute.
 
@@ -50,14 +50,14 @@ The "compute only the delta" idea from Part 1 is the same idea behind every prod
 
 ### Code
 
-Project: `code/dd-scratch/` (same C++/CMake project as Part 1), plus a new `code/dd-scratch/comparisons/` directory for the two external systems.
+Project: `code/dd-scratch/` (same Java/Maven project as Part 1), plus a new `code/dd-scratch/comparisons/` directory for the two external systems.
 
-Data model: a toy `orders` table (`struct Order { int32_t order_id; int32_t region_id; int32_t amount; };` in C++, mirrored as `(order_id, region_id, amount)` rows everywhere else) and a materialized view: total revenue per region. Same shape across all three systems, so the comparison is apples-to-apples.
+Data model: a toy `orders` table (`record Order(int orderId, int regionId, int amount) {}` in Java, mirrored as `(order_id, region_id, amount)` rows everywhere else) and a materialized view: total revenue per region. Same shape across all three systems, so the comparison is apples-to-apples.
 
-**1. C++ (your own implementation):**
-- [ ] `include/dd_scratch/full_recompute_view.hpp` + `src/full_recompute_view.cpp`: `class FullRecomputeView` holds all orders in a `std::vector<Order>`; on `apply(const Order& new_order)`, appends it and recomputes the entire per-region revenue map from scratch by rescanning every order
-- [ ] `include/dd_scratch/materialized_view.hpp` + `src/materialized_view.cpp`: `class IncrementalAggregateView` reuses `Update<int32_t, int32_t>` (region_id, amount) from Part 1: on `apply(const Order& new_order)`, updates only the affected region's running total in a `std::unordered_map<int32_t, int64_t>`, no rescan
-- [ ] `benchmark/mv_benchmark.cpp`: seed both views with a growing base of orders (1k, 10k, 100k), then apply a stream of new single-order updates to each; time `apply()` for both. Release build required, same as W08.
+**1. Java (your own implementation):**
+- [ ] `FullRecomputeView.java`: `class FullRecomputeView` holds all orders in a `List<Order>`; on `apply(Order newOrder)`, appends it and recomputes the entire per-region revenue map from scratch by rescanning every order
+- [ ] `IncrementalAggregateView.java`: reuses `Update<Integer, Integer>` (regionId, amount) from Part 1: on `apply(Order newOrder)`, updates only the affected region's running total in a `Map<Integer, Long>`, no rescan
+- [ ] `MvBenchmark.java`: seed both views with a growing base of orders (1k, 10k, 100k), then apply a stream of new single-order updates to each; time `apply()` for both with `System.nanoTime()`, after a handful of warm-up calls so you're not measuring JIT compilation on top of the algorithm, run each size enough times to get a stable number.
 
 **2. ClickHouse (local server, single machine, no account):**
 - [ ] Install: `brew install clickhouse`; run `clickhouse server` in one terminal, `clickhouse client` in another
@@ -67,7 +67,7 @@ Data model: a toy `orders` table (`struct Order { int32_t order_id; int32_t regi
 - [ ] Install: `pip install pyspark` (you already have Python 3.11 set up; Spark itself runs on the JVM regardless of the Python surface, so you'll also need `brew install openjdk@17` if you don't have a JDK)
 - [ ] `code/dd-scratch/comparisons/spark_stateful_agg.py`: a local Structured Streaming job (`master("local[*]")`) that reads order events as small JSON files dropped into a watched directory (`readStream.format("json")`), runs `groupBy("region_id").sum("amount")` with `outputMode("update")`, and writes to the console sink. Drop one new order file mid-run and confirm the console output shows only the affected region's updated row, not every group re-emitted.
 
-**Minimum bar:** for both ClickHouse and Spark, one piece of evidence you observed yourself (a query result, a log line, or the update-mode console output) showing the system updated only the affected slice of state rather than the whole dataset, the same property your C++ `IncrementalAggregateView` has and `FullRecomputeView` doesn't.
+**Minimum bar:** for both ClickHouse and Spark, one piece of evidence you observed yourself (a query result, a log line, or the update-mode console output) showing the system updated only the affected slice of state rather than the whole dataset, the same property your Java `IncrementalAggregateView` has and `FullRecomputeView` doesn't.
 
 ---
 
@@ -96,7 +96,7 @@ result = consolidate(updates)
 assert result == {"apple": 1}
 ```
 
-**Connection:** `Collection::consolidate()` in Part 1 and `IncrementalAggregateView::apply()` in Part 2 are both instances of this same operation, just at different scales: one against a synthetic word stream, one against something shaped like a real materialized view.
+**Connection:** `Collection.consolidate()` in Part 1 and `IncrementalAggregateView.apply()` in Part 2 are both instances of this same operation, just at different scales: one against a synthetic word stream, one against something shaped like a real materialized view.
 
 ---
 
@@ -106,9 +106,9 @@ assert result == {"apple": 1}
 
 **What surprised me:**
 
-**Did `const` actually hold in Part 1, or did you catch yourself mutating `updates_` somewhere it shouldn't have?**
+**Did `updates` in `Collection` actually stay unmutated through Part 1, or did you catch yourself reaching in and changing it somewhere it shouldn't have?**
 
-**Your measured numbers (C++):**
+**Your measured numbers (Java):**
 - Full recompute latency at 1k / 10k / 100k orders: __ / __ / __
 - Incremental latency at 1k / 10k / 100k orders: __ / __ / __
 
@@ -117,6 +117,6 @@ assert result == {"apple": 1}
 - Spark: what did the console sink show after you dropped the new order file? Did the whole aggregation re-run, or just the affected group?
 - Nothing happens when `spark_stateful_agg.py` calls `df.groupBy("region_id").sum("amount")`; the actual streaming job only starts when you call `.start()` on the writer afterward. What does Spark need to see across the whole pipeline before it can decide how to execute it, and what would it lose if `groupBy` ran eagerly the moment you called it?
 
-**Rank your four implementations (C++ `IncrementalAggregateView`, ClickHouse MV, Spark stateful aggregation, and pg_ivm if you did the stretch) from closest to furthest from true DD semantics (tracks retractions, recomputes only the affected delta). Where does each one cut a corner, and why might that corner-cutting be the right engineering trade-off for that system's actual use case?**
+**Rank your four implementations (Java `IncrementalAggregateView`, ClickHouse MV, Spark stateful aggregation, and pg_ivm if you did the stretch) from closest to furthest from true DD semantics (tracks retractions, recomputes only the affected delta). Where does each one cut a corner, and why might that corner-cutting be the right engineering trade-off for that system's actual use case?**
 
 **What I'd do differently:**

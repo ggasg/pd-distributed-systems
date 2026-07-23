@@ -40,9 +40,9 @@ Project: `code/gpu-gemm/` (Python 3.11+, `numba`, `numpy`, `matplotlib`)
 - [ ] `benchmark.py`: allocate 1024×1024 float32 arrays, warm up (5 runs), time 20 runs using `cuda.event_elapsed_time`. Print GFLOPS for both kernels. Verify correctness against `numpy.matmul`.
 - [ ] `roofline.py`: use `matplotlib` to draw the roofline: x-axis arithmetic intensity (flops/byte), y-axis attainable GFLOPS. Plot both kernels as points. Annotate with memory bandwidth and peak compute from `nvidia-smi`.
 
-**Java automation tool:**
+**Go automation tool:**
 
-- [ ] `tools/bench_runner/BenchRunner.java`: a small Java CLI (`ProcessBuilder` to launch the benchmark subprocess and capture its stdout) that parses GFLOPS from the output and appends results as a row to `results.csv`. Usage: `java BenchRunner.java --kernel naive --runs 20` (single-file source-code execution, no build step needed for a program this small, one of Java 21's genuinely beginner-friendly features). Keep it under 80 lines: a quick return to the JDK HttpServer/CLI style, not new territory; you last wrote something this shape for W13's gradient server.
+- [ ] `tools/bench_runner/main.go`: a small Go CLI (`os/exec`'s `exec.Command` to launch the benchmark subprocess and capture its stdout) that parses GFLOPS from the output and appends results as a row to `results.csv`. Usage: `go run . --kernel naive --runs 20` (`flag` package for the CLI args, standard library, no dependency needed for a program this small). Keep it under 80 lines: a quick return to the `net/http`/CLI style, not new territory; you last wrote something this shape for W13's gradient server.
 
 ---
 

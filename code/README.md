@@ -4,99 +4,80 @@ One subdirectory per week. Each is a self-contained project with its own build f
 
 ```
 code/
-├── hello-metrics/          # W00: Java service (Maven) + k8s manifests
-│   ├── pom.xml
-│   ├── Main.java
+├── hello-metrics/          # W00: Go service (modules) + k8s manifests
+│   ├── go.mod
+│   ├── main.go
 │   ├── Dockerfile
 │   └── k8s/
 │       ├── deployment.yaml
 │       └── service-monitor.yaml
 │
-├── lsm/                    # W01: Java (Maven)
-│   ├── MemTable.java
-│   ├── SSTable.java
-│   ├── LSMTree.java
-│   ├── LSMTreeTest.java
-│   └── pom.xml
+├── lsm/                    # W01: Go (modules)
+│   ├── memtable.go
+│   ├── sstable.go
+│   ├── lsm_tree.go
+│   ├── lsm_tree_test.go
+│   └── go.mod
 │
-├── encoding/               # W02: Java (Maven)
-│   ├── Varint.java
-│   ├── RowStore.java
-│   ├── ColumnStore.java
-│   ├── Benchmark.java
-│   └── pom.xml
+├── encoding/               # W02: Go (modules)
+│   ├── varint.go
+│   ├── row_store.go
+│   ├── column_store.go
+│   ├── benchmark_test.go
+│   └── go.mod
 │
-├── mapreduce/              # W03: Java (Maven)
-│   ├── MapReduce.java      # Mapper/Reducer functional interfaces
-│   ├── Runner.java
-│   ├── WordCount.java
-│   ├── PageRank.java
-│   ├── PageRankRunner.java
-│   └── pom.xml
+├── mapreduce/              # W03: Go (modules)
+│   ├── mapreduce.go        # Mapper/Reducer function types
+│   ├── runner.go
+│   ├── wordcount.go
+│   ├── pagerank.go
+│   ├── pagerank_runner.go
+│   └── go.mod
 │   # HTTP coordinator lives in tools/job_coordinator/
 │
-├── clocks/                 # W04: Java (Maven)
-│   ├── VectorClock.java
-│   ├── Message.java
-│   ├── Node.java
-│   ├── CausalDeliveryTest.java
+├── clocks/                 # W04: Go (modules)
+│   ├── vector_clock.go
+│   ├── message.go
+│   ├── node.go
+│   ├── causal_delivery_test.go
+│   └── go.mod
+│
+├── streaming/               # W05: Java (Maven)
+│   ├── Event.java
+│   ├── Watermark.java
+│   ├── StreamItem.java          # sealed interface permits Event, Watermark
+│   ├── TumblingWindowAggregator.java
+│   ├── StreamProcessor.java
+│   ├── StreamProcessorTest.java # JUnit 5
 │   └── pom.xml
 │
-├── streaming/               # W05: C++ (CMake)
-│   ├── include/streaming/
-│   │   ├── event.hpp
-│   │   ├── watermark.hpp
-│   │   ├── aggregator.hpp      # TumblingWindowAggregator
-│   │   └── processor.hpp       # StreamProcessor + StreamItem = std::variant<Event, Watermark>
-│   ├── src/
-│   │   ├── aggregator.cpp
-│   │   └── processor.cpp
-│   ├── tests/
-│   │   └── processor_test.cpp  # GoogleTest
-│   └── CMakeLists.txt
+├── timely-toy/             # W06: Java (Maven)
+│   ├── Timestamp.java
+│   ├── Pointstamp.java
+│   ├── Operator.java            # abstract class, MapOperator, SinkOperator subclasses
+│   ├── ProgressTracker.java
+│   ├── ProgressTrackerTest.java # JUnit 5
+│   └── pom.xml
 │
-├── timely-toy/             # W06: C++ (CMake)
-│   ├── include/timely_toy/
-│   │   ├── timestamp.hpp
-│   │   ├── pointstamp.hpp
-│   │   ├── operator.hpp        # Operator base class, MapOperator, SinkOperator
-│   │   └── progress_tracker.hpp
-│   ├── src/
-│   │   └── progress_tracker.cpp
-│   ├── tests/
-│   │   └── progress_tracker_test.cpp   # GoogleTest
-│   └── CMakeLists.txt
-│
-├── dd-scratch/             # W07: C++ (CMake, header-only where templated)
-│   ├── include/dd_scratch/
-│   │   ├── update.hpp                 # template struct Update<K, V>  (Part 1)
-│   │   ├── collection.hpp             # template class Collection<K, V>  (Part 1)
-│   │   ├── full_recompute_view.hpp    # FullRecomputeView  (Part 2)
-│   │   └── materialized_view.hpp      # IncrementalAggregateView  (Part 2)
-│   ├── src/
-│   │   ├── word_count.cpp             # Part 1
-│   │   ├── full_recompute_view.cpp    # Part 2
-│   │   └── materialized_view.cpp      # Part 2
-│   ├── benchmark/
-│   │   └── mv_benchmark.cpp           # Part 2: incremental vs. full-recompute latency, Release build
+├── dd-scratch/             # W07: Java (Maven)
+│   ├── Update.java              # record Update<K, V>  (Part 1)
+│   ├── Collection.java          # class Collection<K, V>  (Part 1)
+│   ├── WordCount.java           # Part 1
+│   ├── FullRecomputeView.java   # Part 2
+│   ├── IncrementalAggregateView.java  # Part 2
+│   ├── MvBenchmark.java         # Part 2: incremental vs. full-recompute latency
 │   ├── comparisons/                   # Part 2: same orders/region-revenue model, tested against real local OSS systems
 │   │   ├── clickhouse_mv.sql          # local ClickHouse server, real materialized view
 │   │   └── spark_stateful_agg.py      # local-mode Spark Structured Streaming, stateful aggregation
-│   └── CMakeLists.txt
+│   └── pom.xml
 │
-├── query-exec/             # W08: C++ (CMake)
-│   ├── include/query_exec/
-│   │   ├── row_executor.hpp
-│   │   ├── column_filter.hpp
-│   │   ├── column_project.hpp
-│   │   └── hash_join.hpp
-│   ├── src/
-│   │   ├── column_filter.cpp
-│   │   ├── column_project.cpp
-│   │   └── hash_join.cpp
-│   ├── benchmark/
-│   │   └── benchmark.cpp       # build Release; see W08 for why that's not optional
-│   └── CMakeLists.txt
+├── query-exec/             # W08: Go (modules)
+│   ├── row_executor.go
+│   ├── column_filter.go
+│   ├── column_project.go
+│   ├── hash_join.go
+│   ├── benchmark_test.go       # go test -bench=. -benchmem
+│   └── go.mod
 │
 ├── query-planner/          # W09: Scala (sbt)
 │   ├── src/main/scala/
@@ -119,7 +100,7 @@ code/
 │   │   │   └── IntInstances.scala   # sum Monoid[Int], Max wrapper Monoid
 │   │   ├── Combine.scala            # combineAll (fold) + reduceTree
 │   │   ├── Average.scala            # AvgAcc(sum, count), the non-naive associative version
-│   │   ├── ApproxDistinct.scala     # capped-Set approximate distinct-count monoid
+│   │   ├── ApproxDistinct.scala     # optional/stretch: capped-Set approximate distinct-count monoid
 │   │   └── ConnectToConsolidate.scala  # reimplements W07's Collection.consolidate() via combineAll
 │   ├── src/test/scala/
 │   │   └── MonoidSpec.scala         # includes the failing-naive-average test
@@ -146,13 +127,13 @@ code/
 │   ├── generate_orders.py            # shared data, reused by both languages
 │   └── data/                         # orders_100k.parquet, orders_1m.parquet, orders_5m.parquet
 │
-├── distributed-training/   # W13: Python + Java tool
+├── distributed-training/   # W13: Python + Go tool
 │   ├── mlp.py
 │   ├── ring_allreduce.py
 │   ├── worker.py
 │   ├── train.py
 │   └── requirements.txt
-│   # Java tool lives in tools/grad_server/
+│   # Go tool lives in tools/grad_server/
 │
 ├── actor-training/         # W14: Python + Ray
 │   ├── model.py             # PyTorch CNN
@@ -200,16 +181,12 @@ code/
 │       ├── ray-cluster.yaml   # RayCluster CR (KubeRay); W20 edits this to add a sidecar container
 │       └── spark-pi.yaml      # SparkApplication CR (Kubeflow Spark Operator)
 │
-├── dd-scratch/             # W20: extends W07 (C++)
-│   ├── include/dd_scratch/
-│   │   ├── metrics.hpp          # prometheus-cpp
-│   │   ├── tracing_setup.hpp    # opentelemetry-cpp, ScopedSpan RAII helper
-│   │   └── logging.hpp          # nlohmann::json structured log lines
-│   └── src/
-│       ├── metrics.cpp
-│       ├── tracing_setup.cpp
-│       └── logging.cpp
-│   # Java sidecar lives in tools/log-aggregator/, wired into the W19 RayCluster's worker Pod template
+├── dd-scratch/             # W20: extends W07 (Java)
+│   ├── Metrics.java             # Prometheus Java client
+│   ├── TracingSetup.java        # OpenTelemetry Java SDK
+│   ├── ScopedSpan.java          # AutoCloseable, try-with-resources span helper
+│   └── Logging.java             # hand-rolled structured JSON log lines
+│   # Go sidecar lives in tools/log-aggregator/, wired into the W19 RayCluster's worker Pod template
 │
 └── capstone-platform/      # W21 (optional): Python, combines W11+W13+W16+W17+W20, deploys to KubeRay from W19
     ├── train_worker.py
@@ -224,22 +201,22 @@ code/
 
 ## Build Commands
 
+**Go (modules):**
+```bash
+go build ./...
+go test ./...
+go test -bench=. -benchmem ./...                    # W02, W08's benchmark_test.go files
+go run .
+go vet ./...                                         # catch common mistakes before they cost you a debugging session
+```
+
 **Java (Maven):**
 ```bash
 mvn compile
 mvn test
 mvn package                                          # produces target/<name>.jar
 java -jar target/<name>.jar
-java SomeFile.java                                   # single-file source execution, no build step (used by W15's bench runner)
-```
-
-**C++ (CMake):**
-```bash
-cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake
-cmake --build build
-ctest --test-dir build                              # GoogleTest suite, where present
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build && ./build/benchmark
-                                                      # Release build required for anything timed (W08)
+java SomeFile.java                                   # single-file source execution, no build step
 ```
 
 **Scala (sbt):**
@@ -263,7 +240,7 @@ helm install spark-operator spark-operator/spark-operator --namespace spark-oper
 kubectl apply -f code/operator/config/ray-cluster.yaml
 kubectl apply -f code/operator/config/spark-pi.yaml -n spark-operator
 ```
-No `go build` in this curriculum: W19 and W21 deploy CRs against operators you installed, not code you compiled.
+No `go build` specific to W19/W21 themselves: those two weeks deploy CRs against operators you installed, not code you compiled. Go is very much built everywhere else in this curriculum, W00–W04, W08, and every secondary tool.
 
 ---
 
@@ -272,6 +249,6 @@ No `go build` in this curriculum: W19 and W21 deploy CRs against operators you i
 - Keep each project buildable in isolation. No shared parent build file.
 - Code in this directory is the "lab." It's meant to be written, broken, and rewritten.
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
-- The C++ projects that have automated tests (W05, W06) keep them in a separate `tests/` directory using GoogleTest, the CMake-project convention: test files are separate translation units registered in `CMakeLists.txt` via `gtest_discover_tests`, rather than living inline next to the code under test
-- Scala projects (W09–W10, W12) follow the standard sbt layout (`src/main/scala`, `src/test/scala`), a third convention distinct from C++'s separate `tests/` directory; that's just how sbt expects things laid out
-- Java projects (W00–W04, W17, and the secondary tools in W03/W13/W15/W20) each have their own `pom.xml`, one Maven project per directory, no shared parent POM, same isolation as every other language here. Source files sit flat in the project root rather than under the conventional `src/main/java/...` package tree; these are small, single-package exercises, and skipping the package hierarchy keeps the file listing above honest about what's actually in each directory
+- Go projects (W00–W04, W08, and the secondary tools in `tools/`) put tests in `<name>_test.go` files sitting directly alongside the code they test, no separate `tests/` directory, that's Go's own toolchain convention (`go test` discovers `_test.go` files automatically in the same package), a fourth layout convention alongside the other languages here, not a departure from how the rest of this repo organizes things
+- Scala projects (W09–W10, W12) follow the standard sbt layout (`src/main/scala`, `src/test/scala`), a different convention from Go's in-place tests, that's just how sbt expects things laid out
+- Java projects (W05–W07, W17, and the W20 DD-engine instrumentation) each have their own `pom.xml`, one Maven project per directory, no shared parent POM, same isolation as every other language here. Source files sit flat in the project root rather than under the conventional `src/main/java/...` package tree; these are small, single-package exercises, and skipping the package hierarchy keeps the file listing above honest about what's actually in each directory

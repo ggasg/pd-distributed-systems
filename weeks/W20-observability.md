@@ -5,17 +5,17 @@ status: not-started
 
 # W20: Observability: Metrics, Tracing, Logging
 
-> **Arc:** Infrastructure · **Language:** C++ + Java
+> **Arc:** Infrastructure · **Language:** Java + Go
 
 ## What you'll build
-Instrument your W07 Differential Dataflow engine (C++) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
+Instrument your W07 Differential Dataflow engine (Java) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
 
 **Prerequisites:** W00 (kind + Prometheus + Grafana), W07 (DD engine).
 
 ---
 
 ## Read
-- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3** (The Sidecar Pattern): read before Part 3 below. You're about to build a log-aggregator sidecar and wire it into a worker Pod on the KubeRay cluster from W19 without ever naming what you're doing; this chapter names it, and walks through the same "modular container with its own small API, composed alongside a main container it knows nothing about" design your `LogAggregator.java` follows.
+- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3** (The Sidecar Pattern): read before Part 3 below. You're about to build a log-aggregator sidecar and wire it into a worker Pod on the KubeRay cluster from W19 without ever naming what you're doing; this chapter names it, and walks through the same "modular container with its own small API, composed alongside a main container it knows nothing about" design your log aggregator follows.
 - [ ] [Prometheus data model + metric types](https://prometheus.io/docs/concepts/data_model/): Counter vs Gauge vs Histogram vs Summary. Know when to use each. When to NOT use a Summary. (~20 min)
 - [ ] [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/): read "Signals > Traces" and "Signals > Metrics". Understand what a Span is, what attributes are for, how traces differ from metrics. (~25 min)
 - [ ] [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): free online. The four golden signals. (~25 min)
@@ -26,31 +26,39 @@ Instrument your W07 Differential Dataflow engine (C++) with Prometheus metrics, 
 
 ## Code
 
-**Part 1: Instrument the DD Engine (C++)**
+**Part 1: Instrument the DD Engine (Java)**
 
 Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
-- [ ] Add dependencies via CMake (`FetchContent` or vcpkg, your call; vcpkg is what's recommended in SETUP.md):
-  - [prometheus-cpp](https://github.com/jupp0r/prometheus-cpp): the standard C++ Prometheus client, provides `Registry`, `Counter`, `Histogram`, `Gauge`, and an `Exposer` HTTP server for `/metrics`
-  - [opentelemetry-cpp](https://opentelemetry.io/docs/languages/cpp/): official OTel SDK for C++
-  - [nlohmann/json](https://github.com/nlohmann/json): header-only, for the structured log lines
-- [ ] `include/dd_scratch/metrics.hpp` + `src/metrics.cpp`: define and register the following against a `prometheus::Registry`:
+- [ ] Add dependencies via Maven (`pom.xml`):
+  - [`io.prometheus:simpleclient`](https://github.com/prometheus/client_java) (the same Prometheus Java client W00 already uses) plus `simpleclient_httpserver`, which gives you a standalone metrics HTTP server without wiring `/metrics` into your own `HttpServer` by hand this time
+  - [OpenTelemetry Java SDK](https://opentelemetry.io/docs/languages/java/): `io.opentelemetry:opentelemetry-sdk` plus the OTLP exporter artifact
+  - No JSON library needed for the log lines below; five fields is small enough to build by hand, the same call W00 made for its two-key response body
+- [ ] `Metrics.java`: define and register the following against the default `CollectorRegistry`:
   - `updates_processed_total`: `Counter`, incremented once per `Update` processed
   - `consolidation_duration_seconds`: `Histogram` (buckets: 0.1ms, 1ms, 5ms, 10ms, 50ms), time spent in `consolidate()`
   - `batch_size`: `Histogram` (buckets: 1, 10, 100, 1000, 10000), updates per batch
   - `active_keys`: `Gauge`, current distinct key count in the collection
-  - Start a `prometheus::Exposer` on port 9091 serving `/metrics`
-- [ ] `include/dd_scratch/tracing_setup.hpp` + `src/tracing_setup.cpp`: initialize an OpenTelemetry `TracerProvider` with an OTLP exporter. C++ has no attribute-macro sugar for this. Write a small RAII `ScopedSpan` class instead: it starts a span in its constructor and ends it in its destructor, so wrapping a function body in `ScopedSpan span("consolidate");` gets you a "span closes when the function returns" guarantee, spelled out explicitly rather than generated for you. Wrap `map`, `filter`, and `consolidate` in `collection.hpp` this way, recording input batch size and output batch size as span attributes.
-- [ ] `include/dd_scratch/logging.hpp` + `src/logging.cpp`: a small helper that builds a `nlohmann::json` object per log event and writes it as a single line to stdout:
+  - Start an `HTTPServer` (from `simpleclient_httpserver`) on port 9091 serving `/metrics`; this is a different, purpose-built server from the one your own `HttpServer`-based tools use elsewhere in this curriculum, the Prometheus client ships its own because exposing the registry is all it needs to do.
+- [ ] `TracingSetup.java` + `ScopedSpan.java`: initialize an OpenTelemetry `SdkTracerProvider` with an OTLP exporter. Java has no attribute-macro sugar for this either, but it has a direct structural equivalent to the RAII pattern this exercise used to reach for in C++: `AutoCloseable` plus try-with-resources. Write `ScopedSpan implements AutoCloseable`: the constructor starts a span, `close()` ends it, and try-with-resources guarantees `close()` runs when the block exits, including on an exception, the same "closes when the enclosing scope ends" guarantee a C++ destructor gives you, just spelled with a different keyword:
+  ```java
+  try (var span = new ScopedSpan(tracer, "consolidate")) {
+      // ... consolidate logic ...
+      span.setAttribute("input", inputSize);
+      span.setAttribute("output", outputSize);
+  }
+  ```
+  Wrap `map`, `filter`, and `consolidate` in `Collection.java` this way, recording input batch size and output batch size as span attributes.
+- [ ] `Logging.java`: a small helper that builds one structured JSON log line by hand (`String.format` or a `StringBuilder`, five fields doesn't need a library) and writes it to stdout:
   ```json
   {"level":"INFO","ts":"2026-10-19T10:00:00Z","op":"consolidate","input":1000,"output":42,"duration_ms":3}
   ```
-  Replace any `std::cout <<` in the DD engine with calls through this helper.
-- [ ] Run `word_count.cpp` with 10k document updates. Verify `/metrics` at `localhost:9091`.
+  Replace any `System.out.println` in the DD engine with calls through this helper.
+- [ ] Run `WordCount.java` with 10k document updates. Verify `/metrics` at `localhost:9091`.
 
 **Part 2: Grafana Dashboard**
 
-- [ ] Containerize the instrumented DD engine (`Dockerfile`: a multi-stage build compiling with CMake in a builder stage, then copying the binary into a slim runtime image; k8s `Deployment` + `ServiceMonitor`)
+- [ ] Containerize the instrumented DD engine (`Dockerfile`: the same multi-stage `maven:3.9-eclipse-temurin-21` builder → `eclipse-temurin:21-jre-alpine` runtime shape as W00 and W17; k8s `Deployment` + `ServiceMonitor`)
 - [ ] Deploy to kind: `kind load docker-image dd-engine:latest --name pd-systems && kubectl apply -f k8s/`
 - [ ] In Grafana, create a dashboard with 4 panels:
   - `rate(updates_processed_total[1m])`: update throughput (graph)
@@ -59,10 +67,10 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   - `active_keys`: gauge value over time (graph)
 - [ ] Export the dashboard as `config/grafana-dashboard.json` (Grafana → Share → Export)
 
-**Part 3: Java log aggregator, wired into W19's RayCluster**
+**Part 3: Go log aggregator, wired into W19's RayCluster**
 
-- [ ] `tools/log-aggregator/LogAggregator.java`: HTTP server (`com.sun.net.httpserver.HttpServer`, same JDK-only approach as W00 and W03, handlers dispatched on virtual threads the same way W13's gradient server assumes) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W13's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `ReentrantReadWriteLock`, not `Collections.synchronizedList`. That's not a stylistic preference: `synchronizedList` guards every call with a `synchronized` block internally, and a `synchronized` block **pins** the calling virtual thread to its carrier (platform) thread for as long as it's held, silently defeating the reason you're using virtual threads at all. Under enough concurrent requests, a pinned handler can starve the carrier pool the same way a blocked platform thread used to, just with a less obvious cause. `ReentrantReadWriteLock` is a `java.util.concurrent` lock, not a `synchronized` block, so it doesn't pin. ~80 lines. The cluster it plugs into is managed by KubeRay, a real operator you didn't write; that boundary is deliberate, this is a language-agnostic sidecar contract, a container image with two HTTP routes, wired in by editing a Pod template the same way any production sidecar gets attached.
-- [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`maven:3.9-eclipse-temurin-21` builder → `eclipse-temurin:21-jre-alpine` runtime, same shape as W00's), `EXPOSE 8080`.
+- [ ] `tools/log-aggregator/main.go`: HTTP server (`net/http`, standard library, matching the same "no framework needed for two routes" approach every other small service in this curriculum uses) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W13's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `sync.RWMutex`, not a plain `sync.Mutex`. That's not a stylistic preference: `POST /log` is a rare write, `GET /logs` can be a frequent read, and a plain `Mutex` serializes every read behind every other read even though none of them mutate anything; `RWMutex`'s `RLock`/`RUnlock` let concurrent readers through together and only blocks them against the occasional writer. Go's runtime doesn't have the virtual-thread-pinning failure mode a `synchronized` block causes on the JVM, goroutines don't get pinned to an OS thread by holding a lock, but an unnecessarily exclusive lock is still a real, measurable throughput cost under concurrent reads, just a different mechanism than pinning.
+- [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.22` builder → `gcr.io/distroless/static-debian12` runtime, the same shape as W00's), `EXPOSE 8080`.
 - [ ] Build and load into the kind cluster from W19:
   ```bash
   docker build -t log-aggregator:latest tools/log-aggregator
@@ -106,8 +114,8 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
 **What you'd change to have the DD engine actually ship its JSON log lines to the sidecar over `localhost:8080/log` instead of stdout (the exercise above only proves connectivity via a synthetic curl, not the real log path):**
 
-**What did writing `ScopedSpan` by hand teach you about span lifetimes that an auto-instrumentation macro would have hidden from you?**
+**What did writing `ScopedSpan` by hand, and leaning on try-with-resources to close it, teach you about span lifetimes that an auto-instrumentation agent would have hidden from you?**
 
-**What virtual thread pinning is, concretely, in terms of your `LogAggregator`'s ring buffer lock, and why it wouldn't show up as a correctness bug in testing, only as a throughput problem under load:**
+**Why `RWMutex` instead of a plain `Mutex` for the ring buffer, concretely, in terms of `POST /log` vs `GET /logs` traffic, and what would you actually observe under load if you swapped it for a plain `Mutex` (a correctness bug, or something else)?**
 
 **What I'd do differently:**

@@ -5,7 +5,7 @@ status: not-started
 
 # W00: Infrastructure Setup
 
-> **Pre-week:** Complete before W01 begins · **Language:** Java + shell
+> **Pre-week:** Complete before W01 begins · **Language:** Go + shell
 
 ## What you'll build
 A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By end of week, you can deploy any of your weekly code artifacts to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W19 and W20.
@@ -21,7 +21,7 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 ## Install
 
 - [ ] Install Docker Desktop (or Podman Desktop)
-- [ ] `brew install kind kubectl helm`
+- [ ] `brew install kind kubectl helm go`
 - [ ] Create cluster: `kind create cluster --name pd-systems`
 - [ ] Verify: `kubectl cluster-info --context kind-pd-systems`
 
@@ -47,24 +47,24 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 ## Code
 
-Project: `code/hello-metrics/` (Java 21, Maven)
+Project: `code/hello-metrics/` (Go modules)
 
-A minimal Java HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every service you build from here on can follow.
+A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every small service you build from here on can follow, this one and every secondary tool in later weeks (W03's job coordinator, W13's gradient server, W15's bench runner, W20's log-aggregator sidecar).
 
-- [ ] `pom.xml`: a single dependency on the current Prometheus Java client (check [the client's GitHub](https://github.com/prometheus/client_java) for the current artifact coordinates and add it to `pom.xml`; the exact group/artifact has changed as the library evolved, worth confirming rather than assuming). No web framework: the HTTP server itself comes from the JDK, not a dependency.
-- [ ] `Main.java`: uses `com.sun.net.httpserver.HttpServer` (built into the JDK, `jdk.httpserver` module, no Spring, no external web framework needed for two routes) with two registered contexts, plus two metric objects shared by both routes.
+- [ ] `go.mod`: `go mod init hello-metrics`, then `go get github.com/prometheus/client_golang/prometheus` and `go get github.com/prometheus/client_golang/prometheus/promhttp`, the standard Go Prometheus client. No web framework: `net/http`, the standard library's own HTTP server, is enough for two routes.
+- [ ] `main.go`: `http.HandleFunc` for two routes, plus two metric objects shared by both handlers.
 
   **Setup: two shared metrics**
-  Before either route runs, create two objects once, at startup, using the Prometheus client library:
+  Before starting the server, create two objects once, at package or `main()` scope, using `prometheus.NewCounter` and `prometheus.NewHistogram`, then register both with `prometheus.MustRegister`:
   - a Counter named `request_count_total`
-  - a Histogram named `request_duration_seconds`, with bucket boundaries spanning roughly 5ms to 500ms (seven boundaries: `0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5`)
+  - a Histogram named `request_duration_seconds`, with bucket boundaries spanning roughly 5ms to 500ms (seven boundaries: `0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5`, passed to `prometheus.HistogramOpts.Buckets`)
 
-  Store both as `final` fields, created exactly once, and reuse those same objects on every request. Never construct a new Counter or Histogram inside a handler; a fresh object on every request would reset to zero each time and nothing would ever accumulate. This is the same discipline the Go version of this exercise required, and the same mistake (rebuilding the metric per request) produces the same silent bug in any language: a `/metrics` endpoint that always reads zero.
+  Keep both as package-level variables, created exactly once, and reuse those same objects in every handler. Never construct a new Counter or Histogram inside a handler; a fresh object on every request would reset to zero each time and nothing would ever accumulate. It's a one-line mistake with a silent failure mode: a `/metrics` endpoint that always reads zero, no error, no panic, just a counter that never counts.
 
   **`GET /`**
   - Response: `{"status":"ok"}`
-  - Format: JSON, written by hand (a two-key object doesn't need a JSON library). The Counter and Histogram from Setup aren't involved in building this response body.
-  - Side effect: increments the shared Counter, and observes its own response time into the shared Histogram (record a start time when the request comes in, observe the elapsed seconds right before responding).
+  - Format: JSON, written by hand with `fmt.Fprintf` or `w.Write`, a two-key object doesn't need `encoding/json`.
+  - Side effect: increments the shared Counter (`counter.Inc()`), and observes its own response time into the shared Histogram (`time.Now()` when the request comes in, `histogram.Observe(time.Since(start).Seconds())` right before responding, or wrap the whole handler body in `defer` to guarantee the observation runs even on an early return).
 
   **`GET /metrics`**
   - Response: the current value of both metrics created in Setup, `request_count_total` and `request_duration_seconds`, rendered in Prometheus's plain-text exposition format, not JSON. Example output for those two metrics:
@@ -84,21 +84,22 @@ A minimal Java HTTP service that exposes Prometheus metrics, deployed to kind. T
     request_duration_seconds_count 42
     ```
     Notice the Histogram alone takes ten lines: one per bucket boundary from Setup (seven), plus `+Inf`, plus `_sum` and `_count`. There is no single field or single JSON value that represents it.
-  - The Prometheus client library ships a writer that renders its registry in this exact text format; call it from inside your `/metrics` handler rather than building the text yourself. You wire it into your own `HttpServer` route, the same shape as the Go version wiring `promhttp.Handler()` into its own router: the library hands you the response body, you own the route.
+  - Don't write this text by hand: `promhttp.Handler()` already renders the whole registry in this exact format. Register it directly as your route's handler: `http.Handle("/metrics", promhttp.Handler())`. This is the one route where you're not writing the handler body yourself, the library owns the format because the format is a contract Prometheus's scraper depends on, not something worth re-deriving.
 
-**The full pipeline:** your Java code registers and updates the two metrics → they render as text at `/metrics` → the `ServiceMonitor` (below) tells Prometheus to scrape that text every 15s and store it as a time series → Grafana panels (later in this week) query Prometheus (never your Java service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
+**The full pipeline:** your Go service registers and updates the two metrics → they render as text at `/metrics` → the `ServiceMonitor` (below) tells Prometheus to scrape that text every 15s and store it as a time series → Grafana panels (later in this week) query Prometheus (never your Go service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
 - [ ] `Dockerfile`: multi-stage build:
   ```dockerfile
-  FROM maven:3.9-eclipse-temurin-21 AS builder
+  FROM golang:1.22 AS builder
   WORKDIR /app
   COPY . .
-  RUN mvn -q package
+  RUN CGO_ENABLED=0 go build -o hello-metrics .
 
-  FROM eclipse-temurin:21-jre-alpine
-  COPY --from=builder /app/target/hello-metrics.jar /hello-metrics.jar
+  FROM gcr.io/distroless/static-debian12
+  COPY --from=builder /app/hello-metrics /hello-metrics
   EXPOSE 8080
-  CMD ["java", "-jar", "/hello-metrics.jar"]
+  ENTRYPOINT ["/hello-metrics"]
   ```
+  A statically linked Go binary needs nothing at runtime, not even a C library, which is why `distroless/static` works as the final stage: no shell, no package manager, just the binary. This is the smallest, simplest deployment image in the whole curriculum.
 - [ ] `k8s/deployment.yaml`: `Deployment` (1 replica, image `hello-metrics:latest`, imagePullPolicy: Never) + `Service` (ClusterIP, port 8080)
 - [ ] `k8s/service-monitor.yaml`: `ServiceMonitor` resource (so Prometheus scrapes `/metrics` every 15s)
 - [ ] Build and deploy:

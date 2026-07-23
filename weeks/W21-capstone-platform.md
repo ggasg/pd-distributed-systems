@@ -62,7 +62,7 @@ Project: `code/capstone-platform/` (Python for training, coordination, and servi
 **Part 5: Serving + observability (extend W16 and W20)**
 
 - [ ] `serve.py`: a small HTTP service (Flask/FastAPI is fine here, this isn't the distributed part) that loads the trained model and serves `/generate` using the KV cache from W16
-- [ ] Instrument the serving endpoint the same way you instrumented the DD engine in W20 (Python's `prometheus_client` this time, not the C++ `prometheus-cpp` library): `requests_total` (Counter), `generation_latency_seconds` (Histogram), `active_kv_cache_entries` (Gauge)
+- [ ] Instrument the serving endpoint the same way you instrumented the DD engine in W20 (Python's `prometheus_client` this time, not the Java Prometheus client library): `requests_total` (Counter), `generation_latency_seconds` (Histogram), `active_kv_cache_entries` (Gauge)
 - [ ] Deploy everything to kind: training Job, operator, serving Deployment + ServiceMonitor
 - [ ] Grafana dashboard, 4 panels: training throughput (updates/sec across workers), checkpoint/restore events over time, inference p99 latency, active KV cache size
 

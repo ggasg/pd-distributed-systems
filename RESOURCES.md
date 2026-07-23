@@ -29,6 +29,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 - **DDIA Chapter 3**: Storage and Retrieval (SSTables, LSM-Trees, B-Trees)
 - [LevelDB source code](https://github.com/google/leveldb): the canonical LSM implementation; read `db/memtable.h`, `table/table.cc`
+- [BadgerDB source](https://github.com/dgraph-io/badger): a real, actively maintained, pure-Go LSM-tree key-value store, the same language `lsm/` is written in
 - [The Log-Structured Merge-Tree (LSM-tree)](https://www.cs.umb.edu/~poneil/lsmtree.pdf): O'Neil et al. (1996), the original paper
 
 ---
@@ -47,6 +48,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [MapReduce: Simplified Data Processing on Large Clusters](https://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf): Dean & Ghemawat, OSDI 2004 (**free PDF**)
 - [Resilient Distributed Datasets (Spark)](https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf): Zaharia et al., NSDI 2012 (**free PDF**), the "why MapReduce isn't enough" paper
 - [Spark: Cluster Computing with Working Sets](https://people.csail.mit.edu/matei/papers/2010/hotcloud_spark.pdf): Zaharia et al. (2010) (**free PDF**), shorter, read first
+- [MIT 6.5840 Lab 1: MapReduce](https://pdos.csail.mit.edu/6.824/labs/lab-mr.html): optional. The canonical academic version of this exact exercise, also Go, the field's own reference point for building MapReduce as a first distributed-systems lab
 
 ---
 
@@ -70,8 +72,8 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 ## W06: Naiad and Timely Dataflow
 
 - [Naiad: A Timely Dataflow System](https://dl.acm.org/doi/10.1145/2517349.2522738): Murray et al., SOSP 2013 (**ACM DL**; also [free via MSR](https://www.microsoft.com/en-us/research/wp-content/uploads/2013/11/naiad_sosp2013.pdf))
-- [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): the reference implementation of the timestamp/progress-tracking model `timely-toy/` builds a simplified version of. Conceptual reference only; no build target reads it directly, since `timely-toy/` is C++.
-- [PyTorch Autograd Engine source](https://github.com/pytorch/pytorch/blob/main/torch/csrc/autograd/engine.cpp): the actual C++ reference for `timely-toy/`, a production dependency-counted DAG scheduler and the closest real analogue to Naiad's progress tracking in a language you're writing this arc in
+- [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): the reference implementation of the timestamp/progress-tracking model `timely-toy/` builds a simplified version of. Conceptual reference only; no build target reads it directly, since `timely-toy/` is Java.
+- [PyTorch Autograd Engine source](https://github.com/pytorch/pytorch/blob/main/torch/csrc/autograd/engine.cpp): a real production dependency-counted DAG scheduler and the closest real analogue to Naiad's progress tracking, C++, a different language than `timely-toy/` itself, the lesson is the technique
 - [Ray source: `core_worker.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/core_worker.cc) and [`task_manager.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/task_manager.cc): Ray's `CoreWorker` (C++) fires tasks once their dependencies are satisfied: a second, directly target-company-relevant analogue (Anyscale), read from source rather than a third-party summary
 
 ---
@@ -80,7 +82,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 - [Differential Dataflow](https://github.com/frankmcsherry/blog/blob/master/posts/2015-09-29.md): McSherry (2013/2015), blog post (**free**), more accessible than the formal paper
 - [Differential Dataflow (formal paper)](https://dl.acm.org/doi/10.1145/2588555.2610364): McSherry, Murray et al., CIDR 2013 (Part 1 reading, Sections 1–2 only)
-- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): optional, for context. Your `Update`/`Collection` types in `dd-scratch/` are a simplified version of the same ideas as `collection.rs`. No maintained C++ continuation of this lineage exists, so this stays a reading-only reference.
+- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): optional, for context. Your `Update`/`Collection` types in `dd-scratch/` are a simplified version of the same ideas as `collection.rs`. No maintained JVM continuation of this lineage exists, so this stays a reading-only reference.
 - [ClickHouse Materialized Views](https://clickhouse.com/docs/en/guides/developer/cascading-materialized-views): Part 2 required reading. An insert trigger, not a retraction-aware incrementally maintained view. You'll install ClickHouse locally and build one yourself in the exercise.
 - [Spark Structured Streaming: arbitrary stateful operations](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#arbitrary-stateful-operations): Part 2 required reading. Per-key state maintained and updated incrementally between micro-batches. Runs entirely in local mode via `pip install pyspark`, no Databricks account or proprietary docs needed.
 - [Snowflake Dynamic Tables](https://docs.snowflake.com/en/user-guide/dynamic-tables-about): optional, not required. Closed-source SaaS with no self-hosted option, so it's excluded from the hands-on comparison the same way ClickHouse would have been if it weren't locally installable.
@@ -199,8 +201,9 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 - [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/)
 - [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): **free online**
 - [Grafana dashboarding docs](https://grafana.com/docs/grafana/latest/dashboards/)
-- [prometheus-cpp](https://github.com/jupp0r/prometheus-cpp): the C++ Prometheus client used to instrument the W07 DD engine
-- [OpenTelemetry C++ SDK](https://opentelemetry.io/docs/languages/cpp/): official docs, used for the `ScopedSpan` tracing setup
+- [Prometheus Java client](https://github.com/prometheus/client_java): used to instrument the W07 DD engine (same library W00 already uses)
+- [OpenTelemetry Java SDK](https://opentelemetry.io/docs/languages/java/): official docs, used for the `ScopedSpan` tracing setup
+- [Go `net/http` docs](https://pkg.go.dev/net/http): the standard library package the Part 3 log-aggregator sidecar is built on
 
 ---
 

@@ -5,18 +5,20 @@ status: not-started
 
 # W08: Query Execution
 
-> **Arc:** Streaming and Dataflow · **Language:** C++
+> **Arc:** Streaming and Dataflow · **Language:** Go
 
 ## What you'll build
-A vectorized query executor in C++: columnar filter + hash join + projection over in-memory data. Benchmark it against a row-at-a-time version of the same pipeline and measure the speedup.
+A vectorized query executor in Go: columnar filter + hash join + projection over in-memory data. Benchmark it against a row-at-a-time version of the same pipeline and measure the speedup.
+
+**Note on why Go, specifically, for this one week:** the rest of this arc is Java, but this week's benchmark is memory-layout-sensitive in a way the others aren't, and Go gives you two concrete things Java can't here. First, Go compiles ahead of time to native code; there's no JIT to warm up, so a naive, hand-timed benchmark (which is this week's style, no microbenchmark harness) measures real steady-state performance from the first call, instead of risking measuring JIT compilation overhead the way an unwarmed Java benchmark would. Second, and more important for a columnar engine specifically: Go structs are real value types in slices, `[]Row` is genuinely contiguous memory. Java has no true value types (records are still heap-allocated objects), so an array of row structs in Java is an array of pointers to scattered allocations, exactly the pointer-chasing a columnar query engine exists to avoid. The whole point of this week is that vectorized, columnar execution beats naive row-at-a-time processing because of memory layout; Go gets you closer to that lesson honestly than Java would.
 
 ---
 
 ## Read
 - [ ] [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032) (Graefe, 1994): read Sections 1–3. This defines the iterator model (the `next()` interface) that every query engine for 20 years was built on.
 - [ ] [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf) (Boncz et al., CIDR 2005): read Sections 1–3. This is the argument for vectorized execution and why Volcano is CPU-cache unfriendly.
-- [ ] [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++, and one you already depend on via W11's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this week.
-- [ ] Optional, context only (a free public blog post, not something you install or test against): [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html). Photon is "written from the ground up in C++" specifically to replace the JVM-based Spark execution engine for exactly this reason: columnar batches, tight vectorized loops, SIMD. Your actual hands-on comparison this week is DuckDB (and optionally ClickHouse) below; this is just confirmation the same technique is load-bearing in production.
+- [ ] [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++ (a different language than this week's build, the lesson is the technique, not the syntax), and one you already depend on via W11's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this week.
+- [ ] Optional, context only (a free public blog post, not something you install or test against): [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html). Photon is "written from the ground up in C++" specifically to replace the JVM-based Spark execution engine for exactly this reason: columnar batches, tight vectorized loops, SIMD, none of it playing well with a garbage collector or a heap of boxed objects. Your actual hands-on comparison this week is DuckDB (and optionally ClickHouse) below; this is just confirmation the same technique is load-bearing in production, regardless of which non-GC'd language a given engine picks.
 - [ ] [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional: ClickHouse is C++ end to end; skim `IProcessor` and how the pull-based pipeline batches rows into `Chunk`s. A second real reference point alongside DuckDB and Photon, from a different target company with a different pipeline design.
 
 **Key question:** Why does calling `next()` once per row hurt CPU performance even when the logic is simple? What does processing a batch of 1024 rows at a time fix?
@@ -25,34 +27,28 @@ A vectorized query executor in C++: columnar filter + hash join + projection ove
 
 ## Code
 
-Project: `code/query-exec/` (C++, CMake)
+Project: `code/query-exec/` (Go modules)
 
-Data model: a table of 1M rows with columns `std::vector<int32_t> id, dept, salary` stored separately (columnar).
+Data model: a table of 1M rows with columns `[]int32` for `id`, `dept`, `salary`, stored separately (columnar).
 
 **Row-at-a-time executor (baseline):**
 
-- [ ] `include/query_exec/row_executor.hpp`: `struct Row { int32_t id; int32_t dept; int32_t salary; };`; build rows by iterating the three vectors in lockstep (a plain indexed `for` loop is clearest here); apply a filter predicate (`salary > threshold`), then project `(id, salary)`; collect results into a `std::vector<std::pair<int32_t, int32_t>>`
+- [ ] `row_executor.go`: `type Row struct { ID, Dept, Salary int32 }`; build rows by iterating the three slices in lockstep (a plain indexed `for` loop is clearest here); apply a filter predicate (`salary > threshold`), then project `(id, salary)`; collect results into a `[]Row` or a `[]struct{ ID, Salary int32 }`, either way a slice of actual structs, not pointers to them
 
 **Vectorized executor:**
 
-- [ ] `include/query_exec/column_filter.hpp` + `src/column_filter.cpp`: `std::vector<bool> filter(const std::vector<int32_t>& col, int32_t threshold)`, branchless: build the mask with `std::transform` or a tight `for` loop, `mask[i] = col[i] > threshold`
-- [ ] `include/query_exec/column_project.hpp` + `src/column_project.cpp`: `std::vector<int32_t> project(const std::vector<int32_t>& col, const std::vector<bool>& mask)`, collect values where the mask is true
-- [ ] `include/query_exec/hash_join.hpp` + `src/hash_join.cpp`: `std::vector<std::pair<int32_t, int32_t>> join(const std::vector<int32_t>& left_key, const std::vector<int32_t>& left_val, const std::vector<int32_t>& right_key, const std::vector<int32_t>& right_val)`, build a `std::unordered_map<int32_t, int32_t>` from the left side, probe with the right side, emit matching pairs
-- [ ] `benchmark/benchmark.cpp`: generate 1M random rows; time the filter + project pipeline 10 times each using `std::chrono::high_resolution_clock` (3 warm-up runs first, so caches and branch prediction are primed); print mean throughput in M rows/sec for both executors. Build and run in Release mode:
-  ```bash
-  cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-  cmake --build build
-  ./build/benchmark
-  ```
-  **The Release build type is not optional here**, same reason `cargo run --release` mattered in the original plan. A default CMake build has no `-O2`/`-O3` and minimal inlining; an unoptimized debug build will make the comparison meaningless.
+- [ ] `column_filter.go`: `func Filter(col []int32, threshold int32) []bool`, branchless: build the mask with a tight `for` loop, `mask[i] = col[i] > threshold`
+- [ ] `column_project.go`: `func Project(col []int32, mask []bool) []int32`, collect values where the mask is true
+- [ ] `hash_join.go`: `func Join(leftKey, leftVal, rightKey, rightVal []int32) []struct{ Left, Right int32 }`, build a `map[int32]int32` from the left side, probe with the right side, emit matching pairs
+- [ ] `benchmark_test.go`: use Go's `testing.B` (`go test -bench=. -benchmem`) to time the filter + project pipeline for both executors over 1M random rows; `testing.B` runs enough iterations to get a stable number and reports allocations per operation, worth checking that neither executor is allocating inside its hot loop.
 
-**Expected outcome:** vectorized should be 3–8x faster. If the gap is smaller, the first thing to check is whether you actually configured `-DCMAKE_BUILD_TYPE=Release`; that's the single most common reason a C++ benchmark looks flat.
+**Expected outcome:** vectorized should be 3–8x faster. If the gap is smaller, check `-benchmem`'s allocation count first, an unexpected allocation inside the loop (for example, `append` triggering a slice reallocation because the destination wasn't pre-sized with `make([]int32, 0, n)`) is the most common reason a Go benchmark like this looks flatter than expected.
 
 ---
 
 ## 🐍 Python DSA Review (optional)
 
-**Hash join + binary search on sorted arrays**: the two algorithms your C++ `hash_join.cpp` and `column_filter.cpp` implement. Python makes the probe/build logic easy to inspect.
+**Hash join + binary search on sorted arrays**: the two algorithms your Go `hash_join.go` and `column_filter.go` implement. Python makes the probe/build logic easy to inspect.
 
 ```python
 from collections import defaultdict
@@ -76,7 +72,7 @@ right = [{"id": 1, "score": 95},     {"id": 1, "score": 88}]
 joined = hash_join(left, right, "id")
 assert len(joined) == 2 and all(r["name"] == "alice" for r in joined)
 
-# binary_filter.py: binary search on a sorted column (like column_filter.cpp)
+# binary_filter.py: binary search on a sorted column (like column_filter.go)
 def filter_sorted_col(col: list[int], predicate_min: int, predicate_max: int) -> list[int]:
     lo = bisect_left(col, predicate_min)
     hi = bisect_left(col, predicate_max + 1)
@@ -86,7 +82,7 @@ col = sorted([5, 2, 8, 1, 9, 3, 7, 4, 6])
 assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
 ```
 
-**Connection:** `hash_join.cpp` is the build+probe pattern in C++ over `std::vector<int32_t>` columns. `column_filter.cpp` can use `std::lower_bound`/`std::upper_bound` (C++'s `bisect_left` equivalent) for range filters over a sorted column, 3–8x faster than scanning.
+**Connection:** `hash_join.go` is the build+probe pattern in Go over `[]int32` columns. `column_filter.go` can use `sort.Search` (Go's `bisect_left` equivalent) for range filters over a sorted column, 3–8x faster than scanning.
 
 ---
 
@@ -103,6 +99,6 @@ assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
 
 **What does this tell you about how query execution works in a system you know?**
 
-**Where did mutation buy you speed?** Your vectorized executor builds and fills `std::vector`s directly for performance. Notice that C++ never forces immutability on you the way W05 and W07's functional-style code does by construction (`map`/`filter` chains, immutable returns), so this trade-off was always available and always invisible until you looked for it. Point to one specific place in `column_filter.cpp` or `hash_join.cpp` where you mutated a vector in place (`push_back` into a pre-sized buffer, writing through an index, etc.) and estimate what it would've cost you in speed to instead allocate a fresh vector per step and chain functional-style transforms, the way `map`/`filter` in W07 do by construction.
+**Where did a value-type slice buy you speed?** Your vectorized executor builds and fills `[]int32` slices directly, real contiguous memory, not a slice of pointers to scattered structs. Notice that Go never forces immutability on you the way W05 and W07's Java code does by construction (`filter`/`consolidate` returning new values), so this trade-off was always available and always invisible until you looked for it. Point to one specific place in `column_filter.go` or `hash_join.go` where you wrote into a pre-sized slice by index instead of building a fresh one and estimate what it would've cost you in speed to instead allocate a new slice per step and chain functional-style transforms, the way `filter`/`consolidate` in W07 do by construction.
 
 **What I'd do differently:**
