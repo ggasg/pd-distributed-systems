@@ -8,14 +8,14 @@ status: not-started
 > **Arc:** Distributed ML & Compute · **Language:** Python (NumPy only)
 
 ## What you'll build
-Multi-head self-attention forward pass, then extend it with a KV cache for autoregressive generation. No PyTorch. Benchmark the memory usage and latency of cached vs uncached generation.
+A KV cache for autoregressive generation, built against a given multi-head self-attention implementation rather than one you derive from scratch: the attention forward pass itself is standard transformer mechanics that belongs to a dedicated ML/AI track, not this one. This week's actual subject is what happens to memory and latency once you start caching past keys and values across generation steps, and where a naive cache can leak state between requests it was never supposed to share. No PyTorch. Benchmark the memory usage and latency of cached vs uncached generation.
 
 **Scenario:** an inference server serving more than one conversation at a time is the actual, everyday shape of this problem, and it's also exactly where a naive KV cache can quietly let one user's context leak into another user's response. That failure mode is built directly into this week's code so you find it here, not in an incident report.
 
 ---
 
 ## Read
-- [ ] [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (Vaswani et al., 2017): read Sections 3.2–3.5 (the attention mechanism and multi-head attention). Skip the training details.
+- [ ] [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (Vaswani et al., 2017): read Sections 3.2–3.5 (the attention mechanism and multi-head attention) to understand the mechanism `attention.py` gives you below, not to derive it yourself. Skip the training details.
 - [ ] [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135) (Dao et al., 2022): read Sections 1–3. The key insight is tiling attention to avoid materializing the full N×N attention matrix. You won't implement this, but you need to understand *why* naive attention is memory-bound.
 - [ ] [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180) (Kwon et al., 2023): read Sections 1–4. Understand why KV cache fragmentation is a problem and how paging solves it.
 
@@ -31,10 +31,8 @@ Project: `code/attention/` (Python 3.11+, NumPy only)
 
 Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=256`.
 
-- [ ] `attention.py`: `MultiHeadAttention` class:
-  - `__init__`: initialize `W_q`, `W_k`, `W_v`, `W_o` as random NumPy arrays (shape `[d_model, d_model]`)
-  - `scaled_dot_product(Q, K, V, mask=None)`: compute `softmax(QK^T / sqrt(d_head)) V`; apply causal mask (upper triangle = -inf) when `mask=True`
-  - `forward(X)`: split into heads, apply SDPA per head, concatenate, project with `W_o`; input shape `[batch, seq, d_model]`
+**Given, not built:** `attention.py`'s `MultiHeadAttention` class is provided as a starter file: `__init__` (random `W_q`/`W_k`/`W_v`/`W_o` projections, shape `[d_model, d_model]`), `scaled_dot_product(Q, K, V, mask=None)` (`softmax(QK^T / sqrt(d_head)) V`, with an optional causal mask), and `forward(X)` (split into heads, apply SDPA per head, concatenate, project with `W_o`). Read it closely enough to know what shape `forward(X)` expects and returns, since `kv_cache.py` and `generate.py` both call into it directly, but you won't need to modify it. Deriving this mechanism yourself is real, valuable work; it's just not what this week is testing.
+
 - [ ] `kv_cache.py`: `KVCache` class:
   - Stores past keys and values per layer: `Dict[int, Tuple[np.ndarray, np.ndarray]]`
   - `update(layer_id, new_k, new_v)`: concatenates new K/V to cached K/V along the sequence dimension
