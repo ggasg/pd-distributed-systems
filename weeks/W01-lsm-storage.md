@@ -13,7 +13,7 @@ A minimal LSM-tree: MemTable (in-memory sorted buffer) → SSTable (sorted file 
 ---
 
 ## Read
-- [ ] DDIA Ch.3, pp. 70–99: focus on B-Trees vs LSM-Trees; understand SSTables, compaction strategies, and bloom filters. (DDIA is a book, not a free PDF. See [RESOURCES.md](../RESOURCES.md) if you don't have a copy yet; it's referenced again in W02, W04, and W05.)
+- [ ] DDIA Ch.4 (2nd ed.): focus on B-Trees vs LSM-Trees; understand SSTables, compaction strategies, and bloom filters. Optional, AI-adjacent extension in this edition: the chapter's new Vector Embeddings section, if you want the retrieval-side counterpart to W16's attention work. (DDIA is a book, not a free PDF. See [RESOURCES.md](../RESOURCES.md) if you don't have a copy yet; it's referenced again in W02, W04, and W05.)
 - [ ] LevelDB source (30 min skim): [`db/memtable.h`](https://github.com/google/leveldb/blob/main/db/memtable.h), [`db/version_set.cc`](https://github.com/google/leveldb/blob/main/db/version_set.cc): read to see how it's actually done, not to understand every line. LevelDB is C++, this is the algorithm, not the syntax, worth reading regardless of your build language.
 - [ ] [BadgerDB source](https://github.com/dgraph-io/badger): the JVM-native Cassandra pointer from earlier versions of this week doesn't apply anymore, this is its Go replacement, and arguably a closer match: a real, actively maintained, pure-Go LSM-tree key-value store. Skim `memtable.go` and `levels.go` (or their current equivalents, the exact filenames drift as the project evolves): a production Go engine solving the exact problem this week builds a toy version of, in the same language you're about to write it in.
 

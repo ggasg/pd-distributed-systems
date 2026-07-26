@@ -14,7 +14,7 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 ## Read (before anything else)
 
-- [ ] **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications. Not tied to this week's build; read it because it's the vocabulary the entire rest of the curriculum assumes. "Reliable," "scalable," and "maintainable" get used loosely everywhere; Kleppmann defines each precisely in about 20 pages, and every later week's design trade-offs (why W07 trims a corner ClickHouse also trims, why W17 cares about a *consistent* snapshot, why W19's reconcile loop is level-triggered) are instances of these three properties in tension. Read once here, then let it recede into the background.
+- [ ] **DDIA Chapters 1-2** (2nd ed.): Trade-Offs in Data Systems Architecture, then Defining Nonfunctional Requirements. Not tied to this week's build; read them because they're the vocabulary the entire rest of the curriculum assumes. Chapter 2 is where "reliable," "scalable," and "maintainable" get defined precisely in about 20 pages (this is the direct continuation of the 1st edition's Chapter 1); every later week's design trade-offs (why W07 trims a corner ClickHouse also trims, why W17 cares about a *consistent* snapshot, why W19's reconcile loop is level-triggered) are instances of these three properties in tension. Chapter 1 is new in the 2nd edition and worth the extra 20 minutes: it frames cloud-vs-self-hosted and distributed-vs-single-node trade-offs explicitly, the same framing this whole curriculum is built around. Read both once here, then let them recede into the background.
 
 ---
 

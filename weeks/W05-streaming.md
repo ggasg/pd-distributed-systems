@@ -13,7 +13,7 @@ Tumbling window aggregation from scratch in Java. No Flink, no Spark. Input: a s
 ---
 
 ## Read
-- [ ] DDIA Ch.11: focus on "Processing Streams" section; understand exactly-once semantics and the log as a stream
+- [ ] DDIA Ch.12 (2nd ed.): focus on "Processing Streams" section; understand exactly-once semantics and the log as a stream
 - [ ] [The Dataflow Model](https://research.google/pubs/the-dataflow-model-a-practical-approach-to-balancing-correctness-latency-and-cost-in-massive-scale-unbounded-out-of-order-data-processing/) (Akidau et al., VLDB 2015): read Sections 1–4. The windowing taxonomy (fixed, sliding, session) and the "What/Where/When/How" framework are the key takeaways.
 
 **Key question:** What is a watermark, exactly? What breaks if your watermark heuristic is too aggressive? What breaks if it's too conservative?

@@ -21,9 +21,9 @@ A 3-node key-value store in Go where writes are replicated via a simple primary-
 
 **Why Go:** it's a direct extension of the actual code from W01 and W04, not a rewrite in a third language; goroutines and channels make the node communication natural, and `net/http` (standard library) makes the client API trivial without reaching for a framework.
 
-**If you pick this option, read first: DDIA Chapter 5** (Replication), specifically "Leaders and Followers." Primary-backup *is* the leader-based replication Ch. 5 describes; the chapter names the failure modes worth designing around before you write `Promote()` (replication lag, what happens to in-flight writes when the leader dies mid-forward) rather than discovering them by hand.
+**If you pick this option, read first: DDIA Chapter 6** (2nd ed., Replication), specifically "Single-Leader Replication." Primary-backup *is* the leader-based replication Ch. 6 describes; the chapter names the failure modes worth designing around before you write `Promote()` (replication lag, what happens to in-flight writes when the leader dies mid-forward) rather than discovering them by hand.
 
-**Optional companion: DDIA Chapter 6** (Partitioning). Your 3-node store only replicates, it doesn't partition the keyspace, but Ch. 6 is the other half of the scaling story Ch. 5 started: replication makes each copy of the data more available, partitioning is what lets the dataset grow past what one node holds. Worth reading for the concept even though this exercise doesn't implement it; the "What you'd add with another week" Reflect question is a natural place to sketch how you'd combine the two.
+**Optional companion: DDIA Chapter 7** (2nd ed., Sharding, renamed from "Partitioning"). Your 3-node store only replicates, it doesn't shard the keyspace, but Ch. 7 is the other half of the scaling story Ch. 6 started: replication makes each copy of the data more available, sharding is what lets the dataset grow past what one node holds. Worth reading for the concept even though this exercise doesn't implement it; the "What you'd add with another week" Reflect question is a natural place to sketch how you'd combine the two.
 
 **Minimum bar:** 3-node cluster, primary-backup replication works, one node can fail and the system continues.
 

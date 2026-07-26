@@ -8,7 +8,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 | Book | Author | Weeks | Notes |
 |------|--------|-------|-------|
-| [Designing Data-Intensive Applications (DDIA)](https://dataintensive.net) | Kleppmann (2017) | W00, W01, W02, W03, W04, W05, W09 (optional), W17 (optional), W18 (Option A, plus optional companion), W21 (optional) | The single most useful book for this curriculum. Buy it. |
+| [Designing Data-Intensive Applications (DDIA), 2nd ed.](https://dataintensive.net) | Kleppmann & Riccomini (2026) | W00, W01, W02, W03, W04, W05, W09 (optional), W17 (optional), W18 (Option A, plus optional companion), W21 (optional) | The single most useful book for this curriculum. Buy it. 2nd edition (Feb 2026) restructures the whole book: 12 chapters became 14, and every chapter after the first is renumbered. Chapter references below are to the 2nd edition. |
 | [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W17 | For concurrency primitives and correctness |
 | [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W20 | O'Reilly; pairs well with the Google SRE chapter |
 | [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W20 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
@@ -18,7 +18,8 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W00: Infrastructure Setup
 
-- **DDIA Chapter 1**: Reliable, Scalable, and Maintainable Applications. Read before anything else in the curriculum; it isn't tied to this week's build specifically.
+- **DDIA Chapter 1**: Trade-Offs in Data Systems Architecture. Read before anything else in the curriculum; it isn't tied to this week's build specifically. New in the 2nd edition: the operational-vs-analytical and distributed-vs-single-node framing that used to be implicit is now made explicit up front.
+- **DDIA Chapter 2**: Defining Nonfunctional Requirements. The direct continuation of the old Chapter 1 (Reliability and Fault Tolerance, Scalability, Maintainability); read it right after Chapter 1, same sitting.
 - [kind docs](https://kind.sigs.k8s.io/): Kubernetes in Docker
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack): Helm chart for Prometheus + Grafana
 - [Prometheus Java client library](https://github.com/prometheus/client_java)
@@ -27,7 +28,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W01: LSM-Trees and Storage Engines
 
-- **DDIA Chapter 3**: Storage and Retrieval (SSTables, LSM-Trees, B-Trees)
+- **DDIA Chapter 4**: Storage and Retrieval (SSTables, LSM-Trees, B-Trees)
 - [LevelDB source code](https://github.com/google/leveldb): the canonical LSM implementation; read `db/memtable.h`, `table/table.cc`
 - [BadgerDB source](https://github.com/dgraph-io/badger): a real, actively maintained, pure-Go LSM-tree key-value store, the same language `lsm/` is written in
 - [The Log-Structured Merge-Tree (LSM-tree)](https://www.cs.umb.edu/~poneil/lsmtree.pdf): O'Neil et al. (1996), the original paper
@@ -36,7 +37,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W02: Encoding and Wire Formats
 
-- **DDIA Chapter 4**: Encoding and Evolution
+- **DDIA Chapter 5**: Encoding and Evolution
 - [Protocol Buffers Encoding](https://protobuf.dev/programming-guides/encoding/): Google docs; the varint encoding spec
 - [MessagePack spec](https://github.com/msgpack/msgpack/blob/master/spec.md): binary JSON alternative worth understanding
 
@@ -44,7 +45,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W03: MapReduce and Its Limits
 
-- **DDIA Chapter 10**: Batch Processing. Read this first: it tells the MapReduce-to-Spark story as one continuous narrative and frames it as a point on a spectrum, not a standalone system.
+- **DDIA Chapter 11**: Batch Processing. Read this first: it tells the MapReduce-to-Spark story as one continuous narrative and frames it as a point on a spectrum, not a standalone system.
 - [MapReduce: Simplified Data Processing on Large Clusters](https://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf): Dean & Ghemawat, OSDI 2004 (**free PDF**)
 - [Resilient Distributed Datasets (Spark)](https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf): Zaharia et al., NSDI 2012 (**free PDF**), the "why MapReduce isn't enough" paper
 - [Spark: Cluster Computing with Working Sets](https://people.csail.mit.edu/matei/papers/2010/hotcloud_spark.pdf): Zaharia et al. (2010) (**free PDF**), shorter, read first
@@ -55,7 +56,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 ## W04: Clocks, Causality, and Time
 
 - [Time, Clocks, and the Ordering of Events in a Distributed System](https://dl.acm.org/doi/10.1145/359545.359563): Lamport (1978) (**ACM DL; 10 pages**), read all of it
-- **DDIA Chapter 8**: The Trouble with Distributed Systems (clocks, NTP, monotonic clocks)
+- **DDIA Chapter 9**: The Trouble with Distributed Systems (clocks, NTP, monotonic clocks)
 - [Spanner: Google's Globally Distributed Database](https://dl.acm.org/doi/10.1145/2491245): Corbett et al. (2012), TrueTime section only (Sections 3 + 5)
 - [Detecting Causal Relationships in Distributed Computations](https://zoo.cs.yale.edu/classes/cs426/2012/lab/bib/fidge88timestamps.pdf): Fidge (1988) (**free PDF**), vector clocks
 
@@ -64,7 +65,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 ## W05: Stream Processing Primitives
 
 - [The Dataflow Model](https://research.google/pubs/the-dataflow-model-a-practical-approach-to-balancing-correctness-latency-and-cost-in-massive-scale-unbounded-out-of-order-data-processing/): Akidau et al., VLDB 2015 (**free PDF via Google Research**), the paper behind Apache Beam and Flink's model
-- **DDIA Chapter 11**: Stream Processing (watermarks, windows, exactly-once)
+- **DDIA Chapter 12**: Stream Processing (watermarks, windows, exactly-once)
 - [Streaming 101](https://www.oreilly.com/radar/the-world-beyond-batch-streaming-101/): Akidau (O'Reilly blog), free, accessible intro before the paper
 
 ---
@@ -103,7 +104,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W09: Rule-Based Query Planning in Scala
 
-- **DDIA Chapter 2** (optional): Data Models and Query Languages. Read "Query Languages for Data": the declarative-vs-imperative distinction it draws is exactly why `LogicalPlan` can be rewritten by `PushDownFilter` before anything executes.
+- **DDIA Chapter 3** (optional): Data Models and Query Languages. Read "Query Languages for Data": the declarative-vs-imperative distinction it draws is exactly why `LogicalPlan` can be rewritten by `PushDownFilter` before anything executes.
 - [Spark SQL: Relational Data Processing in Spark](https://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf): Armbrust et al., SIGMOD 2015 (**free PDF**), Section 4 describes Catalyst directly
 - [Catalyst source: `TreeNode.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/trees/TreeNode.scala): the real `transform`/`transformDown`/`transformUp` combinators
 - [Catalyst source: `Optimizer.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/optimizer/Optimizer.scala): search for `PushDownPredicates`, the production version of this week's rewrite rule
@@ -173,13 +174,13 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 - [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456): Chandy & Lamport (1985), 10 pages; read all of it
 - [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603): Carbone et al. (2015) (**free on arXiv**), Flink's ABS algorithm
-- **DDIA Chapter 9** (optional): Consistency and Consensus, the linearizability section specifically. It sharpens the distinction between "consistent cut" (what Chandy-Lamport gives you) and linearizability (a stronger guarantee it doesn't).
+- **DDIA Chapter 10** (optional): Consistency and Consensus, the linearizability section specifically. It sharpens the distinction between "consistent cut" (what Chandy-Lamport gives you) and linearizability (a stronger guarantee it doesn't).
 
 ---
 
 ## W18: Capstone
 
-No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 5**, Replication. Read "Leaders and Followers" before writing `promote()`. Optional companion: **DDIA Chapter 6**, Partitioning, the other half of the scaling story, not implemented by this exercise but worth reading for the concept.
+No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 6**, Replication. Read "Leaders and Followers" before writing `promote()`. Optional companion: **DDIA Chapter 7**, Sharding (renamed from "Partitioning" in the 2nd edition), the other half of the scaling story, not implemented by this exercise but worth reading for the concept.
 
 ---
 
@@ -209,7 +210,7 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 
 ## W21: Grand Capstone (optional)
 
-No required reading tied to this week's build. This week synthesizes W11, W13, W16, W17, W19, and W20; revisit those weeks' resources as needed. **DDIA Chapter 12** (The Future of Data Systems) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
+No required reading tied to this week's build. This week synthesizes W11, W13, W16, W17, W19, and W20; revisit those weeks' resources as needed. **DDIA Chapter 13** (A Philosophy of Streaming Systems, renamed from "The Future of Data Systems" in the 2nd edition) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
 
 ---
 
@@ -217,7 +218,8 @@ No required reading tied to this week's build. This week synthesizes W11, W13, W
 
 These aren't required but give you broader context:
 
-- **DDIA Chapter 7**, Transactions. No week in this curriculum implements isolation levels or multi-object transactions, so there's no clean place to attach it as required reading, but it's the one DDIA chapter this curriculum otherwise skips entirely, and it's foundational enough to be worth reading on its own rather than forced into an unrelated week.
+- **DDIA Chapter 8**, Transactions. No week in this curriculum implements isolation levels or multi-object transactions, so there's no clean place to attach it as required reading, but it's the one DDIA chapter this curriculum otherwise skips entirely, and it's foundational enough to be worth reading on its own rather than forced into an unrelated week.
+- **DDIA Chapter 4** (2nd ed.) also gained a Vector Embeddings section, folded into the storage-and-retrieval chapter alongside full-text and multidimensional indexing. No week currently builds against it, but it's the most directly AI-relevant new material in the 2nd edition and worth reading given the curriculum's focus on AI workflows; a natural pairing with W16's attention/KV-cache work if you want the retrieval side of the same systems.
 - [The Google File System](https://dl.acm.org/doi/10.1145/945445.945450): Ghemawat et al., SOSP 2003, the original scale-out storage paper
 - [Bigtable: A Distributed Storage System for Structured Data](https://dl.acm.org/doi/10.1145/1365815.1365816): Chang et al., OSDI 2006
 - [Spanner](https://dl.acm.org/doi/10.1145/2491245): Corbett et al. (2012), full read after W04

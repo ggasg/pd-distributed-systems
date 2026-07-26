@@ -13,7 +13,7 @@ Vector clocks + causal message delivery in Go. 3 simulated nodes, each its own g
 ---
 
 ## Read
-- [ ] DDIA Ch.8, pp. 291–322: unreliable clocks, ordering guarantees, causality. Pay attention to the "Ordering Guarantees" section.
+- [ ] DDIA Ch.9 (2nd ed.): unreliable clocks and causality. Focus on "Unreliable Clocks" and "Knowledge, Truth, and Lies"; the "Ordering Guarantees" material this used to point to actually lives in Ch.10 (Consistency and Consensus), not this chapter, so don't go looking for it here.
 - [ ] [Time, Clocks, and the Ordering of Events in a Distributed System](https://lamport.azurewebsites.net/pubs/time-clocks.pdf) (Lamport, 1978): 11 pages. Read all of it. This paper is the foundation.
 - [ ] [Spanner: Google's Globally Distributed Database](https://dl.acm.org/doi/10.1145/2491245) (Corbett et al., 2012): read only Section 3 (TrueTime API, ~3 pages). Understand how they use bounded clock uncertainty.
 

@@ -13,7 +13,7 @@ Varint encoding/decoding from scratch + a row vs columnar layout benchmark over 
 ---
 
 ## Read
-- [ ] DDIA Ch.4: focus on Thrift/Protobuf encoding, schema evolution, and why forward/backward compatibility matters
+- [ ] DDIA Ch.5 (2nd ed.): focus on Protobuf encoding, schema evolution, and why forward/backward compatibility matters
 - [ ] [Protocol Buffers encoding spec](https://protobuf.dev/programming-guides/encoding/): read the varint and field encoding sections; this is short (~15 min)
 - [ ] [Apache Arrow columnar format overview](https://arrow.apache.org/docs/format/Columnar.html): read through "Physical Memory Layout" section
 
