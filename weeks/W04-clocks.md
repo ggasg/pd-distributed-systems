@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 Vector clocks + causal message delivery in Go. 3 simulated nodes, each its own goroutine, communicating over channels. Assert that no node delivers a message before the messages it causally depends on.
 
+**Scenario:** this is the same problem a distributed chat or collaborative-editing app has to solve so a reply never renders before the message it's replying to, even when the network delivers things out of order. Your test suite proves ordering; the exercise below proves the other real failure mode nobody writes a test for on the first pass.
+
 ---
 
 ## Read
@@ -31,6 +33,10 @@ Project: `code/clocks/` (Go modules)
 - [ ] `causal_delivery_test.go`: Go's standard `testing` package: node A sends m1; node B receives m1 and sends m2 (causally after m1); node C receives m2 before m1; assert C buffers m2 until m1 arrives, then delivers m1 then m2 in order
 
 **Constraints:** simulate 3 nodes in-process, each a goroutine (`go func() { ... }()`). Reorder message delivery in tests by controlling send order directly, not by inserting `time.Sleep` or relying on goroutine scheduling nondeterminism to prove your test cases; make the reordering explicit so the test is deterministic.
+
+**Break it, then decide:**
+- [ ] Send the exact same `Message` value onto a node's inbound channel twice in a row (simulating a network-level retry that redelivers a message the sender thinks was lost). Nothing in `node.go`'s delivery logic checks whether a message with this sender and this exact `VectorClock` has already been delivered, so watch what happens: does the receiving node's own clock get merged and incremented twice for one logical message? If your causal-delivery test suite doesn't already cover this, it's because deduplication and causal ordering are two different problems that are easy to conflate; ordering says *when* a message may be delivered, not *whether* it already was.
+- [ ] Given that gap, would you fix it by having each node track the highest sequence number it's seen per sender (a small, bounded amount of extra state) and drop repeats, or by making `Merge` itself idempotent so a duplicate merge is harmless even if delivery isn't deduplicated? Pick one, and say concretely what each approach costs you that the other doesn't.
 
 ---
 
@@ -82,6 +88,8 @@ assert merge(vc2, vc3) == {"A": 2, "B": 1}
 **What surprised me:**
 
 **What happens if a node crashes? Does the vector clock approach break?**
+
+**Duplicate delivery: sequence-number dedup or idempotent merge, and what each costs (from Break it, then decide above):**
 
 **How a system you know handles ordering or timestamps (what clock does it use?):**
 

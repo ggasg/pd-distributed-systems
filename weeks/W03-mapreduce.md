@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 A minimal MapReduce framework in Go using goroutines and channels. Run two jobs through it: word count and iterative PageRank. Measure the disk I/O cost per PageRank iteration; that number is the concrete motivation for everything in Arc 2.
 
+**Scenario:** the original MapReduce paper spends a full section on what happens when a worker dies mid-job, because at Google's scale a job with a thousand mappers will lose one eventually. Your framework runs in one process on one machine, so "a worker dies" doesn't mean the same thing here, which is exactly what the exercise below makes you reckon with.
+
 **Note on why Go, specifically:** this isn't an arbitrary choice. MIT's 6.824/6.5840 (Distributed Systems), the field's most widely used academic treatment of exactly this material, has students build MapReduce in Go as its first lab, then Raft and a sharded key-value store on top of it in later labs. Goroutines also preserve the actual lesson this week is built around better than most alternatives would: Go's scheduler multiplexes many cheap, garbage-collected goroutines onto a small number of OS threads, the same "spawn thousands of tasks without exhausting the OS" idea, just Go's own long-standing contribution to the field rather than a recent JVM addition.
 
 ---
@@ -86,6 +88,10 @@ A working *concrete* pipeline clears this week. You don't need a beautifully gen
 - [ ] `tools/job_coordinator/main.go`: an HTTP server that accepts job submissions and tracks status, using `net/http` (standard library, no framework needed for two routes). Endpoints: `POST /job` (accepts `{"type": "wordcount"|"pagerank", "input": "path"}`, returns `{"job_id": "..."}`), `GET /job/{id}` (returns status + result when done). Your `runner.go` calls this server to report completion. Keep it under 100 lines; `encoding/json` handles the request/response bodies, small enough that hand-writing them would be more code, not less.
 
 If you have time left after the minimum bar: this is a small rep of the master/worker split from the MapReduce paper itself (a coordinator process tracking job state separate from the workers doing the compute), and a preview of the shape you'll build for real in W19, where a control-plane process reconciling state against reported worker status is most of what a Kubernetes operator's reconcile loop does. Skipping it costs you nothing required; it's here because the parallel to W19 is worth having if the week's going well.
+
+**Break it, then decide:**
+- [ ] Pick one mapper goroutine (say, the one handling the last split) and make it `panic("simulated worker crash")` instead of returning normally. Run the word count job. In Go, an unrecovered panic in any goroutine crashes the entire process, not just that goroutine, so watch what actually happens to the other splits that were still running concurrently. This is the real reason the MapReduce paper's fault tolerance re-executes just the failed task on another worker instead of letting one failure take down the whole job; your framework currently has no such isolation.
+- [ ] Given that your framework runs single-process rather than across real distributed workers, is it worth adding a `recover()` around each mapper goroutine that logs the failure and re-runs just that split, or would that just be theater, since it wouldn't demonstrate the actual hard part (detecting a worker is gone over the network, deciding it's really dead and not just slow, reassigning its work) that a real distributed MapReduce has to solve? Make a call, and if you decide it's worth adding, implement it; if not, write down specifically what a real fix would need that a single-process `recover()` can't give you.
 
 ---
 

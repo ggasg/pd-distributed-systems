@@ -31,6 +31,8 @@ Project: `code/dd-scratch/` (Java 21, Maven)
 
 **Constraints:** JDK standard library only. `filter`/`consolidate` return a new `Collection` rather than mutating the receiver; keep the backing `List` `private final` and never expose it directly, so nothing outside the class can mutate `updates` behind your back.
 
+**Break it, then decide:** if any method on `Collection` ever returns `updates` directly (even just for a test assertion, `assertEquals(expected, coll.getUpdates())`), the caller now holds a live reference to your "immutable" list. Mutate it from outside (`coll.getUpdates().add(...)`) and confirm the `Collection` you thought was safe just changed under you, silently, no exception. `private final` on the field only stops reassignment of the reference; it does nothing to stop the object the reference points to from being mutated. Decide: would you fix this by having any accessor return `List.copyOf(updates)` (a real copy, small ongoing cost) or by simply never writing an accessor that exposes the raw list in the first place (zero cost, but only as safe as every future line of code that touches this class)? Pick one and say why it's the right trade-off for a class this size.
+
 One simplification worth naming, not replicating: `filter`/`consolidate` here compute and return a fully materialized new `Collection` immediately, so this is eager function composition, not a lazy dataflow graph. A real Naiad/DD program builds the operator graph first (map, filter, and consolidate all wired together as nodes) and only pushes data through it once, when the computation actually runs; nothing computes at graph-construction time. This toy version skips that indirection so the DD-specific algebra (the diff-based data model) stays the focus of the week, but it's worth knowing the real thing works differently before you assume this `Collection` API is a faithful model of how Naiad or DD actually execute.
 
 ---
@@ -107,6 +109,8 @@ assert result == {"apple": 1}
 **What surprised me:**
 
 **Did `updates` in `Collection` actually stay unmutated through Part 1, or did you catch yourself reaching in and changing it somewhere it shouldn't have?**
+
+**`List.copyOf` on every access, or just never writing an accessor that leaks the raw list, and why (from Break it, then decide above):**
 
 **Your measured numbers (Java):**
 - Full recompute latency at 1k / 10k / 100k orders: __ / __ / __

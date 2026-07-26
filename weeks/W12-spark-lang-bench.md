@@ -12,6 +12,8 @@ The same aggregation job, run four ways: Scala Spark using only the DataFrame AP
 
 This closes out the Scala thread from W09 and W10. Those two weeks built toy versions of Catalyst and the aggregation algebra Spark's own `reduceByKey` relies on; this week runs real Spark and watches the thing you read about in W09's SIGMOD paper actually execute.
 
+**Scenario:** somewhere on a real team, a PySpark job someone wrote to be "quick and readable" reaches for a plain Python UDF instead of a built-in DataFrame expression, and the job's runtime quietly triples. Nobody notices until it's in production, because a UDF looks exactly like a DataFrame operation in the code review diff. This week gives you the actual numbers, so "just use a UDF, it's simpler" stops being a free choice.
+
 ---
 
 ## Read

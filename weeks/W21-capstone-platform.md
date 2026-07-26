@@ -52,6 +52,8 @@ Project: `code/capstone-platform/` (Python for training, coordination, and servi
 - [ ] `checkpoint_coordinator.py`: adapt the Chandy-Lamport idea from W17: when a checkpoint is triggered, the coordinator waits until all workers have paused at the *same* training step (not mid-allreduce) before recording state. This is what makes the recorded checkpoint a genuinely consistent cut across workers, rather than N independent snapshots that disagree with each other.
 - [ ] Kill a worker process mid-training (`kill -9`). Verify: the operator (Part 4) restarts it, it loads the last consistent checkpoint, and training resumes without corrupting the other workers' state.
 
+**Your call:** `checkpoint_coordinator.py` waits until every worker has paused at the same step before recording a checkpoint. Now kill a worker permanently (don't let Part 4's operator restart it, or kill it before starting Part 4) right before a checkpoint is due. The coordinator is now waiting on a step-pause signal from a worker that will never send one, forever. Decide: should the coordinator time out and checkpoint the workers that did pause, accepting that the resulting snapshot is missing one worker's state (and deciding what that even means for a consistent restart), or should a missing worker block checkpointing entirely, on the reasoning that a checkpoint without every worker's state isn't a real consistent cut at all? This is the same "wait for all N or proceed with a quorum" trade-off from W13 and W14, applied to a real consistency mechanism instead of a gradient exchange; whichever you pick, implement a timeout in `checkpoint_coordinator.py` and note what you'd tell a teammate about what the resulting checkpoint does and doesn't guarantee.
+
 **Part 4: Orchestration (operate KubeRay from W19)**
 
 - [ ] Deploy your Part 2 training workers as a `RayCluster` worker group instead of raw Pods or `multiprocessing.Process`: each worker container runs `train_worker.py`, with `spec.workerGroupSpecs[0].replicas` set to your worker count. Reuse the KubeRay install from W19 if it's still on your cluster.
@@ -82,6 +84,8 @@ Project: `code/capstone-platform/` (Python for training, coordination, and servi
 **What was the hardest integration point? Where did two weeks' code not fit together as cleanly as you expected?**
 
 **What does "consistent checkpoint" mean in your system, concretely? Not the textbook definition, the thing you actually had to guarantee.**
+
+**Timeout-and-proceed or block-forever-without-quorum for `checkpoint_coordinator.py`, and what does the resulting checkpoint actually guarantee (from Your call above)?**
 
 **If you scaled this from 2 workers on one kind cluster to 50 workers on real hardware, what's the first thing that breaks?**
 

@@ -13,6 +13,8 @@ Not build, operate. Deploy two real, production-grade Kubernetes operators to yo
 
 **Why not hand-write a custom operator from scratch, the way this week used to?** Writing your own CRD types and a `controller-runtime` reconciler is the skill set of someone *building* a new operator, which is a narrow platform-infrastructure specialization. It's not what a Staff Data Platform Engineer, a Field/Customer/Professional Services Engineer, or a Developer Advocate does day to day; those roles *operate* operators someone else wrote: install via Helm, configure a CR, read logs, debug a stuck reconcile loop. This week now teaches that instead, using two operators that are directly relevant to the companies this curriculum's job search targets. You've already written Go by now, W00–W04 and W08 all use it, so the reconciler source below reads as familiar syntax applied to a much bigger, real codebase, not a cold start; what this week specifically avoids isn't Go itself, it's the much larger, narrower skill of authoring a `controller-runtime` operator from scratch.
 
+**Scenario:** this is what your first week on call for a platform team actually looks like: nothing you're debugging is code you wrote, and the job is reading logs, forming a hypothesis, and checking it, not fixing a bug in your own mental model of a system you built yourself.
+
 **Prerequisite:** W00 stack (kind cluster + monitoring) must be running.
 
 ---

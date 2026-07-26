@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 A Ray-based actor system in Python that retrains the same data-parallel MNIST job from W13, this time using stateful actors (a pool of `TrainerWorker` actors plus a `ParameterServer` actor) instead of raw sockets, backed by a real PyTorch model instead of a hand-rolled NumPy MLP. You'll benchmark it against W13's implementation to see what the actor abstraction buys you, and what it costs.
 
+**Scenario:** the actor model just fixed the exact hang you caused on purpose in W13, concurrent writers to shared state can't race anymore. It did nothing, though, about a worker that simply never shows up to a round, and that's a different failure with a different fix, which is what the exercise below is actually about.
+
 ---
 
 ## Read
@@ -35,6 +37,10 @@ Scenario: reimplement W13's data-parallel training job, but with two changes: wo
 **Verify:** all three implementations in `compare.py` converge to comparable accuracy (within a couple percentage points). Run `ray list actors` (or `ray.util.state.list_actors()`) during training and confirm N+1 actors are alive.
 
 **Minimum bar:** N≥2 `TrainerWorker` actors plus 1 `ParameterServer` actor coordinate correctly with no shared memory between them: all communication happens through actor method calls, matching the message-passing model from the 1973 paper, not through globals or files.
+
+**Break it, then decide:**
+- [ ] With 3+ `TrainerWorker` actors running, kill one mid-round: `ray.kill(worker_handles[i], no_restart=True)`. Watch `ParameterServer.push_gradients()`, which waits until all N workers for the round have pushed before averaging. With one worker gone for good, that condition can never become true, so the round (and the whole training loop) hangs forever, waiting on an actor that no longer exists. The actor model made concurrent writes safe; it did nothing to make "everyone eventually shows up" a guarantee.
+- [ ] This is the same class of problem as W13's dead worker, but you now have a real design choice available that raw sockets didn't make convenient: would you have `ParameterServer` proceed once it's heard from a quorum (say, N-1 of N) within a timeout, averaging only the gradients that arrived and accepting the result is now slightly stale, or keep waiting for all N and treat a permanently missing worker as a fatal error requiring the whole job to restart? The first is closer to real asynchronous/stale-SGD parameter servers; the second is simpler and matches what synchronous SGD actually requires for its convergence guarantees to hold. Pick one, implement a timeout-based quorum in `push_gradients`, and say what accuracy or convergence cost you'd expect to pay for the choice you didn't make.
 
 ---
 
@@ -86,5 +92,7 @@ assert a.process_one() == 8   # processed strictly in order, no locks needed
 **Why does the actor abstraction make `push_gradients` safe without explicit locks, when W13's raw-socket workers needed you to reason about message ordering yourself?**
 
 **Where does a single `ParameterServer` actor start to become a bottleneck at scale, and how does that connect back to why W13's ring-allreduce avoids a central coordinator entirely?**
+
+**Quorum-with-timeout or wait-for-all-N, and what did that decision cost you (from Break it, then decide above)?**
 
 **What I'd do differently:**

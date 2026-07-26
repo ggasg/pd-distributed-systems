@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 Tumbling window aggregation from scratch in Java. No Flink, no Spark. Input: a stream of `(eventTime: long, value: int)` tuples. Output: per-window sums, emitted when a watermark advances past the window boundary.
 
+**Scenario:** think of this as the aggregator behind a real-time revenue dashboard. A mobile client that was offline for ten minutes eventually reconnects and sends its buffered events, late, by definition, since your watermark has already moved on without them. Whether those events count is a real product decision, not just a technical one, and it's the decision this week actually makes you make.
+
 ---
 
 ## Read
@@ -41,6 +43,10 @@ Project: `code/streaming/` (Java 21, Maven)
 - [ ] Tests, `StreamProcessorTest.java` (JUnit 5): test 1: all events in order, watermarks advance correctly; test 2: out-of-order events arrive before the watermark; test 3: late event arrives after watermark (confirm it's dropped or handled)
 
 **Constraints:** state lives only inside `TumblingWindowAggregator`: keep `sums` `private`, expose behavior through methods, not the field itself. Java won't stop you from making `sums` public and reaching in from outside the class, that's a discipline you enforce with access modifiers, the same way encapsulation works in any language; the compiler only helps once you've actually marked the field `private`. Use `long` timestamps (milliseconds, matching `Event.eventTime`).
+
+**Break it, then decide:**
+- [ ] Feed a batch of events spanning several windows, but advance the watermark to the maximum event time you've seen so far immediately after each batch, as aggressively as possible. Confirm this forces every window up to that point to close and emit right away. Now have one more, genuinely valid event arrive for an already-closed window (still earlier than "now," just delayed in transit, not maliciously late). Watch it get silently dropped by `onWatermark`'s eviction logic. This is the concrete cost of an aggressive watermark the Key Question above asks about in the abstract; here you're looking at the actual dropped value.
+- [ ] Pick one real fix and implement it, rather than leaving "handle late data" as a Reflect answer: either (a) let a late event reopen its window and re-emit a corrected sum downstream (simple, but now a consumer of your output has to handle a value it already saw changing), or (b) route late events to a separate side-output list instead of the main result list, the way Flink actually does, and leave reconciling them as an explicit downstream step rather than a silent correction. Whichever you pick, update `TumblingWindowAggregator` and `StreamProcessorTest.java`'s test 3 to prove it.
 
 ---
 
@@ -90,7 +96,7 @@ assert sliding_max([1, 3, -1, -3, 5, 3, 6, 7], 3) == [3, 3, 5, 5, 6, 7]
 
 **What surprised me:**
 
-**How would you handle late data without dropping it?**
+**Which fix did you implement, reopen-and-correct or a side-output, and what does it cost a downstream consumer of your results compared to silently dropping late data?**
 
 **How a system you've worked with handles event time vs. processing time:**
 

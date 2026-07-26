@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 A versioned feature pipeline in Python: raw events to features to versioned Parquet snapshot. Query historical feature snapshots with DuckDB. No ML model, just the data plumbing that makes models reliable.
 
+**Scenario:** a model trained against v1 features starts making noticeably worse predictions after a routine pipeline change, and nobody can say why without being able to answer "what exactly changed between v1 and v2, for which users?" `FeatureStore.diff()` is that question made answerable instead of a Slack message asking whoever last touched the pipeline.
+
 ---
 
 ## Read
@@ -39,6 +41,8 @@ Scenario: raw user activity events to session features to versioned feature stor
 - [ ] `pipeline.py`: end-to-end script: generate, engineer features (v1), modify 10% of raw events, re-engineer (v2), print diff
 
 **Constraints:** no MLflow, no DVC, no feature store library. Implement versioning yourself.
+
+**Your call:** `pipeline.py` modifies 10% of raw events between v1 and v2, but real pipelines also gain and lose users entirely between versions, someone stops generating events, someone new shows up. Decide what `diff(v1, v2)` should do with a `user_id` present in one version but not the other: silently skip it (the join just won't match, so this is what happens if you don't handle it explicitly), report it as a row with the old values and nulls for the new ones, or exclude it with a separate count logged ("N users present in v1 dropped from v2"). Pick one and implement it deliberately, then note in Reflect which choice you made and what a downstream model-monitoring job would need from `diff()` that your choice doesn't give it.
 
 ---
 
@@ -70,6 +74,8 @@ No new dependencies: everything below uses `pandas`, `pyarrow`, and the standard
 **What surprised me:**
 
 **What would break at scale that works fine here?**
+
+**How did you handle users present in one version but not the other in `diff()`, and what would a real monitoring job still be missing from your choice?**
 
 **How a streaming system could replace the batch feature pipeline:**
 

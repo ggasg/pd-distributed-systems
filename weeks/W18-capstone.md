@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 One system that combines at least two concepts from this curriculum. It should be something you can explain end-to-end, from the data model to the failure behavior. No scaffolding provided; you design it.
 
+**Scenario:** every option below asks you to break something on purpose, kill a primary, crash a worker, corrupt a query's incremental state, and prove your design survives it, not just that it works when nothing goes wrong. That's deliberate: a design you can only defend on the happy path isn't actually a design yet.
+
 ---
 
 ## Choose One

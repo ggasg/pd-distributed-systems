@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 Varint encoding/decoding from scratch + a row vs columnar layout benchmark over 1M integer records. Numbers tell the story.
 
+**Scenario:** two bugs live in this space that never show up as a crash, only as a wrong number or a slow query nobody can explain. Both get made visible on purpose below instead of staying theoretical.
+
 ---
 
 ## Read
@@ -31,6 +33,10 @@ Project: `code/encoding/` (Go modules)
 - [ ] `benchmark_test.go`: use Go's built-in `testing.B` (`go test -bench=.`) to measure: (1) full column scan in row store vs column store; (2) point lookup by row index in both layouts. `testing.B` already handles the concerns hand-rolled timing has to get right by hand, it runs the benchmark body enough times to get a stable measurement and reports allocations per operation if you pass `-benchmem`, worth using instead of `time.Now()`/`time.Since()` by hand for this one.
 
 **Expected outcome:** column scan should be ~5–10x faster in columnar layout. If it's not, investigate why (cache effects, or whether you accidentally allocated inside the hot loop, `-benchmem` will show you directly if that's what happened).
+
+**Break it, then decide:**
+- [ ] Temporarily bypass the zigzag transform: encode `-1` by feeding the raw `int64` value straight into your unsigned-varint loop instead of `(n << 1) ^ (n >> 63)` first. Count the bytes it takes. It should balloon to something like 10 bytes, because two's-complement `-1` is all 1-bits, and your continuation-bit loop has no way to know most of those bits are sign extension rather than real magnitude. Put the zigzag transform back and confirm `-1` drops to 1 byte. This is the actual, historically real bug zigzag encoding exists to prevent, not a formula worth memorizing without seeing what it protects against.
+- [ ] Your benchmark's workload reads one column across all 1M rows and never reads a full row. Now imagine a second, equally realistic workload shows up: a point lookup that fetches one full record by `id`, the shape a request-serving path needs, not an analytics query. Would you keep the columnar layout and eat the cost for that second workload, add the row layout back for it specifically, or maintain both and route each query to whichever layout fits? There's no single right answer, but you should be able to say which one you'd pick for a system you were actually operating, and why. This is the real reason production systems keep separate OLTP (row) and OLAP (column) storage paths instead of picking one.
 
 ---
 
@@ -80,5 +86,7 @@ for n in [0, 1, 127, 128, 300, 16383, 2**21 - 1]:
 - Speedup: __x
 
 **How this connects to a system you've worked with:**
+
+**Row, column, or both for the second workload, and why:**
 
 **What I'd do differently:**

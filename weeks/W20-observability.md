@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 Instrument your W07 Differential Dataflow engine (Java) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
 
+**Scenario:** a dashboard with a confident-looking p99 line is worse than no dashboard at all if the number on it is wrong, because now everyone trusts it. Histogram bucket boundaries are the single easiest way to make that happen silently, and the exercise below shows you exactly how.
+
 **Prerequisites:** W00 (kind + Prometheus + Grafana), W07 (DD engine).
 
 ---
@@ -56,6 +58,8 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   Replace any `System.out.println` in the DD engine with calls through this helper.
 - [ ] Run `WordCount.java` with 10k document updates. Verify `/metrics` at `localhost:9091`.
 
+**Break it, then decide:** temporarily reconfigure `consolidation_duration_seconds`'s buckets to something wildly mismatched with reality, say `1, 5, 10, 30, 60` (seconds) for an operation that actually completes in single-digit milliseconds. Re-run `WordCount.java` and query `histogram_quantile(0.99, rate(consolidation_duration_seconds_bucket[5m]))` in Prometheus. Every observation lands in the lowest bucket, so the p99 estimate comes back as some number near your smallest boundary regardless of whether real consolidation calls take 0.1ms or 9ms, the histogram has no resolution in the range that actually matters. Put the original buckets (0.1ms-50ms) back and confirm the p99 number now moves when you change the workload. Which failure would you rather ship: buckets too coarse in the range that matters (what you just saw), or too many buckets, adding memory and cardinality cost for resolution nobody queries? Say which you'd default to when instrumenting a component you don't yet know the real latency distribution of.
+
 **Part 2: Grafana Dashboard**
 
 - [ ] Containerize the instrumented DD engine (`Dockerfile`: the same multi-stage `maven:3.9-eclipse-temurin-21` builder → `eclipse-temurin:21-jre-alpine` runtime shape as W00 and W17; k8s `Deployment` + `ServiceMonitor`)
@@ -69,7 +73,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
 **Part 3: Go log aggregator, wired into W19's RayCluster**
 
-- [ ] `tools/log-aggregator/main.go`: HTTP server (`net/http`, standard library, matching the same "no framework needed for two routes" approach every other small service in this curriculum uses) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W13's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `sync.RWMutex`, not a plain `sync.Mutex`. That's not a stylistic preference: `POST /log` is a rare write, `GET /logs` can be a frequent read, and a plain `Mutex` serializes every read behind every other read even though none of them mutate anything; `RWMutex`'s `RLock`/`RUnlock` let concurrent readers through together and only blocks them against the occasional writer. Go's runtime doesn't have the virtual-thread-pinning failure mode a `synchronized` block causes on the JVM, goroutines don't get pinned to an OS thread by holding a lock, but an unnecessarily exclusive lock is still a real, measurable throughput cost under concurrent reads, just a different mechanism than pinning.
+- [ ] `tools/log-aggregator/main.go`: HTTP server (`net/http`, standard library, matching the same "no framework needed for two routes" approach every other small service in this curriculum uses) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W13's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `sync.RWMutex`, not a plain `sync.Mutex`. A 100-line cap means a real burst, a tight retry loop, a noisy dependency, anything logging faster than something reads `/logs`, silently evicts the oldest lines before anyone sees them. Decide whether that's acceptable for this sidecar's actual job (a debugging aid, not a durability guarantee) or whether you'd rather have `POST /log` block or reject once the buffer's full instead of silently dropping the oldest entry; whichever you pick, say what it would cost the `ray-worker` container if `POST /log` ever blocked on a full buffer. That's not a stylistic preference: `POST /log` is a rare write, `GET /logs` can be a frequent read, and a plain `Mutex` serializes every read behind every other read even though none of them mutate anything; `RWMutex`'s `RLock`/`RUnlock` let concurrent readers through together and only blocks them against the occasional writer. Go's runtime doesn't have the virtual-thread-pinning failure mode a `synchronized` block causes on the JVM, goroutines don't get pinned to an OS thread by holding a lock, but an unnecessarily exclusive lock is still a real, measurable throughput cost under concurrent reads, just a different mechanism than pinning.
 - [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.22` builder → `gcr.io/distroless/static-debian12` runtime, the same shape as W00's), `EXPOSE 8080`.
 - [ ] Build and load into the kind cluster from W19:
   ```bash
@@ -107,6 +111,10 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 ## Reflect
 
 **What the four golden signals are and which ones your DD engine was "blind" to before this week:**
+
+**What your p99 looked like with mismatched histogram buckets, and coarse-buckets vs. too-many-buckets, which would you default to and why (from Break it, then decide above)?**
+
+**Silently drop the oldest log line under a burst, or make `POST /log` block/reject instead, and what would blocking cost the `ray-worker` container?**
 
 **What tracing reveals that metrics alone can't (think: which operator is slow for which specific inputs):**
 

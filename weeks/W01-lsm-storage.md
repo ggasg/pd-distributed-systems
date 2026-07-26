@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 A minimal LSM-tree: MemTable (in-memory sorted buffer) → SSTable (sorted file on disk) → merge read path. No compaction. Passes put/get/scan tests.
 
+**Scenario:** it passes every put/get/scan test below, which is exactly the trap. A storage engine can be "correct" on the happy path and still lose data or degrade badly because of what it doesn't do yet. Both gaps in this week's build are made deliberately visible at the end instead of quietly ignored.
+
 ---
 
 ## Read
@@ -31,6 +33,10 @@ Project: `code/lsm/` (Go modules)
 - [ ] `lsm_tree_test.go`: Go's standard `testing` package, table-driven where it helps: (1) put 10k keys, get them back; (2) overwrite a key, confirm latest value wins; (3) force a `MemTable` flush, confirm reads still work across the SSTable boundary
 
 **Constraints:** standard library only, no external dependencies beyond what's already in `go.mod`. Implement your own byte-slice comparator (`bytes.Compare` is fine to use; don't reach for a third-party sorted-map package).
+
+**Break it, then decide:**
+- [ ] Durability check: `Put` 100 keys, confirm they haven't hit your flush threshold yet (still sitting only in the `MemTable`), then kill the process before calling any explicit flush and restart a fresh `LSMTree` pointed at the same directory. Confirm those 100 keys are gone. Nothing in this week's build writes an intentions log before an entry lands in the `MemTable`, so anything not yet flushed to an `SSTable` doesn't survive a crash. That's not a bug in your code, it's a real simplification; production engines cut this corner differently, by appending every write to a WAL before touching the `MemTable`, so a crash replays the log instead of losing data.
+- [ ] Lower your flush threshold (say, 4KB instead of 1MB) so you accumulate several `SSTable`s quickly, then time a `Get()` for a key that doesn't exist anywhere. It has to check the `MemTable`, then every `SSTable` oldest to newest, since nothing tells it early that a given table can't contain the key. Given that cost, and given this build has neither a WAL nor a bloom filter, if you could ship only one improvement before this went to production, durability (the WAL from the bullet above) or read performance on misses (a bloom filter), which would you pick? There's a defensible answer either way depending on the workload; write down which one and why in Reflect.
 
 ---
 
@@ -74,5 +80,7 @@ assert merge_sstables(a, b) == [("apple", 1), ("apple", 2), ("grape", 4), ("mang
 **What surprised me:**
 
 **How this connects to a system you've worked with or currently build:**
+
+**WAL or bloom filter first, and why (from Break it, then decide above):**
 
 **What I'd do differently:**

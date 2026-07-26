@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 A toy version of Spark's Catalyst optimizer: a logical query plan represented as an algebraic data type (Scala case classes), a small set of rewrite rules expressed as pattern-matching partial functions, and a generic `transform` combinator that applies rules recursively across the tree. This is the capstone to Arc 2: W05–W08 built the individual operators (windowed aggregation, dataflow progress tracking, incremental views, vectorized execution); this week builds the thing that arranges and rewrites those operators into an optimized plan, the way a real MPP engine does.
 
+**Scenario:** every rule you write this week is a small, local rewrite (push this filter, fold this constant) that has to compose safely with every other rule already in the optimizer, without you re-checking the whole system by hand each time you add one. That's the actual engineering problem a rule-based optimizer solves, and it's also where the two exercises below go looking for the gap between "the rule looks right" and "the rule is safe to run automatically, on any plan, forever."
+
 **Note on why Scala, specifically:** this isn't an arbitrary FP-language choice. Spark itself is written in Scala, and Catalyst (its query optimizer) is genuinely built the way this week has you build your toy version: case classes for plan nodes, pattern matching for rewrite rules, a `transform` combinator for tree recursion. Reading Catalyst's real source while writing a toy version in the same language gets you something W05–W08 don't have: a reference implementation you can actually read in your own build language, not just a paper.
 
 ---
@@ -72,6 +74,10 @@ Project: `code/query-planner/` (Scala 2.13, sbt)
 
 **Minimum bar:** the two rules above compose correctly (running the optimizer on a plan that needs both constant folding and filter pushdown produces a fully rewritten plan in one call to `Optimizer.run`, not just when applied individually).
 
+**Break it, then decide:**
+- [ ] Temporarily make `transformDown` call a rule's `apply(node)` directly instead of checking `rule.isDefinedAt(node)` first (or using `applyOrElse`). Run `PushDownFilter` over a bare `Scan` with no `Filter`/`Project` wrapping it, a plan shape the rule was never written to handle. Watch it throw a `MatchError` at runtime instead of just leaving the node alone. Put the `isDefinedAt` check (or `applyOrElse`) back and confirm the same plan now passes through untouched. This is the concrete, operational answer to this week's own Key Question: a partial function lets `transformDown` ask "does this rule apply here?" before running it, so an optimizer with dozens of rules doesn't need one giant rule that explicitly handles every plan shape in existence, including ones it has nothing to say about.
+- [ ] `Optimizer.run` currently loops "until a full pass produces no change," with no cap. A real rule you write yourself, or a bug in one, could rewrite `A` to `B` and then `B` back to `A` forever. Would you add a max-iteration limit (Catalyst's real approach) that throws or logs a warning if the plan hasn't stabilized after, say, 100 passes, or is unbounded iteration acceptable here since you control every rule yourself and can just fix a misbehaving one? Make a call; if you add the cap, write a deliberately oscillating test rule to prove it actually stops the loop.
+
 ---
 
 ## Reflect
@@ -87,5 +93,7 @@ Project: `code/query-planner/` (Scala 2.13, sbt)
 **Building `Filter(GreaterThan(Column("age"), Literal(18)), Scan(...))` doesn't scan anything; it's just a `LogicalPlan` value sitting in memory until something else walks it. What would break about `PushDownFilter`'s ability to rearrange the tree if constructing a plan node ran the scan or filter immediately instead of just recording intent? This is the lazy-versus-eager distinction underneath every query engine, Catalyst included, not just this toy version of it.**
 
 **What real Catalyst does that your toy optimizer doesn't (hint: cost-based optimization, not just rule-based):**
+
+**Did you add a max-iteration cap to `Optimizer.run`, and if so, what did your oscillating test rule actually do before you added it (from Break it, then decide above)?**
 
 **What I'd do differently:**

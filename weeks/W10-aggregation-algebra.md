@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 A `Semigroup`/`Monoid` typeclass hierarchy in Scala, built from scratch, then used to implement several distributed-style aggregations (sum, max, average, approximate distinct count) that are all correct to combine in any order, from any partial partitioning of the data. This week is the algebraic complement to W09: W09 was about *rearranging* operators safely (query planning); this week is about *combining partial results* safely, which is the other half of what makes an MPP engine's `reduceByKey`/`aggregate`-style operators actually correct at scale.
 
+**Scenario:** somewhere on a real cluster, partial averages computed on different partitions have to be combined into one final number, correctly, no matter which partitions happen to land on which executor or in what order the shuffle delivers them. "Just average the averages" is the obvious thing to reach for and the wrong answer; this week is built around making that wrongness impossible to miss.
+
 ---
 
 ## Before you start (optional, 15–20 min)
@@ -59,7 +61,7 @@ Project: `code/agg-algebra/` (Scala 2.13, sbt)
 **The part that isn't just sum and max:**
 
 - [ ] `Average.scala`: implement average as a monoid *without cheating*: a naive `(a + b) / 2` is not associative (verify this with a failing test first, three values combined two different ways give different answers). The correct approach: represent the accumulator as `case class AvgAcc(sum: Double, count: Int)`, with `combine` adding both fields and `empty = AvgAcc(0, 0)`, and only divide `sum / count` at the very end when you read the result out. This is the general pattern: some aggregations need a richer intermediate representation to become associative, and the final "answer" is a projection off of that, computed once at the end, not that they're just left out of the algebra.
-- [ ] *(optional, stretch)* `ApproxDistinct.scala`: a deliberately crude approximate-distinct-count monoid using a fixed-size `Set[Int]` capped at, say, 100 elements (`combine` unions and truncates, `empty` is the empty set), not a real HyperLogLog, just enough to demonstrate that even a lossy, bounded-memory aggregation can still be a correct monoid if `combine` is associative over the representation you chose, which is the actual algebraic property production sketches like HyperLogLog rely on. Not required for the minimum bar below; `Average.scala` already carries the week's core "richer representation, associative by construction" lesson.
+- [ ] *(optional, stretch)* `ApproxDistinct.scala`: a deliberately crude approximate-distinct-count monoid using a fixed-size `Set[Int]` capped at, say, 100 elements (`combine` unions and truncates, `empty` is the empty set), not a real HyperLogLog, just enough to demonstrate that even a lossy, bounded-memory aggregation can still be a correct monoid if `combine` is associative over the representation you chose, which is the actual algebraic property production sketches like HyperLogLog rely on. Not required for the minimum bar below; `Average.scala` already carries the week's core "richer representation, associative by construction" lesson. If you do build it: is truncating by an arbitrary rule (say, keeping the 100 smallest hash values) still a correct monoid, or does the truncation rule itself have to be chosen carefully for `combine` to stay associative? Pick a truncation rule, then check by hand whether combining three capped sets two different ways gives the same result.
 
 **Connect it to Arc 2:**
 

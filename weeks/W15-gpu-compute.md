@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 Two GEMM kernels in C: naive triple-loop, then cache-blocked (tile size 64, `i-k-j` loop order). Benchmark both on 1024×1024 float32 matrices, compare `-O2` against `-O3 -march=native` to measure what compiler auto-vectorization buys you, and plot the results on a roofline diagram. No GPU needed, and no hand-written SIMD intrinsics either: the compiler's vectorizer does that job portably, on Apple Silicon/NEON as much as on x86/AVX2. If you have NVIDIA GPU access, the same exercise as CUDA kernels via Numba is below, but it's optional and not required to complete this week.
 
+**Scenario:** 1024 is a suspiciously convenient number, it's exactly 16 tiles of 64. Real matrices don't arrive sized to flatter your tiling scheme, and a blocked GEMM that only works when dimensions divide evenly is a bug waiting for whichever input size ships it to production.
+
 ---
 
 ## Read
@@ -30,6 +32,10 @@ Project: `code/cpu-gemm/` (C, gcc/clang)
 - [ ] `blocked_gemm.c`: cache-blocked with tile size 64; reorder loops to `i-k-j` for cache-friendliness
 - [ ] `benchmark.c`: time both kernels on 1024×1024 float32, print GFLOPS. Build `blocked_gemm.c` twice, once with `-O2` and once with `-O3 -march=native`, and compare the two GFLOPS numbers to see what auto-vectorization buys you. Confirm it actually vectorized with `clang -Rpass=loop-vectorize` or `gcc -fopt-info-vec-optimized` on the blocked loop, no need to write or verify any ISA-specific intrinsics by hand.
 - [ ] `roofline.py`: small `matplotlib` script, reads the GFLOPS numbers `benchmark.c` prints and plots them against arithmetic intensity, same roofline diagram either path produces.
+
+**Break it, then decide:**
+- [ ] Run `blocked_gemm.c` against a naive triple-loop reference on a matrix size that does *not* divide evenly by your tile size, 1000×1000 instead of 1024×1024. Compare outputs element-by-element instead of trusting that "it ran without crashing" means "it's correct." If your tiled loops assume every tile is a full 64×64 block, the remainder rows and columns at the edges either get computed wrong or silently skipped, wrong numbers, no crash, no warning, exactly the kind of bug that survives a benchmark that only ever runs on convenient sizes.
+- [ ] Fix it one of two ways and say why you picked it: pad both input matrices up to the next multiple of 64 with zeros before tiling (simple, reuses the exact same inner loop, costs some wasted compute and memory on the padding), or add explicit boundary handling to the blocked loops so the last tile in each dimension can be a partial tile (no waste, more branching in code that was fast partly because it had none). Which one keeps the loop's vectorization intact, and did you check?
 
 **If you have NVIDIA GPU access (optional, not required):**
 
@@ -60,5 +66,7 @@ Project: `code/gpu-gemm/` (Python 3.11+, `numba`, `numpy`, `matplotlib`)
 - Where does your kernel sit on the roofline?
 
 **What a vendor-tuned BLAS library (Apple's Accelerate/vDSP, Intel MKL, or cuBLAS on GPU) does that your blocked kernel doesn't:**
+
+**Padding or boundary handling for non-multiple-of-tile-size matrices, and did your fix stay vectorized (from Break it, then decide above)?**
 
 **What I'd do differently:**

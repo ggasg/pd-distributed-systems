@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 A toy timely dataflow graph in Java: two operators connected by edges, timestamps with (epoch, iteration) pairs, progress tracking via pointstamp dominance, and notification when a frontier advances.
 
+**Scenario:** a notification firing one instant too early is the dataflow equivalent of a distributed commit that runs before every participant has actually agreed, it looks fine until the one time a message was still in flight. `couldResultIn` is the entire mechanism standing between "probably done" and "provably done," and the exercise below is where you find out what happens when it's gone.
+
 ---
 
 ## Read
@@ -32,6 +34,10 @@ Project: `code/timely-toy/` (Java 21, Maven)
 - [ ] Test (`ProgressTrackerTest.java`, JUnit 5): wire two operators: source → map → sink; send 3 messages at epoch 0; send a "done with epoch 0" signal; assert the sink's `onNotification(new Timestamp(0, 0))` fires only after all messages are processed.
 
 **Constraints:** single-threaded. Focus on correctness of the progress-tracking logic, not performance. Wire operator ownership explicitly: `ProgressTracker` (or whatever assembles the graph) holds a `List<Operator>`, and messages get passed by reference the normal Java way, an object reference, not a pointer you have to reason about the lifetime of. Java's garbage collector means there's no ownership-aliasing failure mode to design around here the way there is in a language with manual memory management; the actual discipline this week asks for is keeping the graph's wiring explicit and readable, not defending against a memory bug class that doesn't exist in this language.
+
+**Break it, then decide:**
+- [ ] Build a graph with a branch: source feeds two paths of different lengths (say, one direct edge to the sink, one routed through an extra `MapOperator` first) that both eventually reach the same downstream operator. Temporarily make `couldResultIn` always return `false` (pretend no path could still deliver more messages for a timestamp), and send messages down only the longer path. Watch `ProgressTracker` fire `onNotification` for that timestamp as soon as the short path's count hits zero, before the message still traveling the longer path has arrived. That premature notification is exactly the bug `couldResultIn` exists to prevent; put the real check back and confirm the notification now waits correctly.
+- [ ] This toy's `couldResultIn` reasons about paths through a fixed, acyclic graph. Naiad's actual claim to fame is handling *cyclic* dataflow, loops for iterative computation, where a message can, in principle, keep coming back around forever. Without implementing loop support, reason through it: would a purely path-based `couldResultIn` even terminate on a graph with a cycle, and if not, what would need to change about how a pointstamp's "could still arrive" question gets answered? You don't need to solve this, just be able to say precisely where the acyclic assumption this toy relies on would break.
 
 ---
 
@@ -89,7 +95,9 @@ assert result.index("src") < result.index("B") < result.index("join")
 
 **What surprised me:**
 
-**What would break if you removed the could-result-in check?**
+**What you actually observed when you disabled `couldResultIn` (which notification fired early, and for what timestamp):**
+
+**Where would a purely path-based `couldResultIn` break down on a cyclic graph?**
 
 **How this maps to a dataflow or streaming system you've encountered:**
 

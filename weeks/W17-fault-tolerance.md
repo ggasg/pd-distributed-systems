@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 Chandy-Lamport distributed snapshot in Java: 3 simulated nodes with FIFO channels, one node triggers a snapshot, all nodes record their local state and in-flight channel contents. Assert the recorded global state is consistent.
 
+**Scenario:** an incident report reads "we took a snapshot for disaster recovery and the restored state doesn't balance, some money appears out of nowhere." The algorithm is provably correct under one assumption, FIFO channels, and the exercise below is where you watch the proof stop applying the moment that assumption doesn't hold.
+
 ---
 
 ## Read
@@ -43,6 +45,10 @@ Project: `code/snapshot/` (Java 21, Maven)
 - [ ] `SnapshotTest.java`: JUnit 5: inject 10 data messages (total sum = 55), trigger a snapshot mid-stream, assert: (1) sum of all recorded local states + sum of all in-flight channel states = total messages sent so far; (2) snapshot completes without deadlock. Java has no single built-in flag equivalent to `go test -race`; using immutable messages (records) and a proper concurrent queue instead of hand-rolled shared mutable state eliminates most of that bug class by construction rather than by detecting it after the fact, which is worth noting as a different, not strictly worse, way of getting to the same confidence.
 
 **Constraints:** no third-party concurrency libraries: `java.util.concurrent` (`BlockingQueue`, virtual threads, `CountDownLatch`) is enough for this. Focus on correctness of the marker protocol, not performance.
+
+**Break it, then decide:**
+- [ ] Add a way to deliberately violate FIFO on one channel: buffer two consecutive `DataMessage`s and enqueue them in swapped order instead of send order. Trigger a snapshot spanning that reordering and check `SnapshotTest.java`'s consistency assertion (sum of recorded states plus in-flight channel states should equal total messages sent so far). Confirm it now fails, or worse, silently produces a "consistent" snapshot that doesn't actually match any state the system was ever really in. This is the concrete cost of the FIFO assumption the Key Question above asks about abstractly; here you're looking at the actual broken invariant.
+- [ ] `LinkedBlockingQueue` gives you FIFO for free as long as everything goes through one queue per channel, which is true in this simulation but not guaranteed on a real network (packets can take different routes, retries can reorder). Would you defend against that by having each message carry a per-channel sequence number and having the receiver detect and reject out-of-order delivery (extra bookkeeping, but catches the problem explicitly), or by relying on the transport layer to guarantee FIFO per connection the way TCP already does (no extra code, but now Chandy-Lamport's correctness is silently resting on a property of a layer underneath it that this exercise never touches)? Say which you'd pick for a real system and why.
 
 ---
 
@@ -91,6 +97,8 @@ assert not all_nodes_recorded(ring, 0, {0, 1})  # node 2 missed
 **What surprised me:**
 
 **What "consistent global state" actually means and why it's useful:**
+
+**What actually happened to the consistency assertion when you broke FIFO ordering, and sequence numbers vs. trusting the transport, which did you pick (from Break it, then decide above)?**
 
 **How fault tolerance is handled in a system you know (checkpointing vs replay vs idempotency):**
 

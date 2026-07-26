@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 Data-parallel training from scratch using Python multiprocessing and raw sockets. No PyTorch distributed, no Horovod. Two workers each train on half of MNIST, exchange gradients via allreduce (ring-allreduce), and converge to the same model.
 
+**Scenario:** a training run that's been going for six hours stalls with no error, no crash, no log line, it's just stuck. One worker died mid-step and the other is blocked on a socket read that will never return. This is a real, common way distributed training jobs waste GPU-hours, and it's built directly into this week's implementation so you can watch it happen on a small, safe scale.
+
 ---
 
 ## Read
@@ -39,6 +41,10 @@ Model: 2-layer MLP on MNIST (784 → 128 → 10). Implemented in NumPy only.
 - [ ] `train.py`: launches 2 workers via `multiprocessing.Process`, assigns rank 0 and rank 1, waits for both to complete. Prints final train accuracy per worker (should be similar).
 
 **Constraints:** no `torch.nn`, no `torch.optim`, no `torch.distributed`. Use `multiprocessing` not threads (GIL). Sockets must be real TCP, not shared memory.
+
+**Break it, then decide:**
+- [ ] Mid-training, `kill -9` one worker's process partway through a `ring_allreduce` call (right after it's sent its chunk but before it's received the reply). Watch the surviving worker: it's blocked on a socket `recv()` that will never be satisfied, so the whole job hangs indefinitely rather than crashing or erroring. Confirm this by timing out yourself (Ctrl-C) after a minute, since nothing in the current implementation will do it for you.
+- [ ] With only 2 workers, there's no way to "route around" the dead one, a ring-allreduce with one member missing isn't a smaller ring, it's a broken one. Given that, is a socket read timeout (fail the whole step loudly and let the caller decide whether to restart both workers from the last checkpoint) the right fix here, or is that only a stopgap that stops mattering once you're past 2 workers, where a real system could exclude a dead node and re-derive a smaller ring instead of failing the whole job? Add a timeout to `ring_allreduce.py`'s socket calls either way, and write down at what worker count you think "fail the whole step" stops being good enough.
 
 **Go gradient server (secondary tool):**
 
@@ -108,5 +114,7 @@ assert ring_indices(0, 4, 4) == [0, 3, 2, 1]
 **How many bytes does each worker send per epoch?**
 
 **What PyTorch DDP does that you didn't implement (and why it matters at scale):**
+
+**At what worker count does "fail the whole step" stop being good enough, and what would a real fix need instead (from Break it, then decide above)?**
 
 **What I'd do differently:**

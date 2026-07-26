@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 A vectorized query executor in Go: columnar filter + hash join + projection over in-memory data. Benchmark it against a row-at-a-time version of the same pipeline and measure the speedup.
 
+**Scenario:** the 3-8x speedup below is measured against one workload shape. Ship this benchmark's conclusion to production unexamined and the first coworker who runs a highly selective filter, or a join where one side doesn't fit in memory, will find the exact place it stops holding.
+
 **Note on why Go, specifically, for this one week:** the rest of this arc is Java, but this week's benchmark is memory-layout-sensitive in a way the others aren't, and Go gives you two concrete things Java can't here. First, Go compiles ahead of time to native code; there's no JIT to warm up, so a naive, hand-timed benchmark (which is this week's style, no microbenchmark harness) measures real steady-state performance from the first call, instead of risking measuring JIT compilation overhead the way an unwarmed Java benchmark would. Second, and more important for a columnar engine specifically: Go structs are real value types in slices, `[]Row` is genuinely contiguous memory. Java has no true value types (records are still heap-allocated objects), so an array of row structs in Java is an array of pointers to scattered allocations, exactly the pointer-chasing a columnar query engine exists to avoid. The whole point of this week is that vectorized, columnar execution beats naive row-at-a-time processing because of memory layout; Go gets you closer to that lesson honestly than Java would.
 
 ---
@@ -43,6 +45,10 @@ Data model: a table of 1M rows with columns `[]int32` for `id`, `dept`, `salary`
 - [ ] `benchmark_test.go`: use Go's `testing.B` (`go test -bench=. -benchmem`) to time the filter + project pipeline for both executors over 1M random rows; `testing.B` runs enough iterations to get a stable number and reports allocations per operation, worth checking that neither executor is allocating inside its hot loop.
 
 **Expected outcome:** vectorized should be 3–8x faster. If the gap is smaller, check `-benchmem`'s allocation count first, an unexpected allocation inside the loop (for example, `append` triggering a slice reallocation because the destination wasn't pre-sized with `make([]int32, 0, n)`) is the most common reason a Go benchmark like this looks flatter than expected.
+
+**Break it, then decide:**
+- [ ] Re-run the filter+project benchmark twice more: once with a threshold so selective that under 1% of rows pass, once with a threshold near the middle so roughly 50% pass. Compare `-benchmem`'s bytes-per-op and allocs-per-op across all three selectivities, not just the wall-clock number. If `Project` always allocates its output slice sized to the full input length regardless of how many rows actually pass the mask, that's real wasted memory at high selectivity, invisible if you only ever benchmarked one selectivity and called it done.
+- [ ] `hash_join.go` builds its hash table from the entire left side before probing. That's fine at 1M rows in memory; it stops being fine the moment the left side is bigger than RAM. Would you keep hash join and accept that limit, or switch to a sort-merge join (sort both sides, then merge in one linear pass, no full in-memory table required, but now you're paying for two sorts)? There's a real, workload-dependent answer; give yours and say what property of your data would have to change to flip it.
 
 ---
 
@@ -98,6 +104,8 @@ assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
 - Speedup: __x
 
 **What does this tell you about how query execution works in a system you know?**
+
+**Allocation behavior across selectivities, and hash join vs. sort-merge for a left side bigger than memory (from Break it, then decide above):**
 
 **Where did a value-type slice buy you speed?** Your vectorized executor builds and fills `[]int32` slices directly, real contiguous memory, not a slice of pointers to scattered structs. Notice that Go never forces immutability on you the way W05 and W07's Java code does by construction (`filter`/`consolidate` returning new values), so this trade-off was always available and always invisible until you looked for it. Point to one specific place in `column_filter.go` or `hash_join.go` where you wrote into a pre-sized slice by index instead of building a fresh one and estimate what it would've cost you in speed to instead allocate a new slice per step and chain functional-style transforms, the way `filter`/`consolidate` in W07 do by construction.
 

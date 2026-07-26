@@ -10,6 +10,8 @@ status: not-started
 ## What you'll build
 Multi-head self-attention forward pass, then extend it with a KV cache for autoregressive generation. No PyTorch. Benchmark the memory usage and latency of cached vs uncached generation.
 
+**Scenario:** an inference server serving more than one conversation at a time is the actual, everyday shape of this problem, and it's also exactly where a naive KV cache can quietly let one user's context leak into another user's response. That failure mode is built directly into this week's code so you find it here, not in an incident report.
+
 ---
 
 ## Read
@@ -43,6 +45,10 @@ Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=
   - Generate 20 tokens from a random start token; measure wall time and peak memory (`tracemalloc`) for both approaches
 - [ ] `benchmark.py`: print comparison table: tokens generated, time (ms), peak memory (MB), for cached vs uncached
 
+**Break it, then decide:**
+- [ ] `KVCache` as specified stores past keys and values keyed only by `layer_id`. Simulate two concurrent "conversations" sharing one `KVCache` instance: generate a few tokens for prompt A, then interleave a few tokens for a completely unrelated prompt B, calling `update`/`get` on the same cache object for both. Because the cache has no notion of which request a K/V pair belongs to, B's tokens get concatenated onto A's cached keys and values at the same `layer_id`, so a later step generating for A ends up attending over tokens from B's prompt too. Confirm this by printing what `get(layer_id)` returns after the interleaving and checking whether it contains tokens from both prompts.
+- [ ] Fix it by keying the cache by `(request_id, layer_id)` instead of `layer_id` alone, and decide: would you give each concurrent request its own `KVCache` instance (simple, no shared bookkeeping, but nothing enforces that a caller can't still pass the wrong instance to the wrong request), or one shared `KVCache` keyed internally by request ID (a single object every request goes through, so isolation is enforced in one place instead of trusted to every caller)? Implement whichever you pick, and re-run the interleaved test above to confirm A's generation no longer sees any of B's tokens.
+
 ---
 
 ## Reflect
@@ -56,5 +62,7 @@ Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=
 - Cached 20 tokens: __ ms, __ MB peak
 
 **What PagedAttention solves that your KVCache doesn't:**
+
+**Per-request cache instances or one cache keyed by request ID, and why (from Break it, then decide above)?**
 
 **What I'd do differently:**
