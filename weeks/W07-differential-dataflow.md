@@ -16,6 +16,7 @@ Two parts this week, deliberately shorter on the from-scratch build than the res
 
 ### Read
 - [ ] [Differential Dataflow](https://www.cidrdb.org/cidr2013/Papers/CIDR13_Paper111.pdf) (McSherry et al., CIDR 2013): read Sections 1–2 only this time. Section 2 defines the data model (collections as functions from time to multisets of changes); that's the part this week actually builds. Section 3 (operators) is optional if you want the full picture.
+- [ ] Optional: [Large-scale Incremental Processing Using Distributed Transactions and Notifications](https://research.google/pubs/large-scale-incremental-processing-using-distributed-transactions-and-notifications/) (Peng & Dabek, Google, OSDI 2010, the Percolator paper): a completely different mechanism for the same underlying problem, incremental computation instead of batch recompute. Where DD tracks deltas through an explicit `(key, value, time, diff)` model, Percolator gets there by layering distributed transactions and observer-style notifications on top of Bigtable, triggering downstream work when a row changes rather than recomputing anything. Google used it to replace a MapReduce-based web indexing pipeline; worth reading right after the DD paper to see a second, production-scale answer to the same question this week's `Collection` class answers in miniature.
 
 **Key question:** What is a "difference" in DD? How does `(key, value, time, diff)` encode both additions and retractions?
 

@@ -16,6 +16,12 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
+## External Reading Lists
+
+- [A Distributed Systems Reading List](https://dancres.github.io/Pages/) (Dan Creswell): a broad, long-running collection of foundational distributed-systems papers and essays, organized by theme (Google, Amazon, Consensus, Paxos, Gossip Protocols, P2P, and more). Some of it predates this curriculum's focus on ML/AI workloads and isn't a required source anywhere here, but it's a good browsing list once you're past a given week and want more of that theme. Percolator (W07), Dremel (W08), and Chubby (extra-time list below) were added to this curriculum directly from its "Google" section; see the 2026-07-26 CONTEXT.md note for the full audit of that section against what's already covered.
+
+---
+
 ## W00: Infrastructure Setup
 
 - **DDIA Chapter 1**: Trade-Offs in Data Systems Architecture. Read before anything else in the curriculum; it isn't tied to this week's build specifically. New in the 2nd edition: the operational-vs-analytical and distributed-vs-single-node framing that used to be implicit is now made explicit up front.
@@ -84,6 +90,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [Differential Dataflow](https://github.com/frankmcsherry/blog/blob/master/posts/2015-09-29.md): McSherry (2013/2015), blog post (**free**), more accessible than the formal paper
 - [Differential Dataflow (formal paper)](https://dl.acm.org/doi/10.1145/2588555.2610364): McSherry, Murray et al., CIDR 2013 (Part 1 reading, Sections 1–2 only)
 - [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): optional, for context. Your `Update`/`Collection` types in `dd-scratch/` are a simplified version of the same ideas as `collection.rs`. No maintained JVM continuation of this lineage exists, so this stays a reading-only reference.
+- [Percolator](https://research.google/pubs/large-scale-incremental-processing-using-distributed-transactions-and-notifications/): Peng & Dabek, Google, OSDI 2010 (**free PDF**), optional. A different mechanism (distributed transactions + notifications over Bigtable) for the same incremental-computation problem DD solves with an explicit diff model; the production system that replaced Google's MapReduce-based web indexing pipeline. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.
 - [ClickHouse Materialized Views](https://clickhouse.com/docs/en/guides/developer/cascading-materialized-views): Part 2 required reading. An insert trigger, not a retraction-aware incrementally maintained view. You'll install ClickHouse locally and build one yourself in the exercise.
 - [Spark Structured Streaming: arbitrary stateful operations](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#arbitrary-stateful-operations): Part 2 required reading. Per-key state maintained and updated incrementally between micro-batches. Runs entirely in local mode via `pip install pyspark`, no Databricks account or proprietary docs needed.
 - [Snowflake Dynamic Tables](https://docs.snowflake.com/en/user-guide/dynamic-tables-about): optional, not required. Closed-source SaaS with no self-hosted option, so it's excluded from the hands-on comparison the same way ClickHouse would have been if it weren't locally installable.
@@ -95,6 +102,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 - [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032): Graefe (1994), the iterator model; skim for the `open/next/close` interface
 - [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf): Boncz, Zukowski, Nes, CIDR 2005 (**free PDF**), the vectorized execution paper
+- [Dremel: Interactive Analysis of Web-Scale Datasets](https://research.google/pubs/dremel-interactive-analysis-of-web-scale-datasets/): Melnik et al., Google, VLDB 2010 (**free PDF**), optional. Columnar storage (the ancestor of Parquet) plus a multi-level serving tree that fans aggregation out across thousands of machines, the distributed-scale continuation of the single-node vectorized-execution argument above. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.
 - [An Overview of Query Optimization in Relational Systems](https://dl.acm.org/doi/10.1145/275487.275492): Chaudhuri (1998), optional background
 - [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended. A real, actively maintained vectorized query engine in C++, already in your stack via W11's feature store.
 - [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html): optional, context only (a free public blog post, not something you install or test against). Databricks' vectorized engine, written from the ground up in C++, built to replace JVM-based Spark execution for the exact row-vs-vectorized reasons this week benchmarks.
@@ -226,6 +234,7 @@ These aren't required but give you broader context:
 - **DDIA Chapter 4** (2nd ed.) also gained a Vector Embeddings section, folded into the storage-and-retrieval chapter alongside full-text and multidimensional indexing. No week currently builds against it, but it's the most directly AI-relevant new material in the 2nd edition and worth reading given the curriculum's focus on AI workflows; a natural pairing with W16's attention/KV-cache work if you want the retrieval side of the same systems.
 - [The Google File System](https://dl.acm.org/doi/10.1145/945445.945450): Ghemawat et al., SOSP 2003, the original scale-out storage paper
 - [Bigtable: A Distributed Storage System for Structured Data](https://dl.acm.org/doi/10.1145/1365815.1365816): Chang et al., OSDI 2006
+- [The Chubby Lock Service for Loosely-Coupled Distributed Systems](https://research.google/pubs/the-chubby-lock-service-for-loosely-coupled-distributed-systems/): Burrows, Google, OSDI 2006, free PDF. Google's Paxos-based lock and small-file coordination service, the direct conceptual ancestor of etcd and ZooKeeper. A natural pairing with W17's Raft paper and W19's hands-on etcd cluster: same problem (a small, strongly-consistent coordination service other systems depend on), Paxos instead of Raft underneath. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.
 - [Spanner](https://dl.acm.org/doi/10.1145/2491245): Corbett et al. (2012), full read after W04
 - [Amazon Dynamo](https://dl.acm.org/doi/10.1145/1294261.1294281): DeCandia et al., SOSP 2007, consistent hashing, vector clocks in practice
 - [CAP Twelve Years Later](https://www.infoq.com/articles/cap-twelve-years-later-how-the-rules-have-changed/): Brewer (2012), free
