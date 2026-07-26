@@ -46,7 +46,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Build the core of a Differential Dataflow engine from scratch (incremental word count), then build and benchmark an incremental materialized view against a full-recompute baseline, the same trade-off ClickHouse and Spark Structured Streaming make in production
 - Benchmark vectorized vs. row-at-a-time query execution; explain the 3–8x gap
 - Build a toy rule-based query optimizer in Scala (case classes + pattern matching + a `transform` combinator), the same technique Spark's real Catalyst optimizer uses
-- Implement a `Semigroup`/`Monoid` typeclass hierarchy from scratch and explain why associativity, not commutativity, is what makes a distributed reduction safe to compute as a tree instead of strictly left-to-right
+- Reason about a `Semigroup`/`Monoid` typeclass hierarchy and implement against it, explaining why associativity, not commutativity, is what makes a distributed reduction safe to compute as a tree instead of strictly left-to-right
 
 **After Arc 3 (W11–W18):**
 - Design and implement a versioned ML feature store with Parquet + DuckDB
@@ -54,7 +54,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Implement ring-allreduce over raw TCP sockets; explain the bandwidth math
 - Build a stateful actor system with Ray; explain why actors (not stateless tasks) are the right abstraction for coordinating training workers
 - Write a cache-blocked GEMM kernel in C, measure what compiler auto-vectorization buys you, and read a roofline chart
-- Implement multi-head attention and KV cache from scratch in NumPy
+- Build a KV cache against a given multi-head attention implementation in NumPy; explain and fix a cross-request cache-bleed bug
 - Implement Chandy-Lamport distributed snapshots; explain what "consistent cut" means
 - Complete a capstone that combines at least two arcs
 

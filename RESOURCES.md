@@ -113,7 +113,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W10: Aggregation Algebra: Monoids and Semigroups
 
-- [Algebird `Semigroup.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Semigroup.scala) and [`Monoid.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Monoid.scala): Twitter's real Scala library built around this idea, published for Scala 2.13, the same version W10 targets, so it's directly usable, not just readable. The exercise builds its own typeclass from scratch on purpose; read Algebird as prior art, not a dependency.
+- [Algebird `Semigroup.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Semigroup.scala) and [`Monoid.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Monoid.scala): Twitter's real Scala library built around this idea, published for Scala 2.13, the same version W10 targets, so it's directly usable, not just readable. `Semigroup.scala`/`Monoid.scala` are given to you as starter files this week (see the week's Code section); read Algebird's real versions alongside them to see how a production typeclass differs (more instances, more structure) from the minimal one you're handed.
 - [Of Algebirds, Monoids, Monads, and Other Bestiary for Large-Scale Data Analytics](https://www.michael-noll.com/blog/2013/12/02/twitter-algebird-monoid-monad-for-large-scala-data-analytics/): Michael Noll, an accessible walkthrough with concrete MapReduce-shaped examples
 
 ---
