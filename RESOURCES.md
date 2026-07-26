@@ -175,6 +175,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456): Chandy & Lamport (1985), 10 pages; read all of it
 - [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603): Carbone et al. (2015) (**free on arXiv**), Flink's ABS algorithm
 - **DDIA Chapter 10** (optional): Consistency and Consensus, the linearizability section specifically. It sharpens the distinction between "consistent cut" (what Chandy-Lamport gives you) and linearizability (a stronger guarantee it doesn't).
+- [In Search of an Understandable Consensus Algorithm](https://raft.github.io/raft.pdf): Ongaro & Ousterhout, USENIX ATC 2014 (**free PDF**), the Raft paper. Not implemented anywhere in this curriculum (see W18's Option A note), but it's the algorithm underneath etcd, watched directly in W19. Read Sections 1–5.
 
 ---
 
@@ -192,6 +193,9 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 - [Kubeflow Spark Operator documentation](https://kubeflow.github.io/spark-operator/): quick-start guide and the `SparkApplication` API reference
 - [KubeRay reconciler source: `raycluster_controller.go`](https://github.com/ray-project/kuberay/blob/master/ray-operator/controllers/ray/raycluster_controller.go): the real reconcile loop this week has you read, not write
 - [Programming Kubernetes](https://www.oreilly.com/library/view/programming-kubernetes/9781492047094/): Hausenblas & Schimanski (O'Reilly), optional. Covers how operators like these two are actually built; useful context even though this week has you operate one rather than author one
+- [etcd: Set up a local cluster](https://etcd.io/docs/v3.5/dev-guide/local_cluster/): official docs for the 3-member local-cluster bootstrap Part 3 uses (run by hand here instead of via their `Procfile`/`goreman` wrapper)
+- [etcd-io/raft](https://github.com/etcd-io/raft): the standalone Raft library etcd actually runs (also vendored into Kubernetes itself, and used by CockroachDB and TiKV); Part 3 has you read `raft.go`'s `becomeLeader`/`campaign`, not the whole file
+- Recall W17's Raft paper (Ongaro & Ousterhout, 2014): Part 3 is where you watch the algorithm that paper describes run for real
 
 ---
 

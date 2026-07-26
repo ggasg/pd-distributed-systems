@@ -17,7 +17,7 @@ One system that combines at least two concepts from this curriculum. It should b
 ### Option A: Distributed KV Store (Go)
 Combine W01 (LSM storage) + W04 (clocks/ordering).
 
-A 3-node key-value store in Go where writes are replicated via a simple primary-backup protocol (not Raft, keep it tractable). The primary assigns a logical timestamp to each write using a Lamport clock before forwarding to backups. Supports `get`, `put`, `delete`. Test: kill the primary, promote a backup, verify reads are consistent.
+A 3-node key-value store in Go where writes are replicated via a simple primary-backup protocol (not Raft, keep it tractable; you get real Raft in W17's reading and W19's live etcd cluster instead, without paying this exercise's time budget for a full leader-election-plus-log-replication implementation). The primary assigns a logical timestamp to each write using a Lamport clock before forwarding to backups. Supports `get`, `put`, `delete`. Test: kill the primary, promote a backup, verify reads are consistent.
 
 **Why Go:** it's a direct extension of the actual code from W01 and W04, not a rewrite in a third language; goroutines and channels make the node communication natural, and `net/http` (standard library) makes the client API trivial without reaching for a framework.
 
