@@ -51,18 +51,22 @@ code/
 │   ├── StreamProcessorTest.java # JUnit 5
 │   └── pom.xml
 │
-├── timely-toy/             # W06: Java (Maven)
-│   ├── Timestamp.java
-│   ├── Pointstamp.java
-│   ├── Operator.java            # abstract class, MapOperator, SinkOperator subclasses
-│   ├── ProgressTracker.java
-│   ├── ProgressTrackerTest.java # JUnit 5
+├── shuffle/                # W06: Java (Maven)
+│   ├── Record.java              # record Record(String key, int value)
+│   ├── Partitioner.java         # sealed interface permits HashPartitioner, RangePartitioner
+│   ├── HashPartitioner.java
+│   ├── RangePartitioner.java
+│   ├── MapTask.java             # writes spill/map-<id>/part-<p>, one file per reduce partition
+│   ├── ReduceTask.java          # fetches spill/map-*/part-<p>, aggregates, writes output/part-<p>
+│   ├── Shuffle.java             # wires M map tasks to R reduce tasks
+│   ├── SkewBench.java           # uniform vs Zipf keys; per-reducer counts and wall time
+│   ├── ShuffleTest.java         # JUnit 5
 │   └── pom.xml
 │
 ├── dd-scratch/             # W07: Java (Maven)
-│   ├── Update.java              # record Update<K, V>  (Part 1)
-│   ├── Collection.java          # class Collection<K, V>  (Part 1)
-│   ├── WordCount.java           # Part 1
+│   ├── Update.java              # record Update<K, V>  (Part 1, GIVEN)
+│   ├── Collection.java          # class Collection<K, V>  (Part 1, GIVEN)
+│   ├── WordCount.java           # Part 1, the only Part 1 build target
 │   ├── FullRecomputeView.java   # Part 2
 │   ├── IncrementalAggregateView.java  # Part 2
 │   ├── MvBenchmark.java         # Part 2: incremental vs. full-recompute latency
@@ -113,34 +117,32 @@ code/
 │   # Optional: generate_events_large.py, memory_naive.py, memory_chunked.py,
 │   # memory_columnar.py (evidence-based memory exercise, no new dependencies)
 │
-├── spark-lang-bench/       # W12: Scala (sbt) + Python (PySpark)
-│   ├── scala/
-│   │   ├── build.sbt             # pins the same Spark release as python/requirements.txt
-│   │   └── src/main/scala/
-│   │       ├── DataFrameBenchmark.scala
-│   │       └── UdfBenchmark.scala
-│   ├── python/
-│   │   ├── dataframe_benchmark.py
-│   │   ├── udf_benchmark.py
-│   │   ├── pandas_udf_benchmark.py   # optional stretch
-│   │   └── requirements.txt
-│   ├── generate_orders.py            # shared data, reused by both languages
-│   └── data/                         # orders_100k.parquet, orders_1m.parquet, orders_5m.parquet
-│
-├── distributed-training/   # W13: Python + Go tool
-│   ├── mlp.py
+├── distributed-training/   # W12: Python + Go tool
+│   ├── mlp.py                   # GIVEN starter file
 │   ├── ring_allreduce.py
+│   ├── naive_allreduce.py       # send-everything-to-everyone baseline, for the byte comparison
+│   ├── compare_allreduce.py     # bytes on the wire per worker at N = 2, 4, 8
 │   ├── worker.py
 │   ├── train.py
 │   └── requirements.txt
 │   # Go tool lives in tools/grad_server/
+│
+├── parallelism/            # W13: Python (imports W12's ring_allreduce directly)
+│   ├── layers.py                # GIVEN starter file: Linear + GeLU, NumPy
+│   ├── tensor_parallel.py       # ColumnParallelLinear, RowParallelLinear
+│   ├── mlp_block.py             # Megatron-style column-then-row composition, one all-reduce
+│   ├── pipeline_parallel.py     # 4 layers, 2 stages, activations over sockets
+│   ├── microbatch.py
+│   ├── bubble.py                # measured vs theoretical (S-1)/(M+S-1)
+│   ├── shard_optimizer.py       # ZeRO stage 1: sharded momentum, all-gather params
+│   └── requirements.txt
 │
 ├── actor-training/         # W14: Python + Ray
 │   ├── model.py             # PyTorch CNN
 │   ├── worker_actor.py      # @ray.remote TrainerWorker
 │   ├── parameter_server_actor.py  # @ray.remote ParameterServer
 │   ├── train.py
-│   ├── compare.py           # sequential vs W13 ring-allreduce vs Ray actors
+│   ├── compare.py           # sequential vs W12 ring-allreduce vs Ray actors
 │   └── requirements.txt
 │
 ├── cpu-gemm/               # W15: C (gcc/clang), primary path, no GPU required
@@ -174,26 +176,27 @@ code/
 │   ├── README.md           # required: design doc
 │   └── ...
 │
-├── operator/                # W19: deployment configs only, no code built. KubeRay and Kubeflow's Spark
-│   │                        # Operator are both installed via Helm (see SETUP.md); you deploy CRs
+├── operator/                # W19: deployment configs only, no code built. Kubeflow Trainer, Kubeflow's
+│   │                        # Spark Operator, and Kueue are all installed per SETUP.md; you deploy CRs
 │   │                        # against them, not author a controller
 │   └── config/
-│       ├── ray-cluster.yaml   # RayCluster CR (KubeRay); W20 edits this to add a sidecar container
-│       └── spark-pi.yaml      # SparkApplication CR (Kubeflow Spark Operator)
+│       ├── train-job.yaml     # TrainJob CR (Kubeflow Trainer); W20 edits this to add a sidecar container
+│       ├── spark-pi.yaml      # SparkApplication CR (Kubeflow Spark Operator)
+│       └── queues.yaml        # ResourceFlavor + ClusterQueue + LocalQueue (Kueue, Part 4)
 │
 ├── dd-scratch/             # W20: extends W07 (Java)
 │   ├── Metrics.java             # Prometheus Java client
 │   ├── TracingSetup.java        # OpenTelemetry Java SDK
 │   ├── ScopedSpan.java          # AutoCloseable, try-with-resources span helper
 │   └── Logging.java             # hand-rolled structured JSON log lines
-│   # Go sidecar lives in tools/log-aggregator/, wired into the W19 RayCluster's worker Pod template
+│   # Go sidecar lives in tools/log-aggregator/, wired into the W19 TrainJob's node Pod template
 │
-└── capstone-platform/      # W21 (optional): Python, combines W11+W13+W16+W17+W20, deploys to KubeRay from W19
+└── capstone-platform/      # W21 (optional): Python, combines W11+W12+W16+W17+W20, deploys as a TrainJob via W19's Trainer
     ├── train_worker.py
     ├── checkpoint_coordinator.py
     ├── serve.py
     ├── config/
-    │   └── ray-cluster.yaml   # training workers as a RayCluster worker group; reuses W19's KubeRay install
+    │   └── train-job.yaml     # training workers as TrainJob nodes; reuses W19's Trainer + Kueue install
     └── README.md            # required: design doc
 ```
 
@@ -235,9 +238,11 @@ python main.py
 
 **Kubernetes (W19, W21):**
 ```bash
-helm install kuberay-operator kuberay/kuberay-operator --version 1.6.0
+# Kubeflow Trainer and Kueue install from versioned manifests, not a chart repo;
+# pin the current release from each project's own installation guide (see SETUP.md)
 helm install spark-operator spark-operator/spark-operator --namespace spark-operator --create-namespace
-kubectl apply -f code/operator/config/ray-cluster.yaml
+kubectl apply -f code/operator/config/queues.yaml
+kubectl apply -f code/operator/config/train-job.yaml
 kubectl apply -f code/operator/config/spark-pi.yaml -n spark-operator
 ```
 No `go build` specific to W19/W21 themselves: those two weeks deploy CRs against operators you installed, not code you compiled. Go is very much built everywhere else in this curriculum, W00–W04, W08, and every secondary tool.
@@ -250,5 +255,5 @@ No `go build` specific to W19/W21 themselves: those two weeks deploy CRs against
 - Code in this directory is the "lab." It's meant to be written, broken, and rewritten.
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
 - Go projects (W00–W04, W08, and the secondary tools in `tools/`) put tests in `<name>_test.go` files sitting directly alongside the code they test, no separate `tests/` directory, that's Go's own toolchain convention (`go test` discovers `_test.go` files automatically in the same package), a fourth layout convention alongside the other languages here, not a departure from how the rest of this repo organizes things
-- Scala projects (W09–W10, W12) follow the standard sbt layout (`src/main/scala`, `src/test/scala`), a different convention from Go's in-place tests, that's just how sbt expects things laid out
+- Scala projects (W09–W10) follow the standard sbt layout (`src/main/scala`, `src/test/scala`), a different convention from Go's in-place tests, that's just how sbt expects things laid out
 - Java projects (W05–W07, W17, and the W20 DD-engine instrumentation) each have their own `pom.xml`, one Maven project per directory, no shared parent POM, same isolation as every other language here. Source files sit flat in the project root rather than under the conventional `src/main/java/...` package tree; these are small, single-package exercises, and skipping the package hierarchy keeps the file listing above honest about what's actually in each directory

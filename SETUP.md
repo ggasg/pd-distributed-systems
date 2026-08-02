@@ -25,7 +25,7 @@ brew install go
 go version    # go1.22.x or later
 ```
 
-**W00–W04, W08, and secondary tooling in W03/W13/W15/W20** use Go, this curriculum's one deliberately introduced new language. Each project is its own module (`go.mod` per directory, no shared workspace file, same isolation principle as the Java/Scala projects); `go build`/`go test`/`go run` fetch whatever the project's `go.mod` declares. There's no separate package manager or lockfile format to learn beyond `go.mod`/`go.sum`, both maintained automatically by `go get` and `go mod tidy`.
+**W00–W04, W08, and secondary tooling in W03/W12/W15/W20** use Go, this curriculum's one deliberately introduced new language. Each project is its own module (`go.mod` per directory, no shared workspace file, same isolation principle as the Java/Scala projects); `go build`/`go test`/`go run` fetch whatever the project's `go.mod` declares. There's no separate package manager or lockfile format to learn beyond `go.mod`/`go.sum`, both maintained automatically by `go get` and `go mod tidy`.
 
 **New to Go?** Budget real time before W00, this is the curriculum's genuinely new component, kept deliberately gentle in scope. [A Tour of Go](https://go.dev/tour/) (~1 hour): work through "Basics" (variables, functions, structs, slices, maps) and "Methods and interfaces" (through the goroutines/channels section at the end); that covers everything W00–W04 and W08 need. The two idioms this curriculum leans on hardest: goroutines plus channels for concurrency (`go func() { ... }()`, `make(chan T)`, `sync.WaitGroup`), and the standard library's own `net/http` for every small HTTP service, no framework, ever, in this curriculum. `testing.B` (`go test -bench=.`) is the other one worth knowing before W02 and W08, Go's built-in microbenchmark harness.
 
@@ -55,16 +55,17 @@ mvn --version     # Apache Maven 3.9.x, and confirms it's picking up JDK 21
 
 ---
 
-## Kubernetes Operators: KubeRay + Spark Operator (W19)
+## Kubernetes Operators: Kubeflow Trainer + Spark Operator + Kueue (W19)
 
-No new toolchain to install for this one specifically, you already have Go from the section above, and W19 itself is Helm installs plus reading, not writing, operator source. Register both chart repos ahead of time so W19 itself is just `helm install`:
+No new toolchain to install for this one specifically, you already have Go from the section above, and W19 itself is installs plus reading, not writing, operator source. Register the Spark Operator chart repo ahead of time:
 ```bash
-helm repo add kuberay https://ray-project.github.io/kuberay-helm/
 helm repo add spark-operator https://kubeflow.github.io/spark-operator
 helm repo update
 ```
 
-By the time you reach W19 you'll have written Go in five other weeks (W00–W04, W08), so reading `ray-project/kuberay`'s and `kubeflow/spark-operator`'s real reconciler source here is no longer a cold start, it's the payoff for the Go you've already been writing, applied to two real, production codebases instead of a toy exercise.
+Kubeflow Trainer and Kueue both install from versioned manifests rather than a stable chart repo, and both move their manifest paths between releases. Don't pre-install them from a version pinned here; when you reach W19, check each project's releases page for the current version and follow its own installation guide. The week says so too, and this is the most common way that part goes wrong.
+
+By the time you reach W19 you'll have written Go in five other weeks (W00–W04, W08), so reading `kubeflow/trainer`'s and `kubeflow/spark-operator`'s real reconciler source here is no longer a cold start, it's the payoff for the Go you've already been writing, applied to two real, production codebases instead of a toy exercise.
 
 ---
 
@@ -88,8 +89,6 @@ Recommended IDE: IntelliJ IDEA with the Scala plugin, the standard choice for Sp
 
 **New to Scala, or want a warm-up before W09 specifically?** See the drill in [W09](weeks/W09-query-planning.md)'s "Before you start" section: a 15–20 minute case-class-and-pattern-matching exercise scoped to exactly what that week needs, meant to be done the day you start W09, not months ahead of it. W10 has its own equivalent warm-up for the `implicit`-parameter-resolution mechanism specifically.
 
-**W12's Scala project is different from W09/W10's:** those two are dependency-free toy projects; W12's `scala/build.sbt` pulls in real Spark (`libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.5.1"`), so the first `sbt compile` there downloads Spark's full dependency tree and will take noticeably longer than anything in W09/W10. Any JDK 8/11/17 works (the same one `cs setup` installed, or the `openjdk@17` installed for W07 below both satisfy Spark 3.5.x). Pin the identical version string in `python/requirements.txt` (`pyspark==3.5.1`); the whole point of the week is comparing two runtimes on the same Spark release, not two different releases.
-
 ---
 
 ## Python 3.11+
@@ -106,25 +105,25 @@ python --version   # 3.11.x
 
 Install dependencies per arc:
 
-**Arc 3 Python base (W11, W13–W16):**
+**Arc 3 Python base (W11–W16):**
 ```bash
 pip install numpy torch torchvision duckdb pyarrow pandas "ray[default]"
 ```
 
 **W11 (ML pipelines):**
 ```bash
-pip install duckdb pyarrow pandas
+pip install duckdb pyarrow pandas deltalake
 ```
+`deltalake` is delta-rs, a native implementation with a Python binding. Part 2 of that week uses it to open a real Delta transaction log; there's no JVM and no Spark cluster involved, so this is a plain `pip install` with no extra setup.
 
-**W12 (PySpark vs. Scala Spark):**
-```bash
-pip install pyspark==3.5.1        # match the exact version in scala/build.sbt
-```
-Same Spark install as the ClickHouse + PySpark section below; if you already set that up for W07, you only need to confirm the version matches what W12's `build.sbt` pins, not reinstall from scratch.
-
-**W13 (distributed training):**
+**W12 (distributed training):**
 ```bash
 pip install numpy torch           # torch for MNIST loading only
+```
+
+**W13 (beyond data parallelism):**
+```bash
+pip install numpy                 # no new dependencies; imports W12's ring_allreduce directly
 ```
 
 **W14 (actor model / Ray):**
@@ -145,9 +144,9 @@ pip install numpy                 # NumPy only, no PyTorch for this week
 
 ---
 
-## ClickHouse + PySpark (W07, PySpark reused in W12)
+## ClickHouse + PySpark (W07)
 
-W07's Part 2 comparison exercise runs two real local systems alongside your Java build; both single-machine, no account, no cluster. The PySpark install here is reused for W12; just confirm the version matches what W12's `scala/build.sbt` pins (see the Python section above), reinstalling with `pip install pyspark==<version>` if it doesn't.
+W07's Part 2 comparison exercise runs two real local systems alongside your Java build; both single-machine, no account, no cluster.
 
 ```bash
 # ClickHouse: single local server, no cluster
@@ -212,7 +211,7 @@ clang --version      # or gcc --version, for W15's C kernels
 docker --version     # 25.x or later
 kind --version       # 0.22.x or later
 kubectl version      # 1.29.x or later
-helm version         # 3.14.x or later, needed for W19's KubeRay + Spark Operator installs
+helm version         # 3.14.x or later, needed for W19's Spark Operator install
 ```
 
 ---

@@ -1,9 +1,9 @@
 ---
-week_number: 13
+week_number: 12
 status: not-started
 ---
 
-# W13: Distributed Training
+# W12: Distributed Training
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
 
@@ -17,8 +17,9 @@ Data-parallel training using Python multiprocessing and raw sockets, built entir
 ## Read
 - [ ] [Horovod: fast and easy distributed deep learning in TensorFlow](https://arxiv.org/abs/1802.05799) (Sergeev & Del Balso, 2018): focus on Section 3 (ring-allreduce algorithm). Understand exactly what bytes are being sent and why ring topology uses bandwidth efficiently.
 - [ ] PyTorch DDP source, read [`torch/distributed/distributed_c10d.py`](https://github.com/pytorch/pytorch/blob/main/torch/distributed/distributed_c10d.py), specifically the `all_reduce` function and its docstring. You don't need to understand the CUDA path, just the concept.
+- [ ] [NCCL: Collective Operations](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html): a short reference page, read for vocabulary rather than API detail. The operations you'll care about are `AllReduce`, `ReduceScatter`, and `AllGather`. The one fact worth carrying out of it: an allreduce is not a primitive. It is a reduce-scatter followed by an all-gather, which is exactly the two phases you're about to implement, and knowing they have standard names makes every distributed-training doc you read afterwards legible.
 
-**Key question:** Why is ring-allreduce more bandwidth-efficient than a parameter server for large gradients? Work out the math for N workers and a gradient of size G.
+**Key question:** Why is ring-allreduce more bandwidth-efficient than a parameter server for large gradients? Work out the math for N workers and a gradient of size G. You should land on each worker sending roughly 2G(N-1)/N bytes, and you should be able to say why that quantity barely changes as N grows.
 
 ---
 
@@ -34,10 +35,13 @@ Model: 2-layer MLP on MNIST (784 → 128 → 10). Implemented in NumPy only.
 
 - [ ] `ring_allreduce.py`: implement ring-allreduce for a list of NumPy arrays:
   - Each worker has a rank and knows the total number of workers
-  - Scatter-reduce phase: each worker sends a chunk to the next, receives and adds
-  - All-gather phase: each worker sends the reduced chunk, receives and places
+  - Reduce-scatter phase: each worker sends a chunk to the next, receives and adds. After N-1 steps every worker owns the fully summed version of exactly one chunk.
+  - All-gather phase: each worker sends its finished chunk around the ring. After another N-1 steps every worker has all of them.
   - Result: every worker has the sum of all workers' arrays
   - Use TCP sockets for communication (each worker binds a port; worker 0 initiates)
+  - Count bytes as you go: add a module-level counter that every `send` increments, so you can report actual bytes on the wire per worker rather than the number you expected
+- [ ] `naive_allreduce.py`: the obvious implementation, for contrast. Every worker sends its full gradient to every other worker, and each one sums the N arrays it receives locally. This is correct, it is about ten lines, and it is what most people write first. Instrument it with the same byte counter.
+- [ ] `compare_allreduce.py`: run both against the same gradient at N = 2, 4, and 8 simulated workers, and print bytes sent per worker for each. Ring should be flat as N grows while naive climbs linearly. Confirm your measured numbers match the 2G(N-1)/N formula from the Read section, and if they don't, the discrepancy is usually chunk padding when the gradient size doesn't divide evenly by N, which is worth finding rather than rounding away.
 - [ ] `worker.py`: each worker: loads its shard of MNIST, runs forward + backward, calls `ring_allreduce` on gradients, updates params. Runs for 5 epochs.
 - [ ] `train.py`: launches 2 workers via `multiprocessing.Process`, assigns rank 0 and rank 1, waits for both to complete. Prints final train accuracy per worker (should be similar).
 
@@ -113,6 +117,8 @@ assert ring_indices(0, 4, 4) == [0, 3, 2, 1]
 **What surprised me:**
 
 **How many bytes does each worker send per epoch?**
+
+**Measured bytes per worker, naive vs ring, at N = 2, 4, and 8 (and did they match 2G(N-1)/N):**
 
 **What PyTorch DDP does that you didn't implement (and why it matters at scale):**
 

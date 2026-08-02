@@ -8,7 +8,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 | Book | Author | Weeks | Notes |
 |------|--------|-------|-------|
-| [Designing Data-Intensive Applications (DDIA), 2nd ed.](https://dataintensive.net) | Kleppmann & Riccomini (2026) | W00, W01, W02, W03, W04, W05, W09 (optional), W17 (optional), W18 (Option A, plus optional companion), W21 (optional) | The single most useful book for this curriculum. Buy it. 2nd edition (Feb 2026) restructures the whole book: 12 chapters became 14, and every chapter after the first is renumbered. Chapter references below are to the 2nd edition. |
+| [Designing Data-Intensive Applications (DDIA), 2nd ed.](https://dataintensive.net) | Kleppmann & Riccomini (2026) | W00, W01, W02, W03, W04, W05, W06, W09 (optional), W17 (optional), W18 (Option A, plus optional companion), W21 (optional) | The single most useful book for this curriculum. Buy it. 2nd edition (Feb 2026) restructures the whole book: 12 chapters became 14, and every chapter after the first is renumbered. Chapter references below are to the 2nd edition. |
 | [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W17 | For concurrency primitives and correctness |
 | [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W20 | O'Reilly; pairs well with the Google SRE chapter |
 | [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W20 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
@@ -76,12 +76,12 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W06: Naiad and Timely Dataflow
+## W06: Partitioning and the Shuffle
 
-- [Naiad: A Timely Dataflow System](https://dl.acm.org/doi/10.1145/2517349.2522738): Murray et al., SOSP 2013 (**ACM DL**; also [free via MSR](https://www.microsoft.com/en-us/research/wp-content/uploads/2013/11/naiad_sosp2013.pdf))
-- [Timely Dataflow (Rust implementation)](https://github.com/TimelyDataflow/timely-dataflow): the reference implementation of the timestamp/progress-tracking model `timely-toy/` builds a simplified version of. Conceptual reference only; no build target reads it directly, since `timely-toy/` is Java.
-- [PyTorch Autograd Engine source](https://github.com/pytorch/pytorch/blob/main/torch/csrc/autograd/engine.cpp): a real production dependency-counted DAG scheduler and the closest real analogue to Naiad's progress tracking, C++, a different language than `timely-toy/` itself, the lesson is the technique
-- [Ray source: `core_worker.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/core_worker.cc) and [`task_manager.cc`](https://github.com/ray-project/ray/blob/master/src/ray/core_worker/task_manager.cc): Ray's `CoreWorker` (C++) fires tasks once their dependencies are satisfied: a second, directly target-company-relevant analogue (Anyscale), read from source rather than a third-party summary
+- **DDIA Ch.7 (2nd ed.), "Sharding"**: required, the whole chapter. Key-range vs hash sharding, hot spots, rebalancing, and Kleppmann's deliberately skeptical treatment of consistent hashing for databases
+- [Spark RDD Programming Guide: Shuffle operations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations): required, short. The map-side-write then reduce-side-fetch structure this week builds, described by the system that made it famous
+- [The Snowflake Elastic Data Warehouse](https://dl.acm.org/doi/10.1145/2882903.2903741): Dageville et al., SIGMOD 2016 (also [free PDF](https://event.cwi.nl/lsde/papers/p215-dageville-snowflake.pdf)), optional, Sections 3-4. The same data-exchange problem solved with object storage in the middle instead of local disk
+- [Dynamo: Amazon's Highly Available Key-value Store](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf): DeCandia et al., SOSP 2007 (**free PDF**), optional. Section 4.2 is the canonical description of consistent hashing with virtual nodes, the technique the Python DSA Review implements
 
 ---
 
@@ -89,7 +89,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 - [Differential Dataflow](https://github.com/frankmcsherry/blog/blob/master/posts/2015-09-29.md): McSherry (2013/2015), blog post (**free**), more accessible than the formal paper
 - [Differential Dataflow (formal paper)](https://dl.acm.org/doi/10.1145/2588555.2610364): McSherry, Murray et al., CIDR 2013 (Part 1 reading, Sections 1–2 only)
-- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): optional, for context. Your `Update`/`Collection` types in `dd-scratch/` are a simplified version of the same ideas as `collection.rs`. No maintained JVM continuation of this lineage exists, so this stays a reading-only reference.
+- [Differential Dataflow (Rust implementation)](https://github.com/TimelyDataflow/differential-dataflow): optional, for context. The `Update`/`Collection` starter files you're given in `dd-scratch/` are a simplified version of the same ideas as `collection.rs`. No maintained JVM continuation of this lineage exists, so this stays a reading-only reference.
 - [Percolator](https://research.google/pubs/large-scale-incremental-processing-using-distributed-transactions-and-notifications/): Peng & Dabek, Google, OSDI 2010 (**free PDF**), optional. A different mechanism (distributed transactions + notifications over Bigtable) for the same incremental-computation problem DD solves with an explicit diff model; the production system that replaced Google's MapReduce-based web indexing pipeline. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.
 - [ClickHouse Materialized Views](https://clickhouse.com/docs/en/guides/developer/cascading-materialized-views): Part 2 required reading. An insert trigger, not a retraction-aware incrementally maintained view. You'll install ClickHouse locally and build one yourself in the exercise.
 - [Spark Structured Streaming: arbitrary stateful operations](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html#arbitrary-stateful-operations): Part 2 required reading. Per-key state maintained and updated incrementally between micro-batches. Runs entirely in local mode via `pip install pyspark`, no Databricks account or proprietary docs needed.
@@ -132,23 +132,27 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [Delta Lake: High-Performance ACID Table Storage](https://www.vldb.org/pvldb/vol13/p3411-armbrust.pdf): Armbrust et al., VLDB 2020 (**free PDF**)
 - [DuckDB docs](https://duckdb.org/docs/): for the SQL-on-Parquet layer in the feature store
 - [Apache Parquet spec](https://parquet.apache.org/docs/file-format/): understand the columnar format your feature store writes
+- [Apache Iceberg Table Spec](https://iceberg.apache.org/spec/): Part 2 required reading, "Overview" and "Table Metadata" sections only. The three-level metadata file to manifest list to manifest structure, worth seeing next to Delta's flat commit log so you don't mistake one implementation for the concept
+- [delta-rs (`deltalake` Python package)](https://delta-io.github.io/delta-rs/): Part 2's dependency. A native implementation with a Python binding, so no JVM and no Spark cluster are involved
 - Optional, for the memory exercise: [pandas PyArrow-backed dtypes (`dtype_backend`)](https://pandas.pydata.org/docs/user_guide/pyarrow.html) and [`pyarrow.parquet.ParquetFile.iter_batches`](https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetFile.html) docs
 
 ---
 
-## W12: PySpark vs. Scala Spark: Where the JVM Boundary Costs You
-
-- [Introducing Pandas UDF for PySpark](https://www.databricks.com/blog/2017/10/30/introducing-vectorized-udfs-for-pyspark.html): Databricks engineering blog (2017), names the py4j-serialization mechanism before you go measure it yourself
-- [Apache Spark docs: Pandas UDFs (a.k.a. Vectorized UDFs)](https://spark.apache.org/docs/latest/api/python/user_guide/sql/arrow_pandas.html): current reference for `pandas_udf`, needed for the optional stretch arm
-- Recall W09's Spark SQL/Catalyst paper (Armbrust et al., SIGMOD 2015): this week runs the physical plan you read about there
-
----
-
-## W13: Distributed Training
+## W12: Distributed Training
 
 - [Horovod: fast and easy distributed deep learning in TensorFlow](https://arxiv.org/abs/1802.05799): Sergeev & Del Balso (2018) (**free on arXiv**), focus on Section 3 (ring-allreduce)
 - [PyTorch Distributed: Experiences on Accelerating Data Parallel Training](https://arxiv.org/abs/2006.15704): Li et al. (2020) (**free on arXiv**), how DDP actually works
 - [PyTorch DDP source](https://github.com/pytorch/pytorch/blob/main/torch/distributed/distributed_c10d.py): `all_reduce` function
+- [NCCL: Collective Operations](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html): short reference page, read for vocabulary. `AllReduce`, `ReduceScatter`, `AllGather`, and the fact that the first is built from the other two
+
+---
+
+## W13: Beyond Data Parallelism
+
+- [Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism](https://arxiv.org/abs/1909.08053): Shoeybi et al. (2019) (**free on arXiv**), Sections 1 and 3. Column-parallel then row-parallel composition, and why one all-reduce per MLP block is enough
+- [GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism](https://arxiv.org/abs/1811.06965): Huang et al., NeurIPS 2019 (**free on arXiv**), Sections 1-3. Microbatching and the bubble
+- [ZeRO: Memory Optimizations Toward Training Trillion Parameter Models](https://arxiv.org/abs/1910.02054): Rajbhandari et al., SC 2020 (**free on arXiv**), Section 5 and the stage table. Shard optimizer state, then gradients, then parameters
+- [PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel](https://arxiv.org/abs/2304.11277): Zhao et al., VLDB 2023 (**free on arXiv**), optional. ZeRO once it became a production API
 
 ---
 
@@ -189,17 +193,19 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W18: Capstone
 
-No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 6**, Replication. Read "Leaders and Followers" before writing `promote()`. Optional companion: **DDIA Chapter 7**, Sharding (renamed from "Partitioning" in the 2nd edition), the other half of the scaling story, not implemented by this exercise but worth reading for the concept.
+No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 6**, Replication. Read "Leaders and Followers" before writing `promote()`. Optional companion: **DDIA Chapter 7**, Sharding (renamed from "Partitioning" in the 2nd edition), the other half of the scaling story, not implemented by this exercise but worth reading for the concept. You already read it as required material in W06, so this is a reread rather than a new one.
 
 ---
 
-## W19: Operating Kubernetes Operators (KubeRay + Spark Operator)
+## W19: Operating Kubernetes Operators (Kubeflow Trainer + Spark Operator)
 
 - **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2**: Important Distributed System Concepts. Read "Idempotency" and "Orchestration and Kubernetes" before deploying either operator; the chapter argues directly for why a reconcile loop has to be idempotent, the same claim this week's Reflect section asks you to defend.
 - [Kubernetes Operators docs](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): official k8s docs
-- [KubeRay documentation](https://ray-project.github.io/kuberay/): architecture overview and the `RayCluster`/`RayJob`/`RayService` CRDs; also has the Helm install instructions this week uses
+- [Kubeflow Trainer documentation](https://www.kubeflow.org/docs/components/trainer/): architecture overview plus the `TrainJob`, `TrainingRuntime`, and `ClusterTrainingRuntime` APIs. Trainer v2 unified the older framework-specific CRDs (`PyTorchJob`, `MPIJob`, `JAXJob`, `XGBoostJob`) into one `TrainJob` plus a pluggable runtime, which is why it's the portable choice
+- [kubeflow/trainer releases](https://github.com/kubeflow/trainer/releases): pin a current `v2.x.y` before installing; the manifests move between releases, so don't copy a version tag out of a tutorial
+- [kubeflow/trainer source](https://github.com/kubeflow/trainer): search for `TrainJobReconciler`; the real reconcile loop this week has you read, not write
 - [Kubeflow Spark Operator documentation](https://kubeflow.github.io/spark-operator/): quick-start guide and the `SparkApplication` API reference
-- [KubeRay reconciler source: `raycluster_controller.go`](https://github.com/ray-project/kuberay/blob/master/ray-operator/controllers/ray/raycluster_controller.go): the real reconcile loop this week has you read, not write
+- [Kueue documentation](https://kueue.sigs.k8s.io/docs/): job queueing and gang admission for Kubernetes. Part 4 uses `ResourceFlavor`, `ClusterQueue`, and `LocalQueue`; the [batch user quickstart](https://kueue.sigs.k8s.io/docs/tasks/run/jobs/) has a working example of all three
 - [Programming Kubernetes](https://www.oreilly.com/library/view/programming-kubernetes/9781492047094/): Hausenblas & Schimanski (O'Reilly), optional. Covers how operators like these two are actually built; useful context even though this week has you operate one rather than author one
 - [etcd: Set up a local cluster](https://etcd.io/docs/v3.5/dev-guide/local_cluster/): official docs for the 3-member local-cluster bootstrap Part 3 uses (run by hand here instead of via their `Procfile`/`goreman` wrapper)
 - [etcd-io/raft](https://github.com/etcd-io/raft): the standalone Raft library etcd actually runs (also vendored into Kubernetes itself, and used by CockroachDB and TiKV); Part 3 has you read `raft.go`'s `becomeLeader`/`campaign`, not the whole file
@@ -222,7 +228,7 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 
 ## W21: Grand Capstone (optional)
 
-No required reading tied to this week's build. This week synthesizes W11, W13, W16, W17, W19, and W20; revisit those weeks' resources as needed. **DDIA Chapter 13** (A Philosophy of Streaming Systems, renamed from "The Future of Data Systems" in the 2nd edition) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
+No required reading tied to this week's build. This week synthesizes W11, W12, W16, W17, W19, and W20; revisit those weeks' resources as needed. **DDIA Chapter 13** (A Philosophy of Streaming Systems, renamed from "The Future of Data Systems" in the 2nd edition) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
 
 ---
 

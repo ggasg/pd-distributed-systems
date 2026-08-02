@@ -25,7 +25,7 @@ A 3-node key-value store in Go where writes are replicated via a simple primary-
 
 **If you pick this option, read first: DDIA Chapter 6** (2nd ed., Replication), specifically "Single-Leader Replication." Primary-backup *is* the leader-based replication Ch. 6 describes; the chapter names the failure modes worth designing around before you write `Promote()` (replication lag, what happens to in-flight writes when the leader dies mid-forward) rather than discovering them by hand.
 
-**Optional companion: DDIA Chapter 7** (2nd ed., Sharding, renamed from "Partitioning"). Your 3-node store only replicates, it doesn't shard the keyspace, but Ch. 7 is the other half of the scaling story Ch. 6 started: replication makes each copy of the data more available, sharding is what lets the dataset grow past what one node holds. Worth reading for the concept even though this exercise doesn't implement it; the "What you'd add with another week" Reflect question is a natural place to sketch how you'd combine the two.
+**Optional companion: DDIA Chapter 7** (2nd ed., Sharding, renamed from "Partitioning"), which you already read as required material in W06. Your 3-node store only replicates, it doesn't shard the keyspace, but Ch. 7 is the other half of the scaling story Ch. 6 started: replication makes each copy of the data more available, sharding is what lets the dataset grow past what one node holds. Worth rereading for the concept even though this exercise doesn't implement it, and your W06 shuffle gives you a concrete partitioner to reason with this time; the "What you'd add with another week" Reflect question is a natural place to sketch how you'd combine the two.
 
 **Minimum bar:** 3-node cluster, primary-backup replication works, one node can fail and the system continues.
 
@@ -54,13 +54,13 @@ Extend your W07 DD engine with vectorized, batch-at-a-time operator execution: `
 ---
 
 ### Option D: GPU-Accelerated Distributed Training (Python)
-Combine W13 (ring-allreduce) + W15 (GPU-accelerated GEMM).
+Combine W12 (ring-allreduce) + W15 (GPU-accelerated GEMM).
 
-The only option that stays inside this arc rather than reaching back into Arc 1/Arc 2, worth choosing if distributed training and compute-intensive AI workflows specifically are what you're optimizing this curriculum for. Take W13's 2-worker ring-allreduce training loop and replace the MLP's NumPy matrix multiplies with your W15 tiled CUDA GEMM kernel, so gradient exchange still happens over real TCP sockets between workers, but the compute inside each worker is GPU-accelerated instead of CPU NumPy. Benchmark per-epoch wall time, W13's CPU-only baseline vs. this GPU-accelerated version, and break down where time actually goes: compute or network.
+The only option that stays inside this arc rather than reaching back into Arc 1/Arc 2, worth choosing if distributed training and compute-intensive AI workflows specifically are what you're optimizing this curriculum for. Take W12's 2-worker ring-allreduce training loop and replace the MLP's NumPy matrix multiplies with your W15 tiled CUDA GEMM kernel, so gradient exchange still happens over real TCP sockets between workers, but the compute inside each worker is GPU-accelerated instead of CPU NumPy. Benchmark per-epoch wall time, W12's CPU-only baseline vs. this GPU-accelerated version, and break down where time actually goes: compute or network.
 
 **No GPU?** Use W15's cache-blocked/AVX2 C kernel via `ctypes` instead of CUDA: same comparison, CPU-baseline vs. optimized-kernel, without requiring hardware you may not have.
 
-**Minimum bar:** the 2-worker ring-allreduce loop runs end-to-end with the GPU (or SIMD C) kernel doing the matmuls, converges to comparable accuracy to W13, and your writeup names where wall-clock time goes at each worker count.
+**Minimum bar:** the 2-worker ring-allreduce loop runs end-to-end with the GPU (or SIMD C) kernel doing the matmuls, converges to comparable accuracy to W12, and your writeup names where wall-clock time goes at each worker count.
 
 ---
 

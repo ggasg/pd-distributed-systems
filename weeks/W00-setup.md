@@ -51,7 +51,7 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 Project: `code/hello-metrics/` (Go modules)
 
-A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every small service you build from here on can follow, this one and every secondary tool in later weeks (W03's job coordinator, W13's gradient server, W15's bench runner, W20's log-aggregator sidecar).
+A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every small service you build from here on can follow, this one and every secondary tool in later weeks (W03's job coordinator, W12's gradient server, W15's bench runner, W20's log-aggregator sidecar).
 
 - [ ] `go.mod`: `go mod init hello-metrics`, then `go get github.com/prometheus/client_golang/prometheus` and `go get github.com/prometheus/client_golang/prometheus/promhttp`, the standard Go Prometheus client. No web framework: `net/http`, the standard library's own HTTP server, is enough for two routes.
 - [ ] `main.go`: `http.HandleFunc` for two routes, plus two metric objects shared by both handlers.

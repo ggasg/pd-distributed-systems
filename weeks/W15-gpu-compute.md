@@ -48,7 +48,7 @@ Project: `code/gpu-gemm/` (Python 3.11+, `numba`, `numpy`, `matplotlib`)
 
 **Go automation tool:**
 
-- [ ] `tools/bench_runner/main.go`: a small Go CLI (`os/exec`'s `exec.Command` to launch the benchmark subprocess and capture its stdout) that parses GFLOPS from the output and appends results as a row to `results.csv`. Usage: `go run . --kernel naive --runs 20` (`flag` package for the CLI args, standard library, no dependency needed for a program this small). Keep it under 80 lines: a quick return to the `net/http`/CLI style, not new territory; you last wrote something this shape for W13's gradient server.
+- [ ] `tools/bench_runner/main.go`: a small Go CLI (`os/exec`'s `exec.Command` to launch the benchmark subprocess and capture its stdout) that parses GFLOPS from the output and appends results as a row to `results.csv`. Usage: `go run . --kernel naive --runs 20` (`flag` package for the CLI args, standard library, no dependency needed for a program this small). Keep it under 80 lines: a quick return to the `net/http`/CLI style, not new territory; you last wrote something this shape for W12's gradient server.
 
 ---
 

@@ -5,14 +5,14 @@ status: not-started
 
 # W21: Grand Capstone: Distributed Training & Serving Platform
 
-> **Arc:** Optional capstone · **Language:** Python (+ Helm/YAML), reuses W11, W13, W16, W17, W20; deploys to KubeRay from W19
-> **Status:** Optional / stretch week. Not required to finish the core curriculum (W00–W20).
+> **Arc:** Optional capstone · **Language:** Python (+ Helm/YAML), reuses W11, W12, W16, W17, W20; deploys via Kubeflow Trainer from W19
+> **Status:** Optional / stretch week. Not required to finish the core curriculum (W00 to W20).
 
-**Prerequisite:** W11 (feature pipeline), W13 (distributed training), W16 (attention + KV cache), W17 (Chandy-Lamport snapshots), W19 (Kubernetes Operators), and W20 (Observability) all completed.
+**Prerequisite:** W11 (feature pipeline), W12 (distributed training), W16 (attention + KV cache), W17 (Chandy-Lamport snapshots), W19 (Kubernetes Operators), and W20 (Observability) all completed.
 
 ## What you'll build
 
-A small end-to-end distributed ML platform on your kind cluster: a versioned feature pipeline feeds a tiny attention-based model that trains across multiple worker Pods via ring-allreduce, checkpoints itself so a killed worker resumes instead of retraining from scratch, runs on the KubeRay cluster you stood up in W19 (you're operating a real operator here, not extending one you wrote), and is served afterward through a KV-cached inference endpoint, all instrumented with the Prometheus/Grafana stack from W20.
+A small end-to-end distributed ML platform on your kind cluster: a versioned feature pipeline feeds a tiny attention-based model that trains across multiple worker Pods via ring-allreduce, checkpoints itself so a killed worker resumes instead of retraining from scratch, runs as a `TrainJob` under the Kubeflow Trainer operator you installed in W19 (you're operating a real operator here, not extending one you wrote), and is served afterward through a KV-cached inference endpoint, all instrumented with the Prometheus/Grafana stack from W20.
 
 **Why this week exists:** W18 combines two arcs. This one chains six weeks into a single working system, end to end, on your own cluster: data in, model trained, failure survived, model served, everything observed. It's the closest thing in this curriculum to what you'd actually build on the job.
 
@@ -22,7 +22,7 @@ A small end-to-end distributed ML platform on your kind cluster: a versioned fea
 
 No new required reading tied to this week's build. If any of these feel rusty, skim your own notes before starting:
 
-- W13: ring-allreduce, and why it's bandwidth-efficient
+- W12: ring-allreduce, and why it's bandwidth-efficient
 - W16: KV cache, and why it turns O(N²) generation into O(N)
 - W17: Chandy-Lamport, and what a *consistent* recorded state actually means
 - W19: the reconcile loop, and why it's level-triggered
@@ -36,15 +36,15 @@ One genuinely new read, if you want it: **DDIA Chapter 13** (2nd ed.), A Philoso
 
 ## Code
 
-Project: `code/capstone-platform/` (Python for training, coordination, and serving; Helm/YAML for deploying to the KubeRay cluster from W19; reusing your W11/W13/W16 code directly)
+Project: `code/capstone-platform/` (Python for training, coordination, and serving; Helm/YAML for deploying as a `TrainJob` via the Kubeflow Trainer operator from W19; reusing your W11/W12/W16 code directly)
 
 **Part 1: Data (reuse W11)**
 
 - [ ] Reuse `feature_pipeline/` from W11 (or a trimmed copy) to generate a versioned training dataset. No changes needed; this is the input to Part 2.
 
-**Part 2: Distributed training (combine W13 and W16)**
+**Part 2: Distributed training (combine W12 and W16)**
 
-- [ ] `train_worker.py`: combine W13's `ring_allreduce.py` with a small attention model from W16's `attention.py` (instead of the MLP from W13). Each worker trains on a shard of the feature data and exchanges gradients via ring-allreduce.
+- [ ] `train_worker.py`: combine W12's `ring_allreduce.py` with a small attention model from W16's `attention.py` (instead of the MLP from W12). Each worker trains on a shard of the feature data and exchanges gradients via ring-allreduce.
 - [ ] Every N steps, each worker writes a checkpoint (model weights + optimizer state + current step number) to a shared path: `checkpoints/worker-{rank}/step-{n}.npz`
 
 **Part 3: Fault tolerance (extend W17)**
@@ -52,13 +52,13 @@ Project: `code/capstone-platform/` (Python for training, coordination, and servi
 - [ ] `checkpoint_coordinator.py`: adapt the Chandy-Lamport idea from W17: when a checkpoint is triggered, the coordinator waits until all workers have paused at the *same* training step (not mid-allreduce) before recording state. This is what makes the recorded checkpoint a genuinely consistent cut across workers, rather than N independent snapshots that disagree with each other.
 - [ ] Kill a worker process mid-training (`kill -9`). Verify: the operator (Part 4) restarts it, it loads the last consistent checkpoint, and training resumes without corrupting the other workers' state.
 
-**Your call:** `checkpoint_coordinator.py` waits until every worker has paused at the same step before recording a checkpoint. Now kill a worker permanently (don't let Part 4's operator restart it, or kill it before starting Part 4) right before a checkpoint is due. The coordinator is now waiting on a step-pause signal from a worker that will never send one, forever. Decide: should the coordinator time out and checkpoint the workers that did pause, accepting that the resulting snapshot is missing one worker's state (and deciding what that even means for a consistent restart), or should a missing worker block checkpointing entirely, on the reasoning that a checkpoint without every worker's state isn't a real consistent cut at all? This is the same "wait for all N or proceed with a quorum" trade-off from W13 and W14, applied to a real consistency mechanism instead of a gradient exchange; whichever you pick, implement a timeout in `checkpoint_coordinator.py` and note what you'd tell a teammate about what the resulting checkpoint does and doesn't guarantee.
+**Your call:** `checkpoint_coordinator.py` waits until every worker has paused at the same step before recording a checkpoint. Now kill a worker permanently (don't let Part 4's operator restart it, or kill it before starting Part 4) right before a checkpoint is due. The coordinator is now waiting on a step-pause signal from a worker that will never send one, forever. Decide: should the coordinator time out and checkpoint the workers that did pause, accepting that the resulting snapshot is missing one worker's state (and deciding what that even means for a consistent restart), or should a missing worker block checkpointing entirely, on the reasoning that a checkpoint without every worker's state isn't a real consistent cut at all? This is the same "wait for all N or proceed with a quorum" trade-off from W12 and W14, applied to a real consistency mechanism instead of a gradient exchange; whichever you pick, implement a timeout in `checkpoint_coordinator.py` and note what you'd tell a teammate about what the resulting checkpoint does and doesn't guarantee.
 
-**Part 4: Orchestration (operate KubeRay from W19)**
+**Part 4: Orchestration (operate Kubeflow Trainer from W19)**
 
-- [ ] Deploy your Part 2 training workers as a `RayCluster` worker group instead of raw Pods or `multiprocessing.Process`: each worker container runs `train_worker.py`, with `spec.workerGroupSpecs[0].replicas` set to your worker count. Reuse the KubeRay install from W19 if it's still on your cluster.
-- [ ] `kill -9` a worker process inside its container, or `kubectl delete pod` on one worker Pod directly, the same test you ran in W19 Part 1. KubeRay's own reconcile loop recreates the Pod; you write zero orchestration code for this. That's the actual point of operating a real operator here instead of hand-rolling one: the "restart a dead worker" mechanism already exists and already works.
-- [ ] The recovery logic that matters is entirely at the application layer, not the operator layer: on startup, `train_worker.py` checks `checkpoints/worker-{rank}/` for the latest checkpoint written by `checkpoint_coordinator.py` (Part 3) and resumes from it instead of starting at step 0. KubeRay's job is only "keep N worker Pods running"; your code's job is "come back correctly when one of them restarts." Keeping those two responsibilities separate, rather than teaching the operator about your checkpoint format, is itself the lesson: it's the same division of labor a real managed training platform uses.
+- [ ] Deploy your Part 2 training workers as a `TrainJob` instead of raw Pods or `multiprocessing.Process`: `spec.trainer.numNodes` set to your worker count, each node running `train_worker.py`. Reuse the Trainer install from W19 if it's still on your cluster, and submit through the Kueue `LocalQueue` from W19 Part 4 so the job is admitted as a gang rather than piecemeal.
+- [ ] `kill -9` a worker process inside its container, or `kubectl delete pod` on one node Pod directly, the same test you ran in W19 Part 1. The operator's own reconcile loop recreates the Pod; you write zero orchestration code for this. That's the actual point of operating a real operator here instead of hand-rolling one: the "restart a dead worker" mechanism already exists and already works.
+- [ ] The recovery logic that matters is entirely at the application layer, not the operator layer, and W19 Part 1 already showed you why: the restarted Pod comes back with no memory of anything. On startup, `train_worker.py` checks `checkpoints/worker-{rank}/` for the latest checkpoint written by `checkpoint_coordinator.py` (Part 3) and resumes from it instead of starting at step 0. The operator's job is only "keep N node Pods running"; your code's job is "come back correctly when one of them restarts." Keeping those two responsibilities separate, rather than teaching the operator about your checkpoint format, is itself the lesson: it's the same division of labor a real managed training platform uses.
 - [ ] Track restart events yourself for the Part 5 dashboard: increment a `worker_restarts_total` Prometheus counter from inside `train_worker.py` the moment it detects it's resuming from a checkpoint rather than starting cold, rather than trying to read Pod restart counts back out of Kubernetes.
 
 **Part 5: Serving + observability (extend W16 and W20)**

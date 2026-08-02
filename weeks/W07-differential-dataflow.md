@@ -8,11 +8,13 @@ status: not-started
 > **Arc:** Streaming and Dataflow · **Language:** Java
 
 ## What you'll build
-Two parts this week, deliberately shorter on the from-scratch build than the rest of the arc. Part 1 (1–2 days): the core Differential Dataflow data model in Java: `(key, value, time, diff)` updates and a `map`/`filter`/`consolidate` `Collection`, applied to incremental word count. Part 2 (remaining days): the same "orders → revenue per region" incremental-view problem built four ways: your own Java benchmark, a real local ClickHouse materialized view, and a real local Spark Structured Streaming stateful aggregation, so the comparison is against systems you actually install and run yourself, not vendor documentation.
+Two parts this week, and the weight sits firmly on the second. Part 1 (1 day): read and exercise a provided Differential Dataflow core in Java, `(key, value, time, diff)` updates and a `filter`/`consolidate` `Collection`, so you understand the diff-based data model well enough to use it. Part 2 (the rest of the week): the same "orders to revenue per region" incremental-view problem built three ways, your own Java benchmark, a real local ClickHouse materialized view, and a real local Spark Structured Streaming stateful aggregation, so the comparison is against systems you actually install and run yourself, not vendor documentation.
+
+The balance is deliberate. Incremental view maintenance is a technique you will meet again in ClickHouse, Flink, dbt, and every streaming feature store, and being able to tell which system genuinely recomputes deltas and which only appends forward is the durable skill here. Reimplementing Differential Dataflow's specific algebra from scratch is a narrower payoff, so Part 1 hands you the code and spends its day making sure you can read it.
 
 ---
 
-## Part 1: Differential Dataflow Core (1–2 days)
+## Part 1: Differential Dataflow Core (1 day)
 
 ### Read
 - [ ] [Differential Dataflow](https://www.cidrdb.org/cidr2013/Papers/CIDR13_Paper111.pdf) (McSherry et al., CIDR 2013): read Sections 1–2 only this time. Section 2 defines the data model (collections as functions from time to multisets of changes); that's the part this week actually builds. Section 3 (operators) is optional if you want the full picture.
@@ -24,17 +26,20 @@ Two parts this week, deliberately shorter on the from-scratch build than the res
 
 Project: `code/dd-scratch/` (Java 21, Maven)
 
-- [ ] `Update.java`: `record Update<K, V>(K key, V value, int time, int diff) {}` where `diff` is `+1` (addition) or `-1` (retraction). A generic record here is a straightforward, mature fit, Java's generics have handled parameterized types like this since Java 5, nothing experimental about reaching for one.
-- [ ] `Collection.java`: `class Collection<K, V> { private final List<Update<K, V>> updates; ... }` implements:
-  - `Collection<K, V> filter(BiPredicate<K, V> p)`: drop updates where the predicate is false, return a new `Collection`
-  - `Collection<K, V> consolidate()`: merge updates with the same (key, value, time) via a `HashMap`, sum their diffs, drop zero-diff entries, return a new `Collection`
-- [ ] `WordCount.java`: given a `Collection<Integer, String>` (document id to document text): flat-map each document into per-word updates, consolidate, group by key and sum diffs to get current count per word. In a loop: add a document at t=1 (diff=+1), print counts; retract it at t=2 (diff=-1), print updated counts. Only print the delta each round, not the full state.
+**Given, not built:** `Update.java` and `Collection.java` are both provided as starter files, already implemented and tested.
 
-**Constraints:** JDK standard library only. `filter`/`consolidate` return a new `Collection` rather than mutating the receiver; keep the backing `List` `private final` and never expose it directly, so nothing outside the class can mutate `updates` behind your back.
+- `Update.java`: `record Update<K, V>(K key, V value, int time, int diff) {}` where `diff` is `+1` (an addition) or `-1` (a retraction). That single signed integer is the whole trick: a retraction is not a delete, it is a negative-weighted addition, which means merging changes is just arithmetic.
+- `Collection.java`: `class Collection<K, V>` wrapping a `private final List<Update<K, V>>`, with `filter(BiPredicate<K, V>)` and `consolidate()`. `consolidate()` merges updates sharing the same (key, value, time) via a `HashMap`, sums their diffs, and drops anything that nets to zero. Both methods return a new `Collection` rather than mutating the receiver.
 
-**Break it, then decide:** if any method on `Collection` ever returns `updates` directly (even just for a test assertion, `assertEquals(expected, coll.getUpdates())`), the caller now holds a live reference to your "immutable" list. Mutate it from outside (`coll.getUpdates().add(...)`) and confirm the `Collection` you thought was safe just changed under you, silently, no exception. `private final` on the field only stops reassignment of the reference; it does nothing to stop the object the reference points to from being mutated. Decide: would you fix this by having any accessor return `List.copyOf(updates)` (a real copy, small ongoing cost) or by simply never writing an accessor that exposes the raw list in the first place (zero cost, but only as safe as every future line of code that touches this class)? Pick one and say why it's the right trade-off for a class this size.
+Read both files once before writing anything. The thing to look for is why `consolidate()` can drop a zero-diff entry entirely: an add and a retract of the same row cancel exactly, so the row simply stops existing in the output with no special-case code anywhere.
 
-One simplification worth naming, not replicating: `filter`/`consolidate` here compute and return a fully materialized new `Collection` immediately, so this is eager function composition, not a lazy dataflow graph. A real Naiad/DD program builds the operator graph first (map, filter, and consolidate all wired together as nodes) and only pushes data through it once, when the computation actually runs; nothing computes at graph-construction time. This toy version skips that indirection so the DD-specific algebra (the diff-based data model) stays the focus of the week, but it's worth knowing the real thing works differently before you assume this `Collection` API is a faithful model of how Naiad or DD actually execute.
+- [ ] `WordCount.java`: this is your build for Part 1, and it is small on purpose. Given a `Collection<Integer, String>` (document id to document text), flat-map each document into per-word updates, consolidate, then group by key and sum diffs to get the current count per word. In a loop: add a document at t=1 with diff=+1 and print counts, then retract it at t=2 with diff=-1 and print the updated counts. Print only the delta each round, not the full state, because printing the full state would quietly hide whether your incremental path is doing anything at all.
+
+**Constraints:** JDK standard library only. Do not modify the two provided files.
+
+**Break it, then decide:** add a method to `Collection` that returns `updates` directly, the way you would if a test wanted to assert on it (`assertEquals(expected, coll.getUpdates())`). The caller now holds a live reference to your supposedly immutable list. Mutate it from outside with `coll.getUpdates().add(...)` and confirm the `Collection` you thought was safe just changed underneath you, silently, with no exception thrown. `private final` on the field only stops the reference from being reassigned; it does nothing to stop the list it points at from being mutated. This surprises most people once and then never again. Decide how you'd fix it: return `List.copyOf(updates)` from any accessor, which is a real copy with a small ongoing cost, or never write an accessor that exposes the raw list at all, which is free but only as safe as every future line of code someone adds to this class. Pick one and say why it's right for a class this size.
+
+One simplification worth naming, not replicating: `filter` and `consolidate` here compute and return a fully materialized new `Collection` immediately, so this is eager function composition, not a lazy dataflow graph. A real Differential Dataflow program builds the operator graph first, with map, filter, and consolidate all wired together as nodes, and only pushes data through it once, when the computation actually runs. Nothing computes at graph-construction time. The provided version skips that indirection so the diff-based data model stays the focus, but it is worth knowing the real thing works differently before you assume this `Collection` API is a faithful model of how DD actually executes.
 
 ---
 
