@@ -39,6 +39,8 @@ Data model: `record Record(String key, int value) {}`. The job is a word-count-s
 
 **Constraints:** no Spark, no Hadoop, no external dependencies beyond JUnit 5. Standard library only. Keep every class under 100 lines; if one is growing past that, the shuffle logic has probably leaked into it from somewhere it doesn't belong.
 
+**Minimum bar:** the job runs end to end across M map tasks and R reduce tasks, and you have two numbers: the ratio between the busiest and median reducer on the skewed dataset, and the same ratio after applying one fix. The consistent-hashing review and the broadcast alternative are extras.
+
 **Break it, then decide:**
 - [ ] Run `SkewBench` and look at the per-reducer record counts for the Zipf dataset. One reducer should be handling a large multiple of what the others handle, and total wall time should be roughly that one reducer's time, because everyone else finished and waited. Write down the actual ratio you measured. This is the three-hour job from the scenario, reproduced on your laptop in a few seconds.
 - [ ] Now fix it with salting: for the handful of hot keys, append a random suffix (`"userA" -> "userA#3"`) so their rows spread across several partitions, aggregate as normal, then run a second, much smaller aggregation pass to combine the salted groups back together. Measure again and confirm the skew flattened. Note what salting cost you: a second pass, and an aggregation that now only works because summing is associative. It would not work this way for, say, a median.

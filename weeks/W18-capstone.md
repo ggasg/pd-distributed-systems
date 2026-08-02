@@ -34,7 +34,7 @@ A 3-node key-value store in Go where writes are replicated via a simple primary-
 ### Option B: Streaming Pipeline with Exactly-Once (Java)
 Combine W05 (stream processing) + W17 (snapshots).
 
-A stateful streaming word count in Java that periodically checkpoints using Chandy-Lamport snapshots. On simulated failure: restore from the latest snapshot, replay messages from that point, verify the final word count matches a non-failing run.
+A stateful streaming word count in Java that periodically checkpoints using Chandy-Lamport snapshots. Before starting, reread W04's note on delivery semantics and be precise about what this option's title claims: replay-from-snapshot gives you at-least-once delivery, and the result is correct only because reprocessing the same messages from a recorded state produces the same answer. That is effectively-once, and being able to say so exactly is part of the deliverable. On simulated failure: restore from the latest snapshot, replay messages from that point, verify the final word count matches a non-failing run.
 
 **Why Java:** it's a direct extension of the actual code from W05 and W17, both already Java; the `TumblingWindowAggregator` and the sealed-interface `Message`/snapshot machinery from W17 plug together without a rewrite.
 

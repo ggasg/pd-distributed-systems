@@ -74,11 +74,10 @@ This part is deliberately small and entirely local. No Kubernetes, no GPU, no se
 Same project, `code/attention/`. Still NumPy and the standard library.
 
 - [ ] `replica.py`: a `Replica` class wrapping your Part 1 model and its request-keyed `KVCache`. Two methods, `prefill(request_id, tokens)` and `decode_step(request_id)`, plus two things to track: `has_cache_for(request_id) -> bool`, and a running counter of how many tokens it has spent on prefill. That counter is your whole metric, so make it honest.
-- [ ] `workload.py`: generate a simulated workload of multi-turn conversations. Say 6 conversations, each with 5 turns, arriving interleaved so no conversation's turns are adjacent. Each turn appends to a growing history, which is what makes recomputed prefill expensive and increasingly so.
 - [ ] `router.py`: two routers over a list of replicas, both about ten lines.
   - `RoundRobinRouter`: hand each request to the next replica in order. This is what you get by default from essentially every load balancer in existence.
   - `CacheAwareRouter`: ask each replica whether it already holds a cache for this conversation, and prefer that one. Fall back to the least-loaded replica when nobody does.
-- [ ] `bench_routing.py`: run the identical workload through both routers with 2 replicas, and print total prefill tokens computed for each, plus the per-replica breakdown. Round-robin should be recomputing history on most turns; cache-aware should be recomputing almost none of it. Report the ratio.
+- [ ] `bench_routing.py`: generate the workload and run it through both routers. The workload is a handful of multi-turn conversations, say 6 with 5 turns each, arriving interleaved so no conversation's turns are adjacent, with each turn appending to a growing history. That's what makes recomputed prefill expensive and increasingly so, and it's a dozen lines, so keep it here rather than in its own module. Run the identical workload through both routers with 2 replicas, and print total prefill tokens computed for each, plus the per-replica breakdown. Round-robin should be recomputing history on most turns; cache-aware should be recomputing almost none of it. Report the ratio.
 
 **Minimum bar (Part 2):** a measured number, not an argument. Total prefill tokens under round-robin versus cache-aware, on the same workload, with the gap explained in one sentence.
 

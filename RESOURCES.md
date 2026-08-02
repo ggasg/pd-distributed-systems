@@ -59,12 +59,14 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W04: Clocks, Causality, and Time
+## W04: Clocks, Causality, Time, and Unreliable Networks
 
 - [Time, Clocks, and the Ordering of Events in a Distributed System](https://dl.acm.org/doi/10.1145/359545.359563): Lamport (1978) (**ACM DL; 10 pages**), read all of it
 - **DDIA Chapter 9**: The Trouble with Distributed Systems (clocks, NTP, monotonic clocks)
 - [Spanner: Google's Globally Distributed Database](https://dl.acm.org/doi/10.1145/2491245): Corbett et al. (2012), TrueTime section only (Sections 3 + 5)
 - [Detecting Causal Relationships in Distributed Computations](https://zoo.cs.yale.edu/classes/cs426/2012/lab/bib/fidge88timestamps.pdf): Fidge (1988) (**free PDF**), vector clocks
+- **DDIA Chapter 9, "Timeouts and Unbounded Delays"**: required a second time, for the week's failure-detector half. The one sentence that matters: over an asynchronous network a crashed node and a slow node produce identical evidence
+- [Unreliable Failure Detectors for Reliable Distributed Systems](https://dl.acm.org/doi/10.1145/226643.226647): Chandra & Toueg, JACM 1996 (**ACM DL**; free copies are easy to find), optional and theory-heavy. Read for the framing rather than the algorithms: a failure detector is permitted to be wrong, and the useful questions are how wrong, how often, and how fast
 
 ---
 
@@ -73,6 +75,8 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [The Dataflow Model](https://research.google/pubs/the-dataflow-model-a-practical-approach-to-balancing-correctness-latency-and-cost-in-massive-scale-unbounded-out-of-order-data-processing/): Akidau et al., VLDB 2015 (**free PDF via Google Research**), the paper behind Apache Beam and Flink's model
 - **DDIA Chapter 12**: Stream Processing (watermarks, windows, exactly-once)
 - [Streaming 101](https://www.oreilly.com/radar/the-world-beyond-batch-streaming-101/): Akidau (O'Reilly blog), free, accessible intro before the paper
+- [Flink: Network Stack and Backpressure](https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/monitoring/back_pressure/): Part 2 required reading, short. How backpressure is detected and why it propagates upstream through the job graph rather than being absorbed locally
+- **Little's Law** (`L = λW`): no link needed, it is one line, but Part 2 is built on it. Average items in the system equals arrival rate times average time in the system. It is what turns "the queue is filling up" into arithmetic you can do before running anything
 
 ---
 

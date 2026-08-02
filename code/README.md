@@ -39,15 +39,21 @@ code/
 │   ├── vector_clock.go
 │   ├── message.go
 │   ├── node.go
+│   ├── failure_detector.go      # heartbeats, lastHeard, SUSPECTED on timeout
 │   ├── causal_delivery_test.go
 │   └── go.mod
 │
 ├── streaming/               # W05: Java (Maven)
-│   ├── Event.java
-│   ├── Watermark.java
-│   ├── StreamItem.java          # sealed interface permits Event, Watermark
-│   ├── TumblingWindowAggregator.java
-│   ├── StreamProcessor.java
+│   ├── Event.java               # Part 1
+│   ├── Watermark.java           # Part 1
+│   ├── StreamItem.java          # Part 1: sealed interface permits Event, Watermark
+│   ├── TumblingWindowAggregator.java   # Part 1
+│   ├── StreamProcessor.java     # Part 1
+│   ├── BoundedQueue.java        # Part 2: fixed-capacity queue between source and aggregator
+│   ├── Source.java              # Part 2: configurable arrival rate
+│   ├── SlowAggregator.java      # Part 2: configurable service rate
+│   ├── Policy.java              # Part 2: sealed interface permits Block, Drop, Spill
+│   ├── BackpressureBench.java   # Part 2: all three policies against one overload
 │   ├── StreamProcessorTest.java # JUnit 5
 │   └── pom.xml
 │

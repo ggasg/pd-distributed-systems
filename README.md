@@ -39,9 +39,12 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Implement varint encoding and measure column vs. row scan performance
 - Write a MapReduce framework with goroutines and channels; explain why iterative algorithms are slow on it
 - Implement vector clocks; reason about causal consistency and concurrent events
+- Build a heartbeat failure detector, then make it declare a healthy node dead on purpose, and defend a timeout knowing it can only trade false suspicions against slow detection
+- State precisely what at-most-once, at-least-once, and effectively-once mean, and why the third is never a delivery guarantee
 
 **After Arc 2 (W05–W10):**
 - Build a streaming windowed aggregator with watermarks; explain what "late data" means
+- Use Little's Law to predict queue growth before running anything, then implement block, drop, and spill against the same overload and measure what each one costs, including how wrong it makes the answer
 - Build a working shuffle (partitioned map-side spill, reduce-side fetch), reproduce a real skew incident, and fix it with salting or a broadcast
 - Benchmark an incremental materialized view against a full-recompute baseline, then compare your own implementation against a real local ClickHouse materialized view and a real local Spark Structured Streaming stateful aggregation, and say which of them can retract a wrong result and which can only append forward
 - Benchmark vectorized vs. row-at-a-time query execution; explain the 3–8x gap
@@ -122,7 +125,7 @@ Every week has:
 - [W01: LSM-Trees and Storage Engines](weeks/W01-lsm-storage.md)
 - [W02: Encoding and Wire Formats](weeks/W02-encoding.md)
 - [W03: MapReduce and Its Limits](weeks/W03-mapreduce.md)
-- [W04: Clocks, Causality, and Time](weeks/W04-clocks.md)
+- [W04: Clocks, Causality, Time, and Unreliable Networks](weeks/W04-clocks.md)
 - [W05: Stream Processing Primitives](weeks/W05-streaming.md)
 - [W06: Partitioning and the Shuffle](weeks/W06-shuffle.md)
 - [W07: Differential Dataflow and Incremental View Maintenance](weeks/W07-differential-dataflow.md)
@@ -144,6 +147,8 @@ Every week has:
 ---
 
 ## Adapting This Curriculum
+
+**Every week has a Minimum bar.** It names the smallest thing that counts as having done the week, and everything past it is explicitly optional. Weeks are budgeted at 2h/day, 5 days/week, and several are split into parts with day counts so you can see where the time goes. When a week runs long, drop from the bottom and hit the bar rather than half-finishing the whole thing; the bar is chosen so the next week still works.
 
 **Only 1h/day?** Focus on Read + Reflect each week; treat Code as optional. Prioritize W01, W03, W06, W09, W12, W13, W16: those give the most conceptual leverage per hour, and they're the ones whose ideas the later weeks keep reusing. W06 and W12 in particular are worth doing the Code for even on a reduced schedule, since the shuffle and the allreduce are the two data-movement patterns almost everything else in the curriculum is built out of.
 

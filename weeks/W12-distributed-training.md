@@ -47,9 +47,11 @@ Model: 2-layer MLP on MNIST (784 → 128 → 10). Implemented in NumPy only.
 
 **Constraints:** no `torch.nn`, no `torch.optim`, no `torch.distributed`. Use `multiprocessing` not threads (GIL). Sockets must be real TCP, not shared memory.
 
+**Minimum bar:** two workers train to comparable accuracy with gradients synchronized by your own ring-allreduce, and you have bytes-on-the-wire per worker for naive versus ring at N = 2, 4, and 8. The Go gradient server is a secondary tool, not the bar.
+
 **Break it, then decide:**
 - [ ] Mid-training, `kill -9` one worker's process partway through a `ring_allreduce` call (right after it's sent its chunk but before it's received the reply). Watch the surviving worker: it's blocked on a socket `recv()` that will never be satisfied, so the whole job hangs indefinitely rather than crashing or erroring. Confirm this by timing out yourself (Ctrl-C) after a minute, since nothing in the current implementation will do it for you.
-- [ ] With only 2 workers, there's no way to "route around" the dead one, a ring-allreduce with one member missing isn't a smaller ring, it's a broken one. Given that, is a socket read timeout (fail the whole step loudly and let the caller decide whether to restart both workers from the last checkpoint) the right fix here, or is that only a stopgap that stops mattering once you're past 2 workers, where a real system could exclude a dead node and re-derive a smaller ring instead of failing the whole job? Add a timeout to `ring_allreduce.py`'s socket calls either way, and write down at what worker count you think "fail the whole step" stops being good enough.
+- [ ] What you just watched is W04's ambiguity with real money attached: the surviving worker cannot tell whether its peer died or is merely slow, and the only instrument available is a timeout you have to choose. With only 2 workers, there's no way to "route around" the dead one, a ring-allreduce with one member missing isn't a smaller ring, it's a broken one. Given that, is a socket read timeout (fail the whole step loudly and let the caller decide whether to restart both workers from the last checkpoint) the right fix here, or is that only a stopgap that stops mattering once you're past 2 workers, where a real system could exclude a dead node and re-derive a smaller ring instead of failing the whole job? Add a timeout to `ring_allreduce.py`'s socket calls either way, and write down at what worker count you think "fail the whole step" stops being good enough.
 
 **Go gradient server (secondary tool):**
 

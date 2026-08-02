@@ -120,11 +120,11 @@ Same project, `code/query-planner/`. Plain Scala throughout, case classes and re
 **Break it, then decide:**
 - [ ] Change the catalog so `customers` claims 1,000 rows when the plan will actually be run against 5,000,000. Re-run the optimizer. It picks a plan, reports a low estimated cost, and raises nothing: no warning, no confidence interval, no indication that anything is wrong. Now compute the real cost of that chosen plan using the correct row count and compare it against the plan the optimizer would have picked with accurate statistics. Write down both numbers. This is the six-hour job from the scenario, and the reason it is hard to catch is exactly what you just observed: the optimizer's output looks identical whether its inputs were right or wrong.
 - [ ] Contrast this with Part 1 deliberately, because it's the distinction the whole week turns on. `PushDownFilter` cannot do this. It is either applicable or not, and when it applies, the result is correct and faster regardless of what's in the tables. Nothing about the data can make it a bad idea. Write two sentences on why that makes rules cheap to trust and cost models expensive to trust, and what that implies about which one you'd add to a system you couldn't easily observe in production.
-- [ ] **Your call:** you're designing the policy for what happens when statistics are stale. One option is to refuse to reorder joins when a table's statistics are older than some threshold, falling back to the order the query was written in, which is safe and leaves real performance on the table every day. The other is to always trust the statistics, which is fast whenever they're fresh and catastrophic when they aren't. Implement one of them (a `lastRefreshed` timestamp on `TableStats` and a threshold check is enough), and write down which failure you chose to accept. Then note what a third option would look like, given that this is precisely the question Spark's Adaptive Query Execution answers by declining to commit to an estimate at all.
+- [ ] **Your call (written, not implemented):** you're designing the policy for what happens when statistics are stale. One option is to refuse to reorder joins when a table's statistics are older than some threshold, falling back to the order the query was written in, which is safe and leaves real performance on the table every day. The other is to always trust the statistics, which is fast whenever they're fresh and catastrophic when they aren't. Say which failure you'd accept and why. Then note what a third option looks like, given that this is precisely the question Spark's Adaptive Query Execution answers by declining to commit to an estimate at all.
 
-### The bridge back to W06 (observe, don't build)
+### Optional stretch: the bridge back to W06 (observe, don't build)
 
-You already have PySpark installed locally from W07, so this is a short exercise rather than a project, and it closes a loop this curriculum opened three weeks ago.
+> Skip this if the week is full. It closes a nice loop but it's observation rather than construction, and Part 2's own exercises already carry the lesson. You already have PySpark installed locally from W07, so it's short when you do get to it.
 
 - [ ] Write a small PySpark script that joins a skewed dataset against a small one, using the same Zipf-shaped key distribution you generated in W06. Run it twice, once with `spark.sql.adaptive.enabled=false` and once with `true` plus `spark.sql.adaptive.skewJoin.enabled=true`, calling `df.explain("formatted")` each time and timing both.
 - [ ] Read the two plans. With AQE off you get a plan fixed before execution, chosen from estimates. With AQE on the plan reports itself as adaptive and Spark has coalesced shuffle partitions and split the skewed ones, using row counts it measured at runtime rather than predicted in advance.
@@ -154,7 +154,7 @@ You already have PySpark installed locally from W07, so this is a short exercise
 
 **Stale-statistics policy: which failure did you choose to accept, and what would you tell the person hit by it?**
 
-**What the two Spark plans looked like with AQE off versus on, and where you can point at your own W06 salting fix inside what AQE did automatically:**
+**(Stretch only) What the two Spark plans looked like with AQE off versus on, and where you can point at your own W06 salting fix inside what AQE did automatically:**
 
 **What real Catalyst still does that your toy optimizer doesn't, now that it has both halves:**
 
