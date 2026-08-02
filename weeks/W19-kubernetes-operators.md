@@ -17,6 +17,8 @@ Part 3 goes one layer deeper: both operators only work because Kubernetes' own c
 
 **Why Kubeflow Trainer rather than a framework-specific operator?** Because `TrainJob` is the most portable distributed-training abstraction available. Trainer v2 collapsed the old framework-specific CRDs (`PyTorchJob`, `MPIJob`, `JAXJob`, `XGBoostJob`) into one `TrainJob` plus a pluggable runtime, it's governed by Kubeflow rather than by any single vendor, and it runs the same way on a managed cloud offering as it does on the kind cluster on your laptop. Anything you learn here transfers regardless of which company you end up at, which is exactly what a vendor-specific operator cannot promise.
 
+**A pointer back to W16.** The router you wrote in W16 Part 2, the one that sends a request to the replica already holding its KV cache, is a control-plane component in production, not part of the model server. It runs as a Kubernetes service, it's written in Go, and it needs exactly the kind of per-replica state that the operators below spend their lives tracking. Keep that in mind while reading the reconcilers: the thing you built by hand for two in-process replicas is a small version of what this layer does for a cluster.
+
 **Scenario:** this is what your first week on call for a platform team actually looks like: nothing you're debugging is code you wrote, and the job is reading logs, forming a hypothesis, and checking it, not fixing a bug in your own mental model of a system you built yourself.
 
 **Prerequisite:** W00 stack (kind cluster + monitoring) must be running.
@@ -71,6 +73,25 @@ Part 3 goes one layer deeper: both operators only work because Kubernetes' own c
   kubectl get sparkapplication spark-pi -n spark-operator -w   # State: SUBMITTED -> RUNNING -> COMPLETED
   kubectl logs <driver-pod-name> -n spark-operator   # should print an estimate of Pi
   ```
+  Treat SparkPi as a smoke test rather than an exercise. Getting it green first means that when your own job fails in a minute, you already know the operator, the cluster, and the RBAC are fine, so the problem is yours. That sequencing is a habit worth having, not a formality.
+
+**Part 2b: Submit your own Scala job**
+
+SparkPi ships inside the Spark image, which is exactly why it always works and teaches you nothing about deployment. Everything that actually goes wrong when a team moves a Spark job onto Kubernetes happens in the gap between "my JAR compiles" and "the driver Pod can find my main class." That gap is this exercise.
+
+Keep the job itself boring on purpose. Twenty lines of aggregation is plenty, because none of the difficulty is in the logic.
+
+- [ ] `code/spark-k8s-job/`: a minimal sbt project. `build.sbt` targets Scala 2.13 (matching what Spark itself is built against, same reasoning as W09 and W10) and declares `libraryDependencies += "org.apache.spark" %% "spark-sql" % "<version>" % "provided"`. The `provided` matters: Spark is already inside the image, and bundling a second copy is the most common way a first submission fails with a confusing class-loading error. `Main.scala` creates a `SparkSession`, builds a small DataFrame inline (no external data, nothing to mount), does a `groupBy().agg()`, and prints the result.
+- [ ] Build a thin JAR with `sbt package`. You do not need `sbt-assembly` here, and reaching for it is the usual overcorrection: an assembly JAR exists to bundle dependencies, and with `provided` you have none to bundle.
+- [ ] `code/spark-k8s-job/Dockerfile`: `FROM apache/spark:<matching-version>` and `COPY` your JAR to `/opt/spark/examples/jars/`. Then the same two commands you already know from W00 and W20:
+  ```bash
+  docker build -t pd-spark-job:latest code/spark-k8s-job
+  kind load docker-image pd-spark-job:latest --name pd-systems
+  ```
+  Matching the image's Spark version to the one your `build.sbt` compiled against is not optional, and a mismatch here produces a runtime error that reads like a code bug.
+- [ ] `code/operator/config/spark-job.yaml`: a `SparkApplication` pointing at your image, with `spec.mainClass` set to your fully qualified class name and `spec.mainApplicationFile` set to `local:///opt/spark/examples/jars/<your-jar>.jar`. The `local://` scheme means "already inside the image," as opposed to a path the driver would have to download at submit time.
+- [ ] Apply it and confirm it reaches `COMPLETED`, with your aggregation in the driver logs.
+- [ ] **Break it, on purpose:** change `mainClass` to something that doesn't exist and reapply. The job fails, and the interesting part is where the explanation lives. `kubectl get sparkapplication` shows you a terminal state and nothing useful about why; `kubectl describe` gets you closer; the actual `ClassNotFoundException` is only in the driver Pod's logs. Walk all three and note the order you'd check them next time. This is the single most common Spark-on-Kubernetes failure and the debugging path is not obvious the first time.
 - [ ] **Break it, on purpose:** apply a second `SparkApplication` with a deliberately wrong image tag (`image: apache/spark:not-a-real-tag`). Watch it go to `State: FAILED` or get stuck in `ImagePullBackOff`. Find the reason two ways: `kubectl describe sparkapplication` (check `status` and `Events`) and `kubectl logs` on the spark-operator controller Pod itself. This is the actual debugging workflow for a production Spark-on-k8s failure, not a simulation of one.
 - [ ] **Break it again, differently:** delete the Spark *driver* Pod of a running application. Compare what happens to what happened when you deleted a `TrainJob` node Pod in Part 1. The two operators make genuinely different promises here, and finding out which one is which by doing it is worth more than reading either project's documentation on the subject.
 - [ ] Skim the reconciler: browse [`kubeflow/spark-operator`](https://github.com/kubeflow/spark-operator) for the `SparkApplication` reconcile logic (the exact package path has moved between releases; look under `internal/controller/` or `controllers/` depending on which tag you're viewing, and search for `SparkApplicationReconciler`). You're looking for the same shape you just found in Trainer's: fetch, diff, patch. You don't need to understand the submission-runner mechanics.
@@ -120,7 +141,7 @@ Here's why. The default scheduler places Pods one at a time, independently. That
 - [ ] **Break it, on purpose:** submit the same two jobs *without* the queue label, so Kueue never sees them and the default scheduler handles them directly. Now both get partially admitted, each holding a share of the quota, and neither can complete. Watch the Pods sit in `Pending` while their already-running siblings idle. Leave it in that state long enough to see that nothing resolves it, because nothing will: this is the deadlock described above, and it is not a bug in anything, it's just what happens when a system that assumes independent Pods meets a workload that isn't.
 - [ ] **Your call:** your cluster runs both training jobs and Spark jobs, and there is not enough hardware for everything at peak. You have two obvious policies available. Strict priority means the training queue always preempts Spark, which keeps expensive accelerators busy but means an analytics job can be evicted repeatedly and effectively never finish. Fair sharing means each queue gets a guaranteed slice, which bounds everyone's worst case but leaves accelerators idle when the training queue is empty and the Spark queue is backed up. Configure one of them in your `ClusterQueue` (Kueue supports both through cohorts and borrowing), and write down which team is going to complain first under your choice, and what you'd say to them.
 
-**Minimum bar:** both a `TrainJob` and a `SparkApplication` reach a healthy running state on your kind cluster; you've triggered and diagnosed one real failure in each using `kubectl describe` and `logs`, not by reading about what the failure would look like; you've killed a 3-member etcd cluster's leader specifically, confirmed via `endpoint status` that a new leader was elected with a higher `TERM`, and rejoined the killed member as a follower; and you've watched two jobs queue cleanly under Kueue and then deadlock without it.
+**Minimum bar:** both a `TrainJob` and a `SparkApplication` reach a healthy running state on your kind cluster, and one of those `SparkApplication`s runs a Scala JAR you compiled and packaged into an image yourself, not the built-in example; you've triggered and diagnosed one real failure in each using `kubectl describe` and `logs`, not by reading about what the failure would look like; you've killed a 3-member etcd cluster's leader specifically, confirmed via `endpoint status` that a new leader was elected with a higher `TERM`, and rejoined the killed member as a follower; and you've watched two jobs queue cleanly under Kueue and then deadlock without it.
 
 ---
 
@@ -133,6 +154,8 @@ Here's why. The default scheduler places Pods one at a time, independently. That
 **What happened when you deleted a `TrainJob` node Pod versus a `SparkApplication` driver Pod, and what that says about where each system expects fault tolerance to live:**
 
 **How owner references and garbage collection worked when you deleted each CR entirely, versus what you had to clean up by hand:**
+
+**Where the `ClassNotFoundException` actually turned up, and the order you'd check `get`, `describe`, and driver logs next time:**
 
 **What surprised you about reading a real reconciler's source after only ever reading about the pattern in the abstract:**
 

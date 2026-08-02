@@ -165,9 +165,14 @@ code/
 │   └── requirements.txt
 │
 ├── attention/              # W16: Python
-│   ├── attention.py        # MultiHeadAttention
-│   ├── kv_cache.py
-│   ├── benchmark.py
+│   ├── attention.py        # Part 1: MultiHeadAttention, GIVEN starter file
+│   ├── kv_cache.py         # Part 1
+│   ├── generate.py         # Part 1: cached vs uncached generation
+│   ├── benchmark.py        # Part 1
+│   ├── replica.py          # Part 2: model + request-keyed cache, tracks prefill tokens
+│   ├── workload.py         # Part 2: interleaved multi-turn conversations
+│   ├── router.py           # Part 2: RoundRobinRouter vs CacheAwareRouter
+│   ├── bench_routing.py    # Part 2: prefill tokens recomputed, per router
 │   └── requirements.txt
 │
 ├── snapshot/                # W17: Java (Maven)
@@ -178,6 +183,13 @@ code/
 │   ├── SnapshotTest.java
 │   └── pom.xml
 │
+├── spark-k8s-job/          # W19 Part 2b: Scala (sbt), submitted to the Spark Operator
+│   ├── build.sbt            # Scala 2.13, spark-sql marked "provided"
+│   ├── src/main/scala/
+│   │   └── Main.scala       # deliberately boring: SparkSession + one groupBy/agg
+│   ├── Dockerfile           # FROM apache/spark:<version>, COPY the thin JAR in
+│   └── README.md            # the sbt package -> docker build -> kind load sequence
+│
 ├── capstone/                # W18: your choice of language
 │   ├── README.md           # required: design doc
 │   └── ...
@@ -187,7 +199,8 @@ code/
 │   │                        # against them, not author a controller
 │   └── config/
 │       ├── train-job.yaml     # TrainJob CR (Kubeflow Trainer); W20 edits this to add a sidecar container
-│       ├── spark-pi.yaml      # SparkApplication CR (Kubeflow Spark Operator)
+│       ├── spark-pi.yaml      # SparkApplication CR, built-in example, used as a smoke test
+│       ├── spark-job.yaml     # SparkApplication CR running your own JAR from spark-k8s-job/
 │       └── queues.yaml        # ResourceFlavor + ClusterQueue + LocalQueue (Kueue, Part 4)
 │
 ├── dd-scratch/             # W20: extends W07 (Java)
@@ -202,7 +215,8 @@ code/
     ├── checkpoint_coordinator.py
     ├── serve.py
     ├── config/
-    │   └── train-job.yaml     # training workers as TrainJob nodes; reuses W19's Trainer + Kueue install
+    │   ├── train-job.yaml     # training workers as TrainJob nodes; reuses W19's Trainer + Kueue install
+    │   └── mlflow.yaml        # MLflow Deployment + Service, the registry Part 5 registers into
     └── README.md            # required: design doc
 ```
 
@@ -261,5 +275,5 @@ No `go build` specific to W19/W21 themselves: those two weeks deploy CRs against
 - Code in this directory is the "lab." It's meant to be written, broken, and rewritten.
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
 - Go projects (W00–W04, W08, and the secondary tools in `tools/`) put tests in `<name>_test.go` files sitting directly alongside the code they test, no separate `tests/` directory, that's Go's own toolchain convention (`go test` discovers `_test.go` files automatically in the same package), a fourth layout convention alongside the other languages here, not a departure from how the rest of this repo organizes things
-- Scala projects (W09–W10) follow the standard sbt layout (`src/main/scala`, `src/test/scala`), a different convention from Go's in-place tests, that's just how sbt expects things laid out
+- Scala projects (W09–W10, and W19's `spark-k8s-job`) follow the standard sbt layout (`src/main/scala`, `src/test/scala`), a different convention from Go's in-place tests, that's just how sbt expects things laid out
 - Java projects (W05–W07, W17, and the W20 DD-engine instrumentation) each have their own `pom.xml`, one Maven project per directory, no shared parent POM, same isolation as every other language here. Source files sit flat in the project root rather than under the conventional `src/main/java/...` package tree; these are small, single-package exercises, and skipping the package hierarchy keeps the file listing above honest about what's actually in each directory

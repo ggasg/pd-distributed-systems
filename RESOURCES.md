@@ -174,12 +174,15 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W16: Attention and KV Cache
+## W16: Attention, KV Cache, and Cache-Aware Routing
 
 - **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 15** (optional): AI Inference and Serving. "Hosting a Model" and "Distributing a Model" give the production-serving framing for why the KV cache tradeoff this week measures matters outside a benchmark script.
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762): Vaswani et al. (2017) (**free on arXiv**), the transformer paper
 - [FlashAttention: Fast and Memory-Efficient Exact Attention](https://arxiv.org/abs/2205.14135): Dao et al. (2022) (**free on arXiv**), read the intro and Section 2
 - [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180): Kwon et al. (2023) (**free on arXiv**)
+- [Introducing Gateway API Inference Extension](https://kubernetes.io/blog/2025/06/05/introducing-gateway-api-inference-extension/): Kubernetes blog (June 2025), Part 2 required reading, short. Inference-aware routing on KV cache utilization and LoRA readiness, i.e. facts about a replica's state that a normal load balancer is built to ignore
+- [KV cache aware routing with llm-d](https://developers.redhat.com/articles/2025/10/07/master-kv-cache-aware-routing-llm-d-efficient-ai-inference): Red Hat, Part 2 optional. The same idea against real vLLM replicas, reporting up to 3x on time-to-first-token
+- [kubernetes-sigs/gateway-api-inference-extension](https://github.com/kubernetes-sigs/gateway-api-inference-extension): the production version of Part 2's `router.py`, written in Go and running as part of the control plane rather than the model server. Reading only, no build target; it's here to connect this week to W19
 - [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/): Jay Alammar (free blog), visual intro before the paper
 
 ---
@@ -208,6 +211,7 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 - [kubeflow/trainer source](https://github.com/kubeflow/trainer): search for `TrainJobReconciler`; the real reconcile loop this week has you read, not write
 - [Kubeflow Spark Operator documentation](https://kubeflow.github.io/spark-operator/): quick-start guide and the `SparkApplication` API reference
 - [Kueue documentation](https://kueue.sigs.k8s.io/docs/): job queueing and gang admission for Kubernetes. Part 4 uses `ResourceFlavor`, `ClusterQueue`, and `LocalQueue`; the [batch user quickstart](https://kueue.sigs.k8s.io/docs/tasks/run/jobs/) has a working example of all three
+- [Running Spark on Kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html): Apache Spark's own docs, for Part 2b. The `local://` scheme, `mainClass`/`mainApplicationFile`, and why your image's Spark version has to match what you compiled against
 - [Programming Kubernetes](https://www.oreilly.com/library/view/programming-kubernetes/9781492047094/): Hausenblas & Schimanski (O'Reilly), optional. Covers how operators like these two are actually built; useful context even though this week has you operate one rather than author one
 - [etcd: Set up a local cluster](https://etcd.io/docs/v3.5/dev-guide/local_cluster/): official docs for the 3-member local-cluster bootstrap Part 3 uses (run by hand here instead of via their `Procfile`/`goreman` wrapper)
 - [etcd-io/raft](https://github.com/etcd-io/raft): the standalone Raft library etcd actually runs (also vendored into Kubernetes itself, and used by CockroachDB and TiKV); Part 3 has you read `raft.go`'s `becomeLeader`/`campaign`, not the whole file
@@ -230,7 +234,9 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 
 ## W21: Grand Capstone (optional)
 
-No required reading tied to this week's build. This week synthesizes W11, W12, W16, W17, W19, and W20; revisit those weeks' resources as needed. **DDIA Chapter 13** (A Philosophy of Streaming Systems, renamed from "The Future of Data Systems" in the 2nd edition) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
+No required reading tied to this week's build. This week synthesizes W11, W12, W16, W17, W19, and W20; revisit those weeks' resources as needed.
+
+- [MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html): for Part 5. Registered models, versions, and aliases. The mental model that transfers: a registry is a commit log with movable pointers, the same shape as the Delta transaction log from W11, applied to models instead of tables. **DDIA Chapter 13** (A Philosophy of Streaming Systems, renamed from "The Future of Data Systems" in the 2nd edition) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
 
 ---
 

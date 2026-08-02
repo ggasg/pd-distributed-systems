@@ -79,9 +79,9 @@ brew install coursier/formulas/coursier && cs setup
 sbt --version    # sbt 1.9.x or later
 ```
 
-Each Scala project (`code/query-planner/`, `code/agg-algebra/`) is its own sbt project: `build.sbt` pins `scalaVersion := "2.13.14"` (or the latest 2.13.x patch), so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, a zero-config experience.
+Each Scala project (`code/query-planner/`, `code/agg-algebra/`, `code/spark-k8s-job/`) is its own sbt project: `build.sbt` pins `scalaVersion := "2.13.14"` (or the latest 2.13.x patch), so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, a zero-config experience.
 
-**W09–W10 target Scala 2.13, not 3.** This is a deliberate match, not an oversight. 2.13 is what Apache Spark itself is built and published against today (Spark 4.x still compiles Catalyst and the rest of the codebase on 2.13; there is no Spark-on-Scala-3 build), and it's what Algebird (W10's real-world reference) publishes for. Writing these two weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Algebird source, not a newer dialect neither project has adopted.
+**W09, W10, and W19's Spark job target Scala 2.13, not 3.** This is a deliberate match, not an oversight. 2.13 is what Apache Spark itself is built and published against today (Spark 4.x still compiles Catalyst and the rest of the codebase on 2.13; there is no Spark-on-Scala-3 build), and it's what Algebird (W10's real-world reference) publishes for. Writing these weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Algebird source, not a newer dialect neither project has adopted. For W19's `spark-k8s-job` the constraint is harder than stylistic: the JAR has to load inside a Spark image, so the Scala version and the Spark version both have to match what that image ships.
 
 **Already know Scala from Spark?** This is the lowest-ramp module in the curriculum, and now a near-zero one: 2.13 is almost certainly the exact Scala version you already write in production Spark jobs, so there's no syntax delta to review at all. Case classes, pattern matching, and `implicit` typeclass instances are patterns you already use, just without naming the underlying algebra ("this is a semigroup," "this rewrite rule is a partial function over the plan tree") explicitly. Budget closer to zero prep; go straight to W09. Scala's depth in this curriculum is deliberately capped, just enough to reach the distributed-systems concept each week is about, not a vehicle for deep FP mastery; that's intentionally a separate plan. If your Scala is genuinely rusty or this is a first real exposure, [Scala Book](https://docs.scala-lang.org/overviews/scala-book/introduction.html) (scala-lang.org's official 2.13-era guide) chapters on classes, traits, and implicits cover what these two weeks need; budget 2–3 hours instead.
 
@@ -125,6 +125,12 @@ pip install numpy torch           # torch for MNIST loading only
 ```bash
 pip install numpy                 # no new dependencies; imports W12's ring_allreduce directly
 ```
+
+**W21 (optional capstone):**
+```bash
+pip install mlflow
+```
+Only needed if you do the optional capstone. `mlflow server` runs from this same install; W21 deploys it into kind rather than running it on the host.
 
 **W14 (actor model / Ray):**
 ```bash
