@@ -123,8 +123,9 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## W10: Aggregation Algebra: Monoids and Semigroups
 
-- [Algebird `Semigroup.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Semigroup.scala) and [`Monoid.scala`](https://github.com/twitter/algebird/blob/develop/algebird-core/src/main/scala/com/twitter/algebird/Monoid.scala): Twitter's real Scala library built around this idea, published for Scala 2.13, the same version W10 targets, so it's directly usable, not just readable. `Semigroup.scala`/`Monoid.scala` are given to you as starter files this week (see the week's Code section); read Algebird's real versions alongside them to see how a production typeclass differs (more instances, more structure) from the minimal one you're handed.
-- [Of Algebirds, Monoids, Monads, and Other Bestiary for Large-Scale Data Analytics](https://www.michael-noll.com/blog/2013/12/02/twitter-algebird-monoid-monad-for-large-scala-data-analytics/): Michael Noll, an accessible walkthrough with concrete MapReduce-shaped examples
+- [Spark: User Defined Aggregate Functions](https://spark.apache.org/docs/latest/sql-ref-functions-udf-aggregate.html) and the [`Aggregator` scaladoc](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/expressions/Aggregator.html): required. `zero`, `merge`, and `finish` are the monoid identity, the associative combine, and the final projection, under Spark's names. Spark's own documented example is average, which is this week's exercise
+- [Spark source: `RDD.scala`](https://github.com/apache/spark/blob/master/core/src/main/scala/org/apache/spark/rdd/RDD.scala): required, find `treeAggregate`. Separate `seqOp` and `combOp`, combined in a tree of configurable depth. This is W10's `reduceTree` running in production, and associativity is what permits it
+- [`cats.kernel.Semigroup`](https://github.com/typelevel/cats/blob/main/kernel/src/main/scala/cats/kernel/Semigroup.scala) and [`Monoid`](https://github.com/typelevel/cats/blob/main/kernel/src/main/scala/cats/kernel/Monoid.scala): optional, two small files. The general-purpose Scala versions of W10's provided starter files. The surrounding library is deep FP territory and belongs to a dedicated track, not this curriculum
 
 ---
 

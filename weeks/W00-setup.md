@@ -91,12 +91,12 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
 **The full pipeline:** your Go service registers and updates the two metrics → they render as text at `/metrics` → the `ServiceMonitor` (below) tells Prometheus to scrape that text every 15s and store it as a time series → Grafana panels (later in this week) query Prometheus (never your Go service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
 - [ ] `Dockerfile`: multi-stage build:
   ```dockerfile
-  FROM golang:1.22 AS builder
+  FROM golang:1.26 AS builder
   WORKDIR /app
   COPY . .
   RUN CGO_ENABLED=0 go build -o hello-metrics .
 
-  FROM gcr.io/distroless/static-debian12
+  FROM gcr.io/distroless/static
   COPY --from=builder /app/hello-metrics /hello-metrics
   EXPOSE 8080
   ENTRYPOINT ["/hello-metrics"]

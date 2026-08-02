@@ -16,13 +16,13 @@ Everything you need installed before starting W00. Set this up once; it covers t
 
 ---
 
-## Go 1.22+ (modules)
+## Go 1.26+ (modules)
 
 ```bash
 # macOS
 brew install go
 
-go version    # go1.22.x or later
+go version    # go1.26.x or later
 ```
 
 **W00–W04, W08, and secondary tooling in W03/W12/W15/W20** use Go, this curriculum's one deliberately introduced new language. Each project is its own module (`go.mod` per directory, no shared workspace file, same isolation principle as the Java/Scala projects); `go build`/`go test`/`go run` fetch whatever the project's `go.mod` declares. There's no separate package manager or lockfile format to learn beyond `go.mod`/`go.sum`, both maintained automatically by `go get` and `go mod tidy`.
@@ -81,7 +81,7 @@ sbt --version    # sbt 1.9.x or later
 
 Each Scala project (`code/query-planner/`, `code/agg-algebra/`, `code/spark-k8s-job/`) is its own sbt project: `build.sbt` pins `scalaVersion := "2.13.14"` (or the latest 2.13.x patch), so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, a zero-config experience.
 
-**W09, W10, and W19's Spark job target Scala 2.13, not 3.** This is a deliberate match, not an oversight. 2.13 is what Apache Spark itself is built and published against today (Spark 4.x still compiles Catalyst and the rest of the codebase on 2.13; there is no Spark-on-Scala-3 build), and it's what Algebird (W10's real-world reference) publishes for. Writing these weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Algebird source, not a newer dialect neither project has adopted. For W19's `spark-k8s-job` the constraint is harder than stylistic: the JAR has to load inside a Spark image, so the Scala version and the Spark version both have to match what that image ships.
+**W09, W10, and W19's Spark job target Scala 2.13, not 3.** This is a deliberate match, not an oversight, and as of Spark 4 it isn't even a choice: Spark 4 is built exclusively against 2.13 and dropped 2.12 support entirely, and there is no Spark-on-Scala-3 build. 2.13 is the only version that works. Writing these weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Spark `Aggregator` source, not a newer dialect Spark has not adopted. For W19's `spark-k8s-job` the constraint is harder than stylistic: the JAR has to load inside a Spark image, so the Scala version and the Spark version both have to match what that image ships.
 
 **Already know Scala from Spark?** This is the lowest-ramp module in the curriculum, and now a near-zero one: 2.13 is almost certainly the exact Scala version you already write in production Spark jobs, so there's no syntax delta to review at all. Case classes, pattern matching, and `implicit` typeclass instances are patterns you already use, just without naming the underlying algebra ("this is a semigroup," "this rewrite rule is a partial function over the plan tree") explicitly. Budget closer to zero prep; go straight to W09. Scala's depth in this curriculum is deliberately capped, just enough to reach the distributed-systems concept each week is about, not a vehicle for deep FP mastery; that's intentionally a separate plan. If your Scala is genuinely rusty or this is a first real exposure, [Scala Book](https://docs.scala-lang.org/overviews/scala-book/introduction.html) (scala-lang.org's official 2.13-era guide) chapters on classes, traits, and implicits cover what these two weeks need; budget 2–3 hours instead.
 
@@ -91,16 +91,16 @@ Recommended IDE: IntelliJ IDEA with the Scala plugin, the standard choice for Sp
 
 ---
 
-## Python 3.11+
+## Python 3.13+
 
 Use [pyenv](https://github.com/pyenv/pyenv) to manage Python versions.
 
 ```bash
 # macOS
 brew install pyenv
-pyenv install 3.11.9
-pyenv global 3.11.9
-python --version   # 3.11.x
+pyenv install 3.13
+pyenv global 3.13
+python --version   # 3.13.x
 ```
 
 Install dependencies per arc:
@@ -141,7 +141,7 @@ pip install "ray[default]" torch  # torch for the CNN, Ray for actors
 ```bash
 pip install matplotlib   # only for the roofline plot; the kernels themselves are plain C
 ```
-`xcode-select --install` (ships `clang`) is all you need to build `code/cpu-gemm/`; no separate toolchain, no ISA-specific intrinsics to hand-write. If you have NVIDIA GPU access and want the optional CUDA path instead, install `pip install numba numpy matplotlib` (see the GPU Setup section below).
+`xcode-select --install` (ships `clang`) is all you need to build `code/cpu-gemm/`; no separate toolchain, no ISA-specific intrinsics to hand-write. If you have NVIDIA GPU access and want the optional CUDA path instead, install `pip install numba-cuda numpy matplotlib` (see the GPU Setup section below).
 
 **W16 (attention):**
 ```bash
@@ -158,11 +158,11 @@ W07's Part 2 comparison exercise runs two real local systems alongside your Java
 # ClickHouse: single local server, no cluster
 brew install clickhouse
 
-# Spark runs on the JVM regardless of the Python surface; install a JDK if you don't have one
-brew install openjdk@17
+# Spark runs on the JVM regardless of the Python surface, but you already installed
+# Java 21 above for W05-W07, and Spark 4 supports 17, 21, and 25. Nothing extra to install.
 
-# PySpark, against your existing Python 3.11 setup; no version conflicts
-pip install pyspark
+# PySpark, against your existing Python setup
+pip install "pyspark==4.2.0"     # check for a newer 4.x; Spark 4 requires Python 3.10+
 ```
 
 Verify:
@@ -200,7 +200,7 @@ This section only applies if you have NVIDIA GPU access and want to do W15's opt
 
 1. Install [CUDA Toolkit 12.x](https://developer.nvidia.com/cuda-downloads)
 2. Verify: `nvcc --version`
-3. Install Numba: `pip install numba`
+3. Install Numba's CUDA target: `pip install numba-cuda`. This is a separate package now; CUDA support was split out of core Numba, deprecated there in 0.61 and removed in later releases, so a plain `pip install numba` no longer gives you a working `numba.cuda`.
 4. Test: `python -c "from numba import cuda; print(cuda.gpus)"`
 
 ---
@@ -208,17 +208,19 @@ This section only applies if you have NVIDIA GPU access and want to do W15's opt
 ## Verify Everything
 
 ```bash
-go version           # go1.22.x or later
-java --version       # openjdk 21.x
+go version           # go1.26.x or later
+java --version       # openjdk 21.x (21 is a current LTS; Spark 4 supports 17, 21, and 25)
 mvn --version        # Apache Maven 3.9.x
 sbt --version        # 1.9.x or later, builds Scala 2.13 per-project via build.sbt
-python --version     # 3.11.x or 3.12.x
+python --version     # 3.13.x
 clang --version      # or gcc --version, for W15's C kernels
-docker --version     # 25.x or later
-kind --version       # 0.22.x or later
-kubectl version      # 1.29.x or later
-helm version         # 3.14.x or later, needed for W19's Spark Operator install
+docker --version     # any current release
+kind --version       # any release new enough to create a Kubernetes 1.36 cluster
+kubectl version      # 1.36.x (1.33 and earlier are end-of-life)
+helm version         # 4.x, or 3.21.x if you prefer the 3 line, which is still maintained
 ```
+
+**Why the Kubernetes tools aren't pinned to exact versions above:** kind, kubectl, and Helm move faster than this document will be updated, and a stale pinned number is worse than no number because it looks authoritative. The constraint that actually matters is that they can all talk to the same Kubernetes version. Target the current stable Kubernetes minor release, and take whatever kind, kubectl, and Helm releases support it. Helm 4 is the current major line; the Spark Operator chart W19 installs works on either 4.x or 3.x, so use whichever you already have.
 
 ---
 

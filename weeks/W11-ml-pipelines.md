@@ -26,7 +26,7 @@ A versioned feature pipeline in Python: raw events to features to versioned Parq
 
 ### Code
 
-Project: `code/feature-pipeline/` (Python 3.11+, `uv` or `pip`)
+Project: `code/feature-pipeline/` (Python 3.13+, `uv` or `pip`)
 
 Dependencies: `pandas`, `pyarrow`, `duckdb`. No ML libraries. Part 2 adds `deltalake`.
 

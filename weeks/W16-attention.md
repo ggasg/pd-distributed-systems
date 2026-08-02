@@ -31,7 +31,7 @@ Part 2 is the same cache one level up. Once you have more than one replica of a 
 
 ### Code
 
-Project: `code/attention/` (Python 3.11+, NumPy only)
+Project: `code/attention/` (Python 3.13+, NumPy only)
 
 Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=256`.
 

@@ -39,7 +39,7 @@ Project: `code/cpu-gemm/` (C, gcc/clang)
 
 **If you have NVIDIA GPU access (optional, not required):**
 
-Project: `code/gpu-gemm/` (Python 3.11+, `numba`, `numpy`, `matplotlib`)
+Project: `code/gpu-gemm/` (Python 3.13+, `numba-cuda`, `numpy`, `matplotlib`)
 
 - [ ] `naive_gemm.py`: Numba CUDA kernel: `@cuda.jit` decorator, each thread computes one output element `C[row, col] = sum_k A[row, k] * B[k, col]`. Launch with `blocks = (N//32, N//32)`, `threads = (32, 32)`.
 - [ ] `tiled_gemm.py`: Numba CUDA kernel with shared memory: use `cuda.shared.array(shape=(32, 32), dtype=float32)` for tiles of A and B; cooperatively load tiles, sync with `cuda.syncthreads()`, accumulate partial results.
