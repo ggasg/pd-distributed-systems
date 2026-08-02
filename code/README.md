@@ -91,9 +91,15 @@ code/
 │   │   ├── rules/
 │   │   │   ├── PushDownFilter.scala
 │   │   │   └── ConstantFold.scala
-│   │   └── Optimizer.scala          # runs rules to a fixed point
+│   │   ├── Optimizer.scala          # Part 1: runs rules to a fixed point
+│   │   ├── Statistics.scala         # Part 2: TableStats + Catalog
+│   │   ├── Cost.scala               # Part 2: estimatedRows + cost (sum of intermediates)
+│   │   ├── JoinReorder.scala        # Part 2: enumerate 3-table orderings, cost each
+│   │   └── CostBasedOptimizer.scala # Part 2: rules first, then join reordering
 │   ├── src/test/scala/
-│   │   └── OptimizerSpec.scala      # ScalaTest or MUnit
+│   │   ├── OptimizerSpec.scala      # ScalaTest or MUnit
+│   │   └── JoinReorderSpec.scala
+│   ├── aqe_skew_join.py             # Part 2 bridge: PySpark, AQE off vs on, reuses W07's install
 │   └── build.sbt
 │
 ├── agg-algebra/            # W10: Scala (sbt)

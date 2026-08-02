@@ -110,12 +110,14 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W09: Rule-Based Query Planning in Scala
+## W09: Query Planning: Rules, Then Costs
 
 - **DDIA Chapter 3** (optional): Data Models and Query Languages. Read "Query Languages for Data": the declarative-vs-imperative distinction it draws is exactly why `LogicalPlan` can be rewritten by `PushDownFilter` before anything executes.
 - [Spark SQL: Relational Data Processing in Spark](https://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf): Armbrust et al., SIGMOD 2015 (**free PDF**), Section 4 describes Catalyst directly
 - [Catalyst source: `TreeNode.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/trees/TreeNode.scala): the real `transform`/`transformDown`/`transformUp` combinators
-- [Catalyst source: `Optimizer.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/optimizer/Optimizer.scala): search for `PushDownPredicates`, the production version of this week's rewrite rule
+- [Catalyst source: `Optimizer.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/optimizer/Optimizer.scala): search for `PushDownPredicates`, the production version of Part 1's rewrite rule
+- [How Good Are Query Optimizers, Really?](http://www.vldb.org/pvldb/vol9/p204-leis.pdf): Leis et al., VLDB 2015 (**free PDF**), Part 2 required reading, Sections 1 and 3. Measures how far real optimizers' cardinality estimates drift as joins stack up, and why the error compounds rather than averaging out
+- [Spark: Adaptive Query Execution](https://spark.apache.org/docs/latest/sql-performance-tuning.html#adaptive-query-execution): Part 2 required reading, short. Coalescing shuffle partitions, runtime join-strategy switching, and skew-join splitting, all of which exist because pre-execution estimates weren't good enough. The skew handling is W06's salting exercise done automatically
 
 ---
 

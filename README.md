@@ -25,7 +25,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 |-----|-------|-------|----------|
 | Setup | W00 | Local k8s, Prometheus, Grafana | Go |
 | Data Systems Internals | W01–W04 | Storage engines, encoding, MapReduce, causality | Go |
-| Streaming, Dataflow, and Query Planning | W05–W10 | Stream processing, partitioning and the shuffle, incremental view maintenance, query execution, rule-based query planning, aggregation algebra | Java (W05–W07) / Go (W08) / Scala (W09–W10) |
+| Streaming, Dataflow, and Query Planning | W05–W10 | Stream processing, partitioning and the shuffle, incremental view maintenance, query execution, rule- and cost-based query planning, aggregation algebra | Java (W05–W07) / Go (W08) / Scala (W09–W10) |
 | Distributed ML & Compute | W11–W18 | ML pipelines and table formats, distributed training, tensor/pipeline parallelism, actor model (Ray), GPU compute, transformers, fault tolerance | Python (W11–W16) / Java (W17) / varies (W18) |
 | Infrastructure | W19–W20 | Kubernetes Operators (Kubeflow Trainer, Spark Operator), gang scheduling (Kueue), observability (Prometheus, OTel, Grafana) | Go (W19) / Java + Go (W20) |
 | Capstone (optional) | W21 | Distributed training + serving platform, fully observed (synthesizes W11, W12, W16, W17, W20; deploys as a TrainJob via W19) | Python |
@@ -45,7 +45,8 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Build a working shuffle (partitioned map-side spill, reduce-side fetch), reproduce a real skew incident, and fix it with salting or a broadcast
 - Benchmark an incremental materialized view against a full-recompute baseline, then compare your own implementation against a real local ClickHouse materialized view and a real local Spark Structured Streaming stateful aggregation, and say which of them can retract a wrong result and which can only append forward
 - Benchmark vectorized vs. row-at-a-time query execution; explain the 3–8x gap
-- Build a toy rule-based query optimizer in Scala (case classes + pattern matching + a `transform` combinator), the same technique Spark's real Catalyst optimizer uses
+- Build a toy query optimizer in Scala, both halves: rule-based rewrites (case classes, pattern matching, a `transform` combinator, the same technique real Catalyst uses), then a cost model that reorders joins from table statistics
+- Feed that cost model a wrong statistic on purpose and watch it ship a bad plan without warning, then explain why a rule-based rewrite can never fail that way and what Spark's Adaptive Query Execution does about it
 - Reason about a `Semigroup`/`Monoid` typeclass hierarchy and implement against it, explaining why associativity, not commutativity, is what makes a distributed reduction safe to compute as a tree instead of strictly left-to-right
 
 **After Arc 3 (W11–W18):**
@@ -85,7 +86,7 @@ Every week has:
 | W01–W04 | Go | Storage engines and coordination logic. MIT's 6.824/6.5840 distributed systems course builds this exact material (MapReduce, then Raft) in Go, the field's own canonical choice, not an arbitrary one. Goroutines and channels are Go's signature idiom for W04's message-passing simulation; BadgerDB (a real, pure-Go LSM store) gives W01 a genuine same-language reference implementation to read |
 | W05–W07 | Java | Prior production Java background keeps ramp cost near zero, and modern Java's sealed interfaces plus record patterns carry real weight here: W05's `StreamItem` and W06's `Partitioner` both get compiler-enforced exhaustiveness from the same idiom W17 uses, one pattern reused three times rather than three languages introduced. These weeks are measured against production systems you install and run locally (Spark's shuffle, ClickHouse materialized views, Spark Structured Streaming) rather than against a reference implementation you'd read, so the build language is free to be whichever one expresses the exercise most clearly |
 | W08 | Go | The one week in this arc where memory layout is the actual subject, not incidental. Go compiles ahead of time, no JIT to warm up before a benchmark means something, and Go structs are real value types in slices, genuinely contiguous memory, the same property a columnar query engine depends on. Java's lack of true value types would work against the week's own point here |
-| W09–W10 | Scala | Spark itself is Scala, and its query optimizer (Catalyst) and its "abstract algebra for big data" aggregation story (Algebird) are both genuinely built the way these two weeks have you build toy versions: case classes, pattern matching, typeclasses. Low ramp cost given prior production Spark/Scala experience; kept deliberately gentle, deeper FP mastery is a separate, dedicated Scala-and-Haskell plan, not this curriculum's job |
+| W09–W10 | Scala | Spark itself is Scala, and its query optimizer (Catalyst) and its "abstract algebra for big data" aggregation story (Algebird) are both genuinely built the way these two weeks have you build toy versions: case classes, pattern matching, typeclasses. W09's cost model is deliberately plain Scala, recursion over case classes and a list of permutations, no new language machinery beyond what Part 1 already introduced. Low ramp cost given prior production Spark/Scala experience; kept deliberately gentle, deeper FP mastery is a separate, dedicated Scala-and-Haskell plan, not this curriculum's job |
 | W11–W16 | Python | ML ecosystem, numerical computing, Ray for distributed actors, Numba for GPU. W13 deliberately adds no new dependency, it imports W12's own `ring_allreduce` as its communication layer |
 | W17 | Java | Chandy-Lamport's `Message` type is exactly the shape a sealed interface and exhaustive pattern-matching `switch` were built for (`DataMessage`/`Marker`, compiler-enforced coverage), a real improvement over a language without sum types, not just a language-consistency choice. `LinkedBlockingQueue` substitutes cleanly for FIFO channels |
 | W18 | Go / Java / Python | Depends on capstone option. Option A (KV store) is Go to match what it extends, W01 and W04; Options B (streaming pipeline) and C (incremental query engine) are Java to match W05/W07/W17; Option D (GPU-accelerated ring-allreduce) is Python, extending W12 and W15 |
@@ -124,7 +125,7 @@ Every week has:
 - [W06: Partitioning and the Shuffle](weeks/W06-shuffle.md)
 - [W07: Differential Dataflow and Incremental View Maintenance](weeks/W07-differential-dataflow.md)
 - [W08: Query Execution](weeks/W08-query-execution.md)
-- [W09: Rule-Based Query Planning in Scala](weeks/W09-query-planning.md)
+- [W09: Query Planning: Rules, Then Costs](weeks/W09-query-planning.md)
 - [W10: Aggregation Algebra: Monoids and Semigroups](weeks/W10-aggregation-algebra.md)
 - [W11: ML Data Pipelines and Table Formats](weeks/W11-ml-pipelines.md)
 - [W12: Distributed Training](weeks/W12-distributed-training.md)
@@ -142,7 +143,7 @@ Every week has:
 
 ## Adapting This Curriculum
 
-**Only 1h/day?** Focus on Read + Reflect each week; treat Code as optional. Prioritize W01, W03, W06, W12, W13, W16: those give the most conceptual leverage per hour, and they're the ones whose ideas the later weeks keep reusing. W06 and W12 in particular are worth doing the Code for even on a reduced schedule, since the shuffle and the allreduce are the two data-movement patterns almost everything else in the curriculum is built out of.
+**Only 1h/day?** Focus on Read + Reflect each week; treat Code as optional. Prioritize W01, W03, W06, W09, W12, W13, W16: those give the most conceptual leverage per hour, and they're the ones whose ideas the later weeks keep reusing. W06 and W12 in particular are worth doing the Code for even on a reduced schedule, since the shuffle and the allreduce are the two data-movement patterns almost everything else in the curriculum is built out of.
 
 **Skip the infrastructure arc?** W00, W19, W20 are independent. You can complete W01–W18 without touching Kubernetes, and come back to Arc 4 when it's relevant to your work.
 
