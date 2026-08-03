@@ -1,6 +1,6 @@
 # Distributed, Data-Intensive Systems: Engineering Curriculum
 
-A self-directed curriculum for software engineers who want pragmatic mastery of distributed and data-intensive systems, with a focus on storage and query internals, partitioning and incremental computation, distributed model training, GPU-bound compute, and running all of it on Kubernetes with real observability. Every week has a specific paper to read, a concrete coding task, and a deliverable.
+A self-directed curriculum for software engineers who want pragmatic mastery of distributed and data-intensive systems, with a focus on storage and query internals, partitioning and incremental computation, distributed model training, GPU-bound compute, and running all of it on Kubernetes with real observability. Every unit has a specific paper to read, a concrete coding task, and a deliverable.
 
 This isn't for people who want to pass system design interviews. It's for engineers who want to build real distributed systems and understand them from the inside out.
 
@@ -10,8 +10,8 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 1. Clone the repo and open it as an Obsidian vault
 2. Follow [SETUP.md](SETUP.md) to install Java, Go, Scala, Python, Docker, and Obsidian plugins
-3. Skim [RESOURCES.md](RESOURCES.md): most readings are free links, but a few (DDIA, the most-used book) are worth buying before you hit the week that needs them
-4. Set `start_date` in [config.md](config.md), and all week dates recalculate automatically
+3. Skim [RESOURCES.md](RESOURCES.md): most readings are free links, but a few (DDIA, the most-used book) are worth buying before you hit the unit that needs them
+4. Set `start_date` in [config.md](config.md); dates recalculate automatically, and they are a running order rather than deadlines
 5. Open [Home.md](Home.md) as your daily entry point
 6. Start at W00 (infrastructure setup), then W01
 
@@ -19,16 +19,16 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 ## Structure
 
-16 units across 4 arcs, plus a W00 setup week (17 in total, W00 through W15), and an optional W16 grand capstone.
+15 units across 4 arcs, plus a W00 setup unit (16 in total, W00 through W15), and an optional W16 grand capstone project.
 
 **Budgeted at 5 hours per unit**, which is one hour a weekday or two evening sessions. That is deliberately modest: this is designed to run alongside a full-time job and whatever else you are studying, not to be your main commitment. At a steady 5 hours a week the core is about 4 months; at 3 hours a week, closer to 7. Neither is falling behind.
 
-| Arc | Weeks | Focus | Language |
+| Arc | Units | Focus | Language |
 |-----|-------|-------|----------|
 | Setup | W00 | Local k8s, Prometheus, Grafana | Go |
-| Data Systems Internals | W01–W03 | The write path and its cost, MapReduce, clocks and failure detection | Go |
-| Streaming, Dataflow, and Query Planning | W04–W07 | Stream processing and backpressure, partitioning and the shuffle, vectorized execution, and physical planning: where a distributed query engine decides to move data | Java (W04–W05) / Go (W06) / Scala (W07) |
-| Distributed ML & Compute | W08–W13 | ML pipelines and table formats, distributed training, tensor/pipeline parallelism, actor model (Ray), attention and cache-aware routing, fault tolerance | Python (W08–W12) / Java (W13) |
+| Storage, Batch, and Failure | W01–W03 | What a write costs, MapReduce and re-execution, clocks and failure detection | Go |
+| Data Movement and Execution | W04–W07 | Windows and backpressure, partitioning and the shuffle, vectorized execution, and physical planning: where a distributed engine decides to move data | Java (W04–W05) / Go (W06) / Scala (W07) |
+| Distributed ML Systems | W08–W13 | ML pipelines and table formats, distributed training, tensor/pipeline parallelism, actor model (Ray), attention and cache-aware routing, fault tolerance | Python (W08–W12) / Java (W13) |
 | Infrastructure | W14–W15 | Kubernetes Operators (Kubeflow Trainer, Spark Operator), gang scheduling, observability (Prometheus, OTel, Grafana) | Go/Scala/YAML (W14) / Java + Go (W15) |
 | Capstone (optional) | W16 | Distributed training + serving platform, fully observed (synthesizes W08, W09, W12, W13, W15; deploys as a TrainJob via W14) | Python |
 
@@ -36,14 +36,14 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 ## What You'll Be Able to Do After Each Arc
 
-**After Arc 1 (W01–W03):**
+**After Arc 1, Storage, Batch, and Failure (W01–W03):**
 - Measure, rather than assert, how much faster appending to a log is than updating in place, then measure what that speed costs you on reads and explain why compaction has to exist
 - Write a MapReduce framework with goroutines and channels; explain why iterative algorithms are slow on it
 - Implement vector clocks; reason about causal consistency and concurrent events
 - Build a heartbeat failure detector, then make it declare a healthy node dead on purpose, and defend a timeout knowing it can only trade false suspicions against slow detection
 - State precisely what at-most-once, at-least-once, and effectively-once mean, and why the third is never a delivery guarantee
 
-**After Arc 2 (W04–W07):**
+**After Arc 2, Data Movement and Execution (W04–W07):**
 - Build a streaming windowed aggregator with watermarks; explain what "late data" means
 - Use Little's Law to predict queue growth before running anything, then implement block, drop, and spill against the same overload and measure what each one costs, including how wrong it makes the answer
 - Build a working shuffle (partitioned map-side spill, reduce-side fetch), reproduce a real skew incident, and fix it with salting or a broadcast
@@ -51,7 +51,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Build a physical planner that decides, for every join, how much data crosses the network: broadcast the small side or shuffle both, chosen from table statistics and a memory budget
 - Cause the silent regression by hand: grow one table past a threshold, watch a broadcast quietly become a shuffle with no error and no log line, and name the metric that would have caught it
 
-**After Arc 3 (W08–W13):**
+**After Arc 3, Distributed ML Systems (W08–W13):**
 - Design and implement a versioned ML feature store with Parquet + DuckDB
 - Read a real Delta transaction log by hand, create and then fix a small-file problem, and defend a vacuum retention window against both a retraining job and an auditor
 - Implement ring-allreduce over raw TCP sockets, measure bytes on the wire against a naive baseline, and explain why an allreduce is a reduce-scatter plus an all-gather
@@ -61,7 +61,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 - Put a router in front of two replicas and measure how much prefill work round-robin balancing throws away, then trade cache locality against load balance and defend where you set the line
 - Implement Chandy-Lamport distributed snapshots; explain what "consistent cut" means
 
-**After Arc 4 (W14–W15):**
+**After Arc 4, Infrastructure (W14–W15):**
 - Deploy, break, and debug two real Kubernetes operators (Kubeflow Trainer, Kubeflow's Spark Operator); explain a reconcile loop by reading one, not just defining it
 - Package your own Scala Spark job into an image and submit it as a `SparkApplication`, then debug the class-not-found failure that every team hits on their first Spark-on-Kubernetes deploy
 - Explain why gang scheduling exists by deadlocking two training jobs on partial placement, and say what a queueing layer needs to know that the default scheduler does not
@@ -70,9 +70,9 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 ---
 
-## Each Week
+## Each Unit
 
-Every week has:
+Every unit has:
 - **Read**: one or two named papers or chapters, with specific sections called out
 - **Code**: a concrete implementation task with named files and a clear deliverable
 - **Rehearse it in Python first**: optional, 20 minutes, and only in the three Go units (W02, W03, W06). Writing the algorithm in Python before writing it in Go tells you whether a failure is the algorithm or the syntax. These stop after W06, by which point Go should no longer be the obstacle
@@ -82,16 +82,16 @@ Every week has:
 
 ## Language Map
 
-| Weeks | Language | Why |
+| Units | Language | Why |
 |-------|----------|-----|
 | W00 | Go | Service + k8s deployment; Prometheus metrics. `net/http` (standard library) keeps this framework-free, and this small a service is the gentlest possible first exposure to Go before W01 leans on it for real |
 | W01–W03 | Go | Storage engines and coordination logic. MIT's 6.824/6.5840 distributed systems course builds this exact material (MapReduce, then Raft) in Go, the field's own canonical choice, not an arbitrary one. Goroutines and channels are Go's signature idiom for W03's message-passing simulation; W01 is deliberately the gentlest Go exercise in the plan: file I/O, a loop, and a stopwatch |
-| W04–W05 | Java | Prior production Java background keeps ramp cost near zero, and modern Java's sealed interfaces plus record patterns carry real weight here: W04's `StreamItem` and W05's `Partitioner` both get compiler-enforced exhaustiveness from the same idiom W13 uses, one pattern reused three times rather than three languages introduced. These weeks are measured against production systems you install and run locally (Spark's shuffle, ClickHouse materialized views, Spark Structured Streaming) rather than against a reference implementation you'd read, so the build language is free to be whichever one expresses the exercise most clearly |
-| W06 | Go | The one week in this arc where memory layout is the actual subject, not incidental. Go compiles ahead of time, no JIT to warm up before a benchmark means something, and Go structs are real value types in slices, genuinely contiguous memory, the same property a columnar query engine depends on. Java's lack of true value types would work against the week's own point here |
-| W07, W14 | Scala | Spark itself is Scala, and both weeks are measured against it directly: W07 builds a toy Catalyst from case classes and pattern-matching rewrite rules, and W14 has you compile and submit a real Scala Spark job to the Spark Operator. W07's planner is deliberately plain Scala: case classes, pattern matching, and one recursive walk over a tree you're given. Low ramp cost given prior production Spark/Scala experience; kept deliberately gentle, deeper FP mastery is a separate, dedicated Scala-and-Haskell plan, not this curriculum's job |
+| W04–W05 | Java | Prior production Java background keeps ramp cost near zero, and modern Java's sealed interfaces plus record patterns carry real weight here: W04's `StreamItem` and W05's `Partitioner` both get compiler-enforced exhaustiveness from the same idiom W13 uses, one pattern reused three times rather than three languages introduced. These units are measured against production systems you install and run locally (Spark's shuffle, ClickHouse materialized views, Spark Structured Streaming) rather than against a reference implementation you'd read, so the build language is free to be whichever one expresses the exercise most clearly |
+| W06 | Go | The one unit in this arc where memory layout is the actual subject, not incidental. Go compiles ahead of time, no JIT to warm up before a benchmark means something, and Go structs are real value types in slices, genuinely contiguous memory, the same property a columnar query engine depends on. Java's lack of true value types would work against the unit's own point here |
+| W07, W14 | Scala | Spark itself is Scala, and both units are measured against it directly: W07 builds a toy Catalyst from case classes and pattern-matching rewrite rules, and W14 has you compile and submit a real Scala Spark job to the Spark Operator. W07's planner is deliberately plain Scala: case classes, pattern matching, and one recursive walk over a tree you're given. Low ramp cost given prior production Spark/Scala experience; kept deliberately gentle, deeper FP mastery is a separate, dedicated Scala-and-Haskell plan, not this curriculum's job |
 | W08–W12 | Python | ML ecosystem and numerical computing, plus Ray for distributed actors. W10 deliberately adds no new dependency; it imports W09's own `ring_allreduce` as its communication layer |
 | W13 | Java | Chandy-Lamport's `Message` type is exactly the shape a sealed interface and exhaustive pattern-matching `switch` were built for (`DataMessage`/`Marker`, compiler-enforced coverage), a real improvement over a language without sum types, not just a language-consistency choice. `LinkedBlockingQueue` substitutes cleanly for FIFO channels |
-| W14 | Helm/YAML + a little Scala; reads Go | You operate two real operators, Kubeflow Trainer and Kubeflow's Spark Operator, both implemented in Go, rather than author one yourself: install them, deploy a `TrainJob`/`SparkApplication`, break and debug each, then read (not write) a slice of each one's real reconciler. The Spark half also has you compile, package, and submit your own Scala JAR, which is the one place in this curriculum where Scala and Kubernetes genuinely meet. Trainer is the vendor-neutral choice deliberately: its `TrainJob` API unified the older framework-specific CRDs and runs the same way on any cluster. By this point you've already written Go in five other weeks, so this reading is no longer a cold start the way it would be otherwise |
+| W14 | Helm/YAML + a little Scala; reads Go | You operate two real operators, Kubeflow Trainer and Kubeflow's Spark Operator, both implemented in Go, rather than author one yourself: install them, deploy a `TrainJob`/`SparkApplication`, break and debug each, then read (not write) a slice of each one's real reconciler. The Spark half also has you compile, package, and submit your own Scala JAR, which is the one place in this curriculum where Scala and Kubernetes genuinely meet. Trainer is the vendor-neutral choice deliberately: its `TrainJob` API unified the older framework-specific CRDs and runs the same way on any cluster. By this point you've already written Go in five other units, so this reading is no longer a cold start the way it would be otherwise |
 | W15 | Java + Go | Instrument the W05 shuffle (Java) with the Prometheus Java client and the OpenTelemetry Java SDK; Go log-aggregator built and wired in as a sidecar on the W14 `TrainJob`'s node Pods, the language cloud-native sidecars are overwhelmingly written in for real. The sidecar's language is independent of the workload it's attached to |
 | W02, W09 | Go (secondary) | Automation tools and coordination services, all using `net/http` (standard library), no framework |
 
@@ -105,17 +105,17 @@ Every week has:
 ├── config.md             # Set start_date here
 ├── README.md             # This file
 ├── SETUP.md              # Environment setup (Java, Go, Scala, Python, Docker, Obsidian)
-├── RESOURCES.md          # All papers and books, by week, with free links
+├── RESOURCES.md          # All papers and books, by unit, with free links
 ├── CONTEXT.md            # Session context for AI-assisted study sessions
-├── weeks/                # One .md file per week (W00–W16, where W16 is the optional capstone)
+├── weeks/                # One .md file per unit (W00–W16, where W16 is the optional capstone project)
 ├── code/                 # Your implementations, see code/README.md
 ├── tools/                # Automation tools: plan-dates.go (unrelated to the curriculum's language choices); job_coordinator, grad_server, bench_runner, log-aggregator (Go)
-└── Templates/            # week-template.md for adding custom weeks
+└── Templates/            # week-template.md for adding custom units
 ```
 
 ---
 
-## Weeks
+## Units
 
 - [W00: Infrastructure Setup](weeks/W00-setup.md)
 - [W01: Storage Engines and the Cost of a Write](weeks/W01-storage-engines.md)
@@ -137,15 +137,15 @@ Every week has:
 
 **Every unit has a Minimum bar.** It names the smallest thing that counts as having done it, and everything past it is explicitly optional. When a unit runs long, drop from the bottom and hit the bar rather than half-finishing the whole thing; the bar is chosen so the next unit still works.
 
-**Under 3 hours some weeks?** That will happen, and the plan expects it. Do the Read and the Reflect, hit the Minimum bar if you can, skip the rest without guilt. If you have to skip units entirely, the load-bearing ones are W02, W03, W05, W09, and W12: the shuffle and the allreduce are the two data-movement patterns nearly everything else is built from, and W03's failure detection is the idea five later units keep returning to.
+**Under 3 hours some weeks?** (Calendar weeks, this time.) That will happen, and the plan expects it. Do the Read and the Reflect, hit the Minimum bar if you can, skip the rest without guilt. If you have to skip units entirely, the load-bearing ones are W02, W03, W05, W09, and W12: the shuffle and the allreduce are the two data-movement patterns nearly everything else is built from, and W03's failure detection is the idea five later units keep returning to.
 
 **Skip the infrastructure arc?** W00, W14, and W15 are independent. You can complete W01 through W13 without touching Kubernetes and come back to them when it's relevant to your work.
 
-**Add your own week?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically.
+**Add your own unit?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically. The `week` naming in filenames and frontmatter is legacy and kept only because Home.md's queries depend on it.
 
 **Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers. See the Branch Workflow section in [CONTEXT.md](CONTEXT.md) for how to merge updates between them.
 
-**Different languages?** The algorithms are language-agnostic. This curriculum is built around four languages you write, weighted toward depth in what you already know plus exactly one deliberately introduced new component, rather than breadth for its own sake: Go carries most of Arc 1, W06, and every secondary automation tool (net new, but scoped as a gentle introduction, and its footprint is real rather than token, MIT's own 6.824 distributed systems course builds this exact material in Go first); Java carries the first three weeks of Arc 2 and one week of Arc 3 (near-zero ramp cost against a production Java background, and modern Java's records, sealed interfaces, and pattern matching give the ADT-and-exhaustiveness story this curriculum leans on without a new language to learn); Scala is a short, focused, deliberately gentle module where the real production system (Spark) is itself written in Scala, making it worth the investment even given prior Scala familiarity, deeper FP mastery is intentionally left to a separate plan; Python covers the ML-native arc. Substitutions: if you don't have a Java background the way this plan assumes, the Java weeks could run in Go instead (the two are close in scope for these exercises) or stay Java with more ramp time budgeted; the Python weeks could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
+**Different languages?** The algorithms are language-agnostic. This curriculum is built around four languages you write, weighted toward depth in what you already know plus exactly one deliberately introduced new component, rather than breadth for its own sake: Go carries most of Arc 1, W06, and every secondary automation tool (net new, but scoped as a gentle introduction, and its footprint is real rather than token, MIT's own 6.824 distributed systems course builds this exact material in Go first); Java carries the first two units of Arc 2 and one unit of Arc 3 (near-zero ramp cost against a production Java background, and modern Java's records, sealed interfaces, and pattern matching give the ADT-and-exhaustiveness story this curriculum leans on without a new language to learn); Scala is a short, focused, deliberately gentle module where the real production system (Spark) is itself written in Scala, making it worth the investment even given prior Scala familiarity, deeper FP mastery is intentionally left to a separate plan; Python covers the ML-native arc. Substitutions: if you don't have a Java background the way this plan assumes, the Java units could run in Go instead (the two are close in scope for these exercises) or stay Java with more ramp time budgeted; the Python units could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
 
 ---
 
@@ -158,7 +158,7 @@ Every week has:
 
 No PhD required. No ML background required for the early arcs.
 
-**Already know Java? New to Go?** Java (W04, W05, W13) is the lowest-ramp language in the curriculum against a production Java background: near-zero syntax review, closer to formalizing patterns (records, sealed interfaces, pattern matching) you may not have named explicitly than learning anything new. Go (W00–W03, W06, secondary tooling) is this curriculum's one deliberately introduced new component, kept gentle by design: `net/http` and goroutines-plus-channels cover nearly everything it's used for, no framework, no generics-heavy code. Scala (W07–W09) is similarly low-ramp if you already have production Spark/Scala experience, and is intentionally kept shallow here too, deeper FP mastery is a separate plan, not this curriculum's job. Budget real ramp time for Go specifically before W00: [A Tour of Go](https://go.dev/tour/) (~1 hour for the Basics and Methods/Interfaces sections) covers everything the early weeks need. See the language-specific sections of [SETUP.md](SETUP.md) for what to review before each.
+**Already know Java? New to Go?** Java (W04, W05, W13) is the lowest-ramp language in the curriculum against a production Java background: near-zero syntax review, closer to formalizing patterns (records, sealed interfaces, pattern matching) you may not have named explicitly than learning anything new. Go (W00–W03, W06, secondary tooling) is this curriculum's one deliberately introduced new component, kept gentle by design: `net/http` and goroutines-plus-channels cover nearly everything it's used for, no framework, no generics-heavy code. Scala (W07–W09) is similarly low-ramp if you already have production Spark/Scala experience, and is intentionally kept shallow here too, deeper FP mastery is a separate plan, not this curriculum's job. Budget real ramp time for Go specifically before W00: [A Tour of Go](https://go.dev/tour/) (~1 hour for the Basics and Methods/Interfaces sections) covers everything the early units need. See the language-specific sections of [SETUP.md](SETUP.md) for what to review before each.
 
 ---
 

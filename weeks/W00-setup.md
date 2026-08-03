@@ -7,10 +7,10 @@ status: not-started
 
 > **Budget:** about 5 hours, and it is fine if it takes two sittings. This is the only unit that is mostly installation rather than thinking.
 
-> **Pre-week:** Complete before W01 begins · **Language:** Go + shell
+> **Pre-unit:** Complete before W01 begins · **Language:** Go + shell
 
 ## What you'll build
-A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By end of week, you can deploy any of your weekly code artifacts to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W14 and W15.
+A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By the end of this unit you can deploy any later code artifact to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W14 and W15.
 
 **Scenario:** you've just inherited `hello-metrics` from someone who left the team, and the only handoff note is "it's fine, I think." Nobody, including you, currently has evidence for that claim. Standing up the stack below is what turns "I think it's fine" into something you can actually check.
 
@@ -20,7 +20,7 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 **Depth: skim everything here.** These are reference docs you will come back to, not material to absorb up front. Twenty minutes each, tops.
 
-> **DDIA Chapters 1 and 2 are no longer part of this week.** They used to be, and that was a mistake: they are the least mechanism-dense chapters in the book, nothing in W00 or W01 depends on them, and putting roughly 70 pages of careful reading in front of an infrastructure install guaranteed the first week overran before anything was built. Chapter 1 is now pre-curriculum orientation you read at your own pace, outside any week's budget (see [RESOURCES.md](../RESOURCES.md)). Chapter 2 moved to W15, where you will have a running system to measure and its definitions of reliability and tail latency will have something to attach to.
+> **DDIA Chapters 1 and 2 are no longer part of this unit.** They used to be, and that was a mistake: they are the least mechanism-dense chapters in the book, nothing in W00 or W01 depends on them, and putting roughly 70 pages of careful reading in front of an infrastructure install guaranteed the first unit overran before anything was built. Chapter 1 is now pre-curriculum orientation you read at your own pace, outside any unit's budget (see [RESOURCES.md](../RESOURCES.md)). Chapter 2 moved to W15, where you will have a running system to measure and its definitions of reliability and tail latency will have something to attach to.
 
 ---
 
@@ -55,7 +55,7 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 Project: `code/hello-metrics/` (Go modules)
 
-A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every small service you build from here on can follow, this one and every secondary tool in later weeks (W02's job coordinator, W09's gradient server, W14's bench runner, W15's log-aggregator sidecar).
+A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every small service you build from here on can follow, this one and every secondary tool in later units (W02's job coordinator, W09's gradient server, W14's bench runner, W15's log-aggregator sidecar).
 
 - [ ] `go.mod`: `go mod init hello-metrics`, then `go get github.com/prometheus/client_golang/prometheus` and `go get github.com/prometheus/client_golang/prometheus/promhttp`, the standard Go Prometheus client. No web framework: `net/http`, the standard library's own HTTP server, is enough for two routes.
 - [ ] `main.go`: `http.HandleFunc` for two routes, plus two metric objects shared by both handlers.
@@ -92,7 +92,7 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
     Notice the Histogram alone takes ten lines: one per bucket boundary from Setup (seven), plus `+Inf`, plus `_sum` and `_count`. There is no single field or single JSON value that represents it.
   - Don't write this text by hand: `promhttp.Handler()` already renders the whole registry in this exact format. Register it directly as your route's handler: `http.Handle("/metrics", promhttp.Handler())`. This is the one route where you're not writing the handler body yourself, the library owns the format because the format is a contract Prometheus's scraper depends on, not something worth re-deriving.
 
-**The full pipeline:** your Go service registers and updates the two metrics → they render as text at `/metrics` → the `ServiceMonitor` (below) tells Prometheus to scrape that text every 15s and store it as a time series → Grafana panels (later in this week) query Prometheus (never your Go service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
+**The full pipeline:** your Go service registers and updates the two metrics → they render as text at `/metrics` → the `ServiceMonitor` (below) tells Prometheus to scrape that text every 15s and store it as a time series → Grafana panels (later in this unit) query Prometheus (never your Go service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
 - [ ] `Dockerfile`: multi-stage build:
   ```dockerfile
   FROM golang:1.26 AS builder
@@ -117,7 +117,7 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
 - [ ] Verify: port-forward the service, send 20 requests with `curl`, query `request_count_total` in Prometheus, and see the counter. Also query `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`; confirm it returns a real number, not an empty result. An empty result means the Histogram's observe call is never actually being reached.
 - [ ] In Grafana, create two panels: `rate(request_count_total[1m])` and `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`. Save the dashboard.
 
-**Minimum bar:** the kind cluster is up, `hello-metrics` is deployed to it, Prometheus is scraping its `/metrics`, and one Grafana panel shows a number that moves when you hit the service. The rest of this week is setup you can finish later; that loop is what every subsequent week assumes.
+**Minimum bar:** the kind cluster is up, `hello-metrics` is deployed to it, Prometheus is scraping its `/metrics`, and one Grafana panel shows a number that moves when you hit the service. The rest of this unit is setup you can finish later; that loop is what every subsequent unit assumes.
 
 **Break it, then decide:**
 - [ ] Point `k8s/service-monitor.yaml` at the wrong port on purpose (`8081` instead of `8080`), reapply, and check Prometheus's Targets page at `localhost:9090/targets`. Confirm it shows the target as `DOWN` with a connection-refused error, not just silently missing from your dashboard. That's the actual failure mode a misconfigured ServiceMonitor produces in production: nothing crashes, the panel just quietly has nothing to show. Fix the port and confirm the target goes healthy again.

@@ -5,7 +5,7 @@ status: not-started
 
 # W06: Query Execution
 
-> **Arc:** Streaming and Dataflow · **Language:** Go
+> **Arc:** Data Movement and Execution · **Language:** Go
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
@@ -13,7 +13,7 @@ A vectorized query executor in Go: columnar filter + hash join + projection over
 
 **Scenario:** the 3-8x speedup below is measured against one workload shape. Ship this benchmark's conclusion to production unexamined and the first coworker who runs a highly selective filter, or a join where one side doesn't fit in memory, will find the exact place it stops holding.
 
-**Note on why Go, specifically, for this one week:** the rest of this arc is Java, but this week's benchmark is memory-layout-sensitive in a way the others aren't, and Go gives you two concrete things Java can't here. First, Go compiles ahead of time to native code; there's no JIT to warm up, so a naive, hand-timed benchmark (which is this week's style, no microbenchmark harness) measures real steady-state performance from the first call, instead of risking measuring JIT compilation overhead the way an unwarmed Java benchmark would. Second, and more important for a columnar engine specifically: Go structs are real value types in slices, `[]Row` is genuinely contiguous memory. Java has no true value types (records are still heap-allocated objects), so an array of row structs in Java is an array of pointers to scattered allocations, exactly the pointer-chasing a columnar query engine exists to avoid. The whole point of this week is that vectorized, columnar execution beats naive row-at-a-time processing because of memory layout; Go gets you closer to that lesson honestly than Java would.
+**Note on why Go, specifically, for this one unit:** the rest of this arc is Java, but this unit's benchmark is memory-layout-sensitive in a way the others aren't, and Go gives you two concrete things Java can't here. First, Go compiles ahead of time to native code; there's no JIT to warm up, so a naive, hand-timed benchmark (which is this unit's style, no microbenchmark harness) measures real steady-state performance from the first call, instead of risking measuring JIT compilation overhead the way an unwarmed Java benchmark would. Second, and more important for a columnar engine specifically: Go structs are real value types in slices, `[]Row` is genuinely contiguous memory. Java has no true value types (records are still heap-allocated objects), so an array of row structs in Java is an array of pointers to scattered allocations, exactly the pointer-chasing a columnar query engine exists to avoid. The whole point of this unit is that vectorized, columnar execution beats naive row-at-a-time processing because of memory layout; Go gets you closer to that lesson honestly than Java would.
 
 ---
 
@@ -21,7 +21,7 @@ A vectorized query executor in Go: columnar filter + hash join + projection over
 - [ ] [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032) (Graefe, 1994): read Sections 1–3. This defines the iterator model (the `next()` interface) that every query engine for 20 years was built on.
 - [ ] [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf) (Boncz et al., CIDR 2005): read Sections 1–3. This is the argument for vectorized execution and why Volcano is CPU-cache unfriendly.
 - [ ] Optional: [Dremel: Interactive Analysis of Web-Scale Datasets](https://research.google/pubs/dremel-interactive-analysis-of-web-scale-datasets/) (Melnik et al., Google, VLDB 2010): read Sections 1–3. Same columnar-storage instinct as MonetDB/X100, but scaled a level up: Dremel shreds nested records into columns (the ancestor of Parquet's on-disk format) and spreads the aggregation itself across a multi-level serving tree of thousands of machines. Read it for what changes when "vectorize the scan" becomes "vectorize the scan, then fan the aggregation out across a cluster."
-- [ ] Optional: [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++ (a different language than this week's build, the lesson is the technique, not the syntax), and one you already depend on via W08's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this week.
+- [ ] Optional: [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++ (a different language than this unit's build, the lesson is the technique, not the syntax), and one you already depend on via W08's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this unit.
 
 **Depth: study Sections 1 to 3 of MonetDB/X100.** It contains the argument your benchmark is about to either confirm or fail to reproduce, which makes it worth real attention. Volcano is a read. Dremel and DuckDB are skims and both optional.
 

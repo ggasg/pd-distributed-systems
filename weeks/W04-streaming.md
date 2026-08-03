@@ -5,15 +5,15 @@ status: not-started
 
 # W04: Stream Processing Primitives
 
-> **Arc:** Streaming and Dataflow · **Language:** Java
+> **Arc:** Data Movement and Execution · **Language:** Java
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
-Tumbling window aggregation from scratch in Java (Part 1), then what happens when events arrive faster than you can aggregate them (Part 2). No Flink, no Spark. Input: a stream of `(eventTime: long, value: int)` tuples. Output: per-window sums, emitted when a watermark advances past the window boundary.
+Tumbling window aggregation from scratch in Java (Part 1), then what happens when events arrive faster than you can aggregate them (Part 2). You build both from primitives rather than calling a framework, then read how Flink solves the same two problems in production; that split, build it yourself and then go look at the real one, is how every unit here works. Input: a stream of `(eventTime: long, value: int)` tuples. Output: per-window sums, emitted when a watermark advances past the window boundary.
 
 Part 1 is about *time*: which events belong to which window, and when it is safe to declare a window finished. Part 2 is about *rate*: what you do when the events are arriving faster than you are finishing windows. These are independent problems and a stream processor has to solve both, but only the first one has a satisfying answer.
 
-**Scenario:** think of this as the aggregator behind a real-time revenue dashboard. A mobile client that was offline for ten minutes eventually reconnects and sends its buffered events, late, by definition, since your watermark has already moved on without them. Whether those events count is a real product decision, not just a technical one, and it's the decision this week actually makes you make.
+**Scenario:** think of this as the aggregator behind a real-time revenue dashboard. A mobile client that was offline for ten minutes eventually reconnects and sends its buffered events, late, by definition, since your watermark has already moved on without them. Whether those events count is a real product decision, not just a technical one, and it's the decision this unit actually makes you make.
 
 ---
 
@@ -23,7 +23,7 @@ Part 1 is about *time*: which events belong to which window, and when it is safe
 - [ ] DDIA Ch.12 (2nd ed.): focus on "Processing Streams" section; understand exactly-once semantics and the log as a stream
 - [ ] [The Dataflow Model](https://research.google/pubs/the-dataflow-model-a-practical-approach-to-balancing-correctness-latency-and-cost-in-massive-scale-unbounded-out-of-order-data-processing/) (Akidau et al., VLDB 2015): read Sections 1–4. The windowing taxonomy (fixed, sliding, session) and the "What/Where/When/How" framework are the key takeaways.
 
-**Depth: read DDIA Ch.12 and Sections 1 to 4 of the Dataflow Model.** No study reading this week: you are building windows and watermarks from the concepts rather than reimplementing a described algorithm. Streaming 101 and the Flink backpressure page are skims.
+**Depth: read DDIA Ch.12 and Sections 1 to 4 of the Dataflow Model.** No study reading this unit: you are building windows and watermarks from the concepts rather than reimplementing a described algorithm. Streaming 101 and the Flink backpressure page are skims.
 
 **Key question:** What is a watermark, exactly? What breaks if your watermark heuristic is too aggressive? What breaks if it's too conservative?
 
@@ -89,9 +89,9 @@ Use `ArrayBlockingQueue` from the JDK as the queue between producer and consumer
 
 **Break it, then decide:**
 - [ ] Set the arrival rate to exactly the service rate and run for a while. It looks stable. Now raise arrivals by 10 percent, which is the kind of change a normal traffic day produces, and watch the queue depth. It does not settle at a higher level, it climbs continuously. Confirm with Little's Law that this was predictable from the two rates alone, before you ran anything.
-- [ ] **Your call:** this week's scenario is the aggregator behind a real-time revenue dashboard. Dropping events makes the number on the dashboard quietly wrong, and nobody downstream can tell. Blocking keeps it correct and makes it stale, and if the source is a shared queue that other consumers also read from, your blocking becomes their problem. Spilling keeps it correct and bounded but adds a latency spike exactly when the system is already stressed. Pick one, implement it as the default in `BackpressureBench`, and write down the specific number you'd alert on to find out it was the wrong choice.
+- [ ] **Your call:** this unit's scenario is the aggregator behind a real-time revenue dashboard. Dropping events makes the number on the dashboard quietly wrong, and nobody downstream can tell. Blocking keeps it correct and makes it stale, and if the source is a shared queue that other consumers also read from, your blocking becomes their problem. Spilling keeps it correct and bounded but adds a latency spike exactly when the system is already stressed. Pick one, implement it as the default in `BackpressureBench`, and write down the specific number you'd alert on to find out it was the wrong choice.
 
-**Where you have already met this.** Once you have the three policies in hand, the rest of the curriculum stops looking like unrelated design decisions: W05's shuffle writes partitioned spill files to disk between map and reduce, which is `Spill`; W15's log-aggregator ring buffer silently evicts the oldest line under load, which is `Drop`; and W12's queue-depth threshold, where you stop sending to a cache-holding replica once its queue is too deep, is `Block` expressed as routing. Same three answers, four different weeks.
+**Where you have already met this.** Once you have the three policies in hand, the rest of the curriculum stops looking like unrelated design decisions: W05's shuffle writes partitioned spill files to disk between map and reduce, which is `Spill`; W15's log-aggregator ring buffer silently evicts the oldest line under load, which is `Drop`; and W12's queue-depth threshold, where you stop sending to a cache-holding replica once its queue is too deep, is `Block` expressed as routing. Same three answers, four different units.
 
 ## Reflect
 

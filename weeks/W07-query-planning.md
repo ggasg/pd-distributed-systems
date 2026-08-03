@@ -5,7 +5,7 @@ status: not-started
 
 # W07: Query Planning: Choosing Where Data Moves
 
-> **Arc:** Streaming and Dataflow · **Language:** Scala
+> **Arc:** Data Movement and Execution · **Language:** Scala
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build

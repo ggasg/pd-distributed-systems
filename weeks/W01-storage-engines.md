@@ -5,7 +5,7 @@ status: not-started
 
 # W01: Storage Engines and the Cost of a Write
 
-> **Arc:** Data Systems Internals · **Language:** Go
+> **Arc:** Storage, Batch, and Failure · **Language:** Go
 > **Budget:** about 5 hours, most of it reading. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build

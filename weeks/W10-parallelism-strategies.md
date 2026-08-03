@@ -5,15 +5,15 @@ status: not-started
 
 # W10: Beyond Data Parallelism
 
-> **Arc:** Distributed ML & Compute · **Language:** Python
+> **Arc:** Distributed ML Systems · **Language:** Python
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 Three ways to split a model, rather than the data, across two processes: tensor parallelism (cut a single matrix multiply in half), pipeline parallelism (put different layers on different workers), and sharded optimizer state (each worker keeps only its slice of the optimizer's bookkeeping). You'll reuse the ring-allreduce you wrote in W09 as the communication layer for all three.
 
-Here's the framing, plainly. W09 was **data parallelism**: every worker holds a complete copy of the model and they split the data between them. That works right up until the model itself no longer fits in one worker's memory, at which point it stops being an option at all and you have to cut the model up instead. Everything this week is about how you cut it, and what each cut costs you in communication.
+Here's the framing, plainly. W09 was **data parallelism**: every worker holds a complete copy of the model and they split the data between them. That works right up until the model itself no longer fits in one worker's memory, at which point it stops being an option at all and you have to cut the model up instead. Everything this unit is about how you cut it, and what each cut costs you in communication.
 
-**Scenario:** you have a model that trains fine on one machine and a bigger one that does not fit at all. Somebody asks which parallelism strategy to use, and the honest answer depends on numbers you don't have yet: how much has to cross the network per step, and how much of the time each worker spends waiting. This week you measure both on something small enough to see clearly.
+**Scenario:** you have a model that trains fine on one machine and a bigger one that does not fit at all. Somebody asks which parallelism strategy to use, and the honest answer depends on numbers you don't have yet: how much has to cross the network per step, and how much of the time each worker spends waiting. This unit you measure both on something small enough to see clearly.
 
 ---
 
@@ -23,7 +23,7 @@ Here's the framing, plainly. W09 was **data parallelism**: every worker holds a 
 - [ ] [ZeRO](https://arxiv.org/abs/1910.02054) (Rajbhandari et al., SC 2020): read Section 5 and the stage table. You do not need the full memory analysis. What you want is the three stages: shard the optimizer state, then the gradients, then the parameters themselves, each stage saving more memory and costing more communication.
 - [ ] Optional: [PyTorch FSDP](https://arxiv.org/abs/2304.11277) (Zhao et al., VLDB 2023): what ZeRO looks like once it's a production API people actually call. Useful if you want to see how the theory above landed in the framework.
 
-**Depth: study Section 3 of Megatron-LM.** The column-then-row composition is the one non-obvious idea this week, and you implement it. GPipe and ZeRO are reads, and you only need the named sections. FSDP is an optional skim.
+**Depth: study Section 3 of Megatron-LM.** The column-then-row composition is the one non-obvious idea this unit, and you implement it. GPipe and ZeRO are reads, and you only need the named sections. FSDP is an optional skim.
 
 **Key question:** Tensor parallelism communicates once per layer; pipeline parallelism communicates once per stage boundary. Given that, which one would you put inside a single machine across its GPUs, and which one across machines on a slower network? The answer follows directly from how often each one talks.
 
@@ -33,7 +33,7 @@ Here's the framing, plainly. W09 was **data parallelism**: every worker holds a 
 
 Project: `code/parallelism/` (Python 3.12+)
 
-Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `all_gather` directly from `code/distributed-training/` (W09), so this week builds on real code you already wrote rather than a fresh abstraction.
+Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `all_gather` directly from `code/distributed-training/` (W09), so this unit builds on real code you already wrote rather than a fresh abstraction.
 
 **Given, not built:** `layers.py` is provided, a `Linear` class with `forward` and `backward` and a GeLU activation, all NumPy. Same principle as W09: the calculus is not what's being tested here.
 
@@ -55,7 +55,7 @@ Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `al
 
 - [ ] `shard_optimizer.py`: implement ZeRO stage 1 for SGD with momentum. Each worker keeps momentum buffers for only its shard of the parameters, applies its own slice of the update, and then all-gathers the updated parameters so everyone ends the step with a complete model. Print peak memory per worker (`tracemalloc` is enough) against a non-sharded baseline, and confirm the loss curve is identical, because this is purely a memory optimization and must not change the math at all.
 
-**Minimum bar:** Parts 1 and 2 only. The Megatron block matches a single-process reference and needs one all-reduce, and you have measured bubble fraction at three values of M against the theoretical curve. Part 3 (ZeRO) is the part to drop if the week runs out, since it is a memory optimization that provably does not change the math, which makes it the least costly thing to postpone.
+**Minimum bar:** Parts 1 and 2 only. The Megatron block matches a single-process reference and needs one all-reduce, and you have measured bubble fraction at three values of M against the theoretical curve. Part 3 (ZeRO) is the part to drop if the unit runs out, since it is a memory optimization that provably does not change the math, which makes it the least costly thing to postpone.
 
 **Break it, then decide:**
 - [ ] In `RowParallelLinear`, comment out the all-reduce. The program does not crash, does not warn, and produces output of exactly the right shape. It is simply wrong, because every worker is holding a partial sum. Compare against the single-process reference and look at how wrong it actually is, then let training run a few steps and watch the loss go somewhere strange rather than error. Silent numerical corruption in a distributed layer is one of the genuinely hard bug classes in this field, and the lesson worth taking is that the shape check you'd normally trust tells you nothing here.

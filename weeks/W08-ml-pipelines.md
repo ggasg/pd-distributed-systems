@@ -5,7 +5,7 @@ status: not-started
 
 # W08: ML Data Pipelines and Table Formats
 
-> **Arc:** Distributed ML & Compute · **Language:** Python
+> **Arc:** Distributed ML Systems · **Language:** Python
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
@@ -19,7 +19,7 @@ A versioned feature pipeline in Python: raw events to features to versioned Parq
 - [ ] [Hidden Technical Debt in Machine Learning Systems](https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf) (Sculley et al., NeurIPS 2015): 9 pages, read all of it. The CACE principle and "glue code" sections are most relevant.
 - [ ] [Delta Lake: High-Performance ACID Table Storage over Cloud Object Stores](https://www.vldb.org/pvldb/vol13/p3411-armbrust.pdf) (Armbrust et al., VLDB 2020): read Sections 1–4. Understand why versioning and ACID matter for ML pipelines, not just OLTP.
 
-**Depth: read Hidden Technical Debt and Sections 1 to 4 of the Delta Lake paper.** No study reading: this week's mechanism lives in the transaction log you open by hand, not in a paper. The Iceberg spec is a skim, and only the two sections named.
+**Depth: read Hidden Technical Debt and Sections 1 to 4 of the Delta Lake paper.** No study reading: this unit's mechanism lives in the transaction log you open by hand, not in a paper. The Iceberg spec is a skim, and only the two sections named.
 
 **Key question:** The paper says "changing anything changes everything" (CACE). Give a concrete example from an ML pipeline where this would cause a silent, hard-to-debug failure.
 
@@ -74,7 +74,7 @@ Same project. New dependency: `deltalake` (`pip install deltalake`), which is de
 **Break it, then decide:**
 - [ ] Optional, and only if you built `small_files.py`: the small-file problem is one of the most common real complaints about lakehouse tables, and the cause is unglamorous: every commit writes at least one new file, and query planning cost scales with file count regardless of how little data each file holds. Confirm the scan time actually improved after compaction, and note how much of the original slowness was metadata rather than data.
 - [ ] Now run `DeltaTable(path).vacuum(retention_hours=0, dry_run=True)` and read what it proposes to delete. Those are the files compaction orphaned, still on disk, still referenced by older versions of the table. Deleting them reclaims storage and permanently breaks time travel to those versions.
-- [ ] **Your call:** you own a feature table that a model-retraining job reads and an auditor occasionally queries months later. Compaction is clearly worth running. Vacuum is the question: an aggressive retention window keeps storage costs flat but destroys your ability to reproduce a training run from six weeks ago, and a long one preserves reproducibility while accumulating files nobody reads. Pick a retention window, write it down as a number with a justification, and say which of the two people above you would have to go apologize to if you got it wrong in each direction.
+- [ ] **Your call:** you own a feature table that a model-retraining job reads and an auditor occasionally queries months later. Compaction is clearly worth running. Vacuum is the question: an aggressive retention window keeps storage costs flat but destroys your ability to reproduce a training run from six units ago, and a long one preserves reproducibility while accumulating files nobody reads. Pick a retention window, write it down as a number with a justification, and say which of the two people above you would have to go apologize to if you got it wrong in each direction.
 
 ---
 

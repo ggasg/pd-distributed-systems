@@ -5,7 +5,7 @@ status: not-started
 
 # W02: MapReduce and Its Limits
 
-> **Arc:** Data Systems Internals · **Language:** Go
+> **Arc:** Storage, Batch, and Failure · **Language:** Go
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
@@ -13,7 +13,7 @@ A minimal MapReduce framework in Go using goroutines and channels. Run two jobs 
 
 **Scenario:** the original MapReduce paper spends a full section on what happens when a worker dies mid-job, because at Google's scale a job with a thousand mappers will lose one eventually. Your framework runs in one process on one machine, so "a worker dies" doesn't mean the same thing here, which is exactly what the exercise below makes you reckon with.
 
-**Note on why Go, specifically:** this isn't an arbitrary choice. MIT's 6.824/6.5840 (Distributed Systems), the field's most widely used academic treatment of exactly this material, has students build MapReduce in Go as its first lab, then Raft and a sharded key-value store on top of it in later labs. Goroutines also preserve the actual lesson this week is built around better than most alternatives would: Go's scheduler multiplexes many cheap, garbage-collected goroutines onto a small number of OS threads, the same "spawn thousands of tasks without exhausting the OS" idea, just Go's own long-standing contribution to the field rather than a recent JVM addition.
+**Note on why Go, specifically:** this isn't an arbitrary choice. MIT's 6.824/6.5840 (Distributed Systems), the field's most widely used academic treatment of exactly this material, has students build MapReduce in Go as its first lab, then Raft and a sharded key-value store on top of it in later labs. Goroutines also preserve the actual lesson this unit is built around better than most alternatives would: Go's scheduler multiplexes many cheap, garbage-collected goroutines onto a small number of OS threads, the same "spawn thousands of tasks without exhausting the OS" idea, just Go's own long-standing contribution to the field rather than a recent JVM addition.
 
 ---
 
@@ -21,9 +21,9 @@ A minimal MapReduce framework in Go using goroutines and channels. Run two jobs 
 - [ ] **DDIA Chapter 11** (2nd ed.): Batch Processing. Read this first, before either paper: it's the same MapReduce material and the Spark/RDD argument, told as one continuous narrative instead of two papers written four years apart, and it explicitly frames MapReduce as one point on a spectrum (Unix pipes → MapReduce → dataflow engines like Spark and Flink) rather than a standalone system. That framing is the throughline for the rest of Arc 1 and all of Arc 2.
 - [ ] [MapReduce: Simplified Data Processing on Large Clusters](https://research.google/pubs/mapreduce-simplified-data-processing-on-large-clusters/) (Dean & Ghemawat, OSDI 2004): read Sections 1–4. The programming model is simple; pay attention to the fault tolerance mechanism and why it requires materializing intermediate state. Note what makes re-executing a failed task safe at all: the map and reduce functions are deterministic and the output commit is an atomic rename, so running a task twice produces the same result as running it once. That is at-least-once execution plus an idempotent commit, which W03 names properly, and it is the whole reason MapReduce can recover by simply retrying.
 - [ ] Optional: [Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing](https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf) (Zaharia et al., NSDI 2012): read Sections 1–3. This is the Spark paper. The key argument is in Section 1: why MapReduce forces iterative algorithms to write to disk between every iteration.
-- [ ] Optional: [MIT 6.5840 Lab 1: MapReduce](https://pdos.csail.mit.edu/6.824/labs/lab-mr.html): the assignment this week's exercise is directly inspired by. Worth skimming the spec even though this week's build is smaller in scope (single-process, not a real distributed worker pool), it's the canonical version of the same problem.
+- [ ] Optional: [MIT 6.5840 Lab 1: MapReduce](https://pdos.csail.mit.edu/6.824/labs/lab-mr.html): the assignment this unit's exercise is directly inspired by. Worth skimming the spec even though this unit's build is smaller in scope (single-process, not a real distributed worker pool), it's the canonical version of the same problem.
 
-**Depth: study Section 3 of the MapReduce paper** (the fault-tolerance mechanism), since it carries this week's actual argument about why intermediate state gets materialized. DDIA Ch.11 is a read. The RDD paper, the 2010 Spark paper, and the MIT lab are skims.
+**Depth: study Section 3 of the MapReduce paper** (the fault-tolerance mechanism), since it carries this unit's actual argument about why intermediate state gets materialized. DDIA Ch.11 is a read. The RDD paper, the 2010 Spark paper, and the MIT lab are skims.
 
 **Key question:** PageRank converges after ~50 iterations on typical graphs. In MapReduce, what happens between each iteration, and why does that make it slow? Write down the concrete I/O cost in terms of graph size G.
 
@@ -35,7 +35,7 @@ Project: `code/mapreduce/` (Go modules)
 
 **Minimum bar:** the framework (`mapreduce.go` + `runner.go`) and word count running end to end, plus the written I/O calculation for PageRank at 1M nodes. Actually building and running PageRank is stretch, and so is the coordinator service.
 
-A working *concrete* pipeline clears this week. You don't need a beautifully generic, reusable `Mapper`/`Reducer` abstraction; that's a nice-to-have, not the point. The point is making the disk I/O cost visible.
+A working *concrete* pipeline clears this unit. You don't need a beautifully generic, reusable `Mapper`/`Reducer` abstraction; that's a nice-to-have, not the point. The point is making the disk I/O cost visible.
 
 **The framework:**
 
@@ -43,7 +43,7 @@ A working *concrete* pipeline clears this week. You don't need a beautifully gen
   - `type Mapper func(key, value string) []Pair` where `type Pair struct { Key, Value string }`
   - `type Reducer func(key string, values []string) string`
   - `Mapper` returns its output pairs directly rather than writing into a channel passed in as an argument. A function that returns its results is easier to test in isolation than one that writes into something it was handed.
-- [ ] `runner.go`: `func Run(mapper Mapper, reducer Reducer, splits []string) map[string]string`. This is the fiddly part of the week, and the specific way it's fiddly is worth naming directly:
+- [ ] `runner.go`: `func Run(mapper Mapper, reducer Reducer, splits []string) map[string]string`. This is the fiddly part of the unit, and the specific way it's fiddly is worth naming directly:
   ```go
   results := make(chan []Pair, len(splits))
   var wg sync.WaitGroup
@@ -92,11 +92,11 @@ A working *concrete* pipeline clears this week. You don't need a beautifully gen
 
 - [ ] Optional: `tools/job_coordinator/main.go`: an HTTP server that accepts job submissions and tracks status, using `net/http` (standard library, no framework needed for two routes). Endpoints: `POST /job` (accepts `{"type": "wordcount"|"pagerank", "input": "path"}`, returns `{"job_id": "..."}`), `GET /job/{id}` (returns status + result when done). Your `runner.go` calls this server to report completion. Keep it under 100 lines; `encoding/json` handles the request/response bodies, small enough that hand-writing them would be more code, not less.
 
-If you have time left after the minimum bar: this is a small rep of the master/worker split from the MapReduce paper itself (a coordinator process tracking job state separate from the workers doing the compute), and a preview of the shape you'll build for real in W14, where a control-plane process reconciling state against reported worker status is most of what a Kubernetes operator's reconcile loop does. Skipping it costs you nothing required; it's here because the parallel to W14 is worth having if the week's going well.
+If you have time left after the minimum bar: this is a small rep of the master/worker split from the MapReduce paper itself (a coordinator process tracking job state separate from the workers doing the compute), and a preview of the shape you'll build for real in W14, where a control-plane process reconciling state against reported worker status is most of what a Kubernetes operator's reconcile loop does. Skipping it costs you nothing required; it's here because the parallel to W14 is worth having if the unit's going well.
 
 **Break it, then decide:**
 - [ ] Pick one mapper goroutine (say, the one handling the last split) and make it `panic("simulated worker crash")` instead of returning normally. Run the word count job. In Go, an unrecovered panic in any goroutine crashes the entire process, not just that goroutine, so watch what actually happens to the other splits that were still running concurrently. This is the real reason the MapReduce paper's fault tolerance re-executes just the failed task on another worker instead of letting one failure take down the whole job; your framework currently has no such isolation.
-- [ ] Given that your framework runs single-process rather than across real distributed workers, is it worth adding a `recover()` around each mapper goroutine that logs the failure and re-runs just that split, or would that just be theater, since it wouldn't demonstrate the actual hard part (detecting a worker is gone over the network, deciding it's really dead and not just slow, reassigning its work) that a real distributed MapReduce has to solve? W03 builds a failure detector against exactly that ambiguity, so this is a question you'll get to answer with code rather than prose in one week's time. Make a call, and if you decide it's worth adding, implement it; if not, write down specifically what a real fix would need that a single-process `recover()` can't give you.
+- [ ] Given that your framework runs single-process rather than across real distributed workers, is it worth adding a `recover()` around each mapper goroutine that logs the failure and re-runs just that split, or would that just be theater, since it wouldn't demonstrate the actual hard part (detecting a worker is gone over the network, deciding it's really dead and not just slow, reassigning its work) that a real distributed MapReduce has to solve? W03 builds a failure detector against exactly that ambiguity, so this is a question you'll get to answer with code rather than prose in W03. Make a call, and if you decide it's worth adding, implement it; if not, write down specifically what a real fix would need that a single-process `recover()` can't give you.
 
 ---
 

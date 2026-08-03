@@ -5,7 +5,7 @@ status: not-started
 
 # W05: Partitioning and the Shuffle
 
-> **Arc:** Streaming and Dataflow · **Language:** Java
+> **Arc:** Data Movement and Execution · **Language:** Java
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
@@ -13,7 +13,7 @@ A working shuffle in Java: map tasks that split their output into per-partition 
 
 If "shuffle" is a word you've heard without a firm picture behind it, here it is in one sentence: a shuffle is the all-to-all data movement that happens when every machine holds some of the rows for a key and they all need to end up on one machine so the key can be aggregated. It is the single most expensive thing a distributed query engine does, and it is the mechanism underneath `GROUP BY`, `JOIN`, and `reduceByKey` in every system you're likely to touch.
 
-**Scenario:** a nightly aggregation job that normally finishes in twenty minutes has been taking three hours since last Tuesday. Every executor finished quickly except one, which is still going. Nothing errored, no config changed, and the data volume grew by four percent. This is the most common performance incident in data engineering, and by the end of the week you will have caused it deliberately and then fixed it.
+**Scenario:** a nightly aggregation job that normally finishes in twenty minutes has been taking three hours since last Tuesday. Every executor finished quickly except one, which is still going. Nothing errored, no config changed, and the data volume grew by four percent. This is the most common performance incident in data engineering, and by the end of the unit you will have caused it deliberately and then fixed it.
 
 ---
 

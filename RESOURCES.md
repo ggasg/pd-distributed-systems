@@ -1,12 +1,12 @@
 # Resources
 
-All papers, books, and docs referenced in this curriculum. Organized by week. Free links provided where available.
+All papers, books, and docs referenced in this curriculum. Organized by unit. Free links provided where available.
 
 ---
 
-## Books (referenced across multiple weeks)
+## Books (referenced across multiple units)
 
-| Book | Author | Weeks | Notes |
+| Book | Author | Units | Notes |
 |------|--------|-------|-------|
 | [Designing Data-Intensive Applications (DDIA), 2nd ed.](https://dataintensive.net) | Kleppmann & Riccomini (2026) | Ch.1 pre-curriculum, then W01, W02, W03, W04, W05, W07 (optional), W13 (optional), W15, W16 (optional) | The single most useful book for this curriculum. Buy it. 2nd edition (Feb 2026) restructures the whole book: 12 chapters became 14, and every chapter after the first is renumbered. Chapter references below are to the 2nd edition. |
 | [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W03, W13 | For concurrency primitives and correctness |
@@ -18,13 +18,13 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## External Reading Lists
 
-- [A Distributed Systems Reading List](https://dancres.github.io/Pages/) (Dan Creswell): a broad, long-running collection of foundational distributed-systems papers and essays, organized by theme (Google, Amazon, Consensus, Paxos, Gossip Protocols, P2P, and more). Some of it predates this curriculum's focus on ML/AI workloads and isn't a required source anywhere here, but it's a good browsing list once you're past a given week and want more of that theme. Percolator (W06), Dremel (W06), and Chubby (extra-time list below) were added to this curriculum directly from its "Google" section; see the 2026-07-26 CONTEXT.md note for the full audit of that section against what's already covered.
+- [A Distributed Systems Reading List](https://dancres.github.io/Pages/) (Dan Creswell): a broad, long-running collection of foundational distributed-systems papers and essays, organized by theme (Google, Amazon, Consensus, Paxos, Gossip Protocols, P2P, and more). Some of it predates this curriculum's focus on ML/AI workloads and isn't a required source anywhere here, but it's a good browsing list once you're past a given unit and want more of that theme. Percolator (W06), Dremel (W06), and Chubby (extra-time list below) were added to this curriculum directly from its "Google" section; see the 2026-07-26 CONTEXT.md note for the full audit of that section against what's already covered.
 
 ---
 
-## Before You Start (outside any week's budget)
+## Before You Start (outside any unit's budget)
 
-- **DDIA Chapter 1** (2nd ed.), Trade-Offs in Data Systems Architecture. **Depth: skim.** Read this once, whenever you like, before or during W00. It is orientation rather than prerequisite: nothing in any week depends on having read it, and it contains no mechanism you will implement. What it gives you is the operational-versus-analytical and distributed-versus-single-node framing that the whole curriculum is arranged around, which makes the difference between W01's write path and W06's columnar executor legible as a deliberate contrast rather than two unrelated builds. Forty-five minutes at skim depth. Do not study it.
+- **DDIA Chapter 1** (2nd ed.), Trade-Offs in Data Systems Architecture. **Depth: skim.** Read this once, whenever you like, before or during W00. It is orientation rather than prerequisite: nothing in any unit depends on having read it, and it contains no mechanism you will implement. What it gives you is the operational-versus-analytical and distributed-versus-single-node framing that the whole curriculum is arranged around, which makes the difference between W01's write path and W06's columnar executor legible as a deliberate contrast rather than two unrelated builds. Forty-five minutes at skim depth. Do not study it.
 
 DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliability, scalability, and tail latency have a running system to attach to.
 
@@ -62,7 +62,7 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 - **DDIA Chapter 9**: The Trouble with Distributed Systems (clocks, NTP, monotonic clocks)
 - [Spanner: Google's Globally Distributed Database](https://dl.acm.org/doi/10.1145/2491245): Corbett et al. (2012), TrueTime section only (Sections 3 + 5)
 - [Detecting Causal Relationships in Distributed Computations](https://zoo.cs.yale.edu/classes/cs426/2012/lab/bib/fidge88timestamps.pdf): Fidge (1988) (**free PDF**), vector clocks
-- **DDIA Chapter 9, "Timeouts and Unbounded Delays"**: required a second time, for the week's failure-detector half. The one sentence that matters: over an asynchronous network a crashed node and a slow node produce identical evidence
+- **DDIA Chapter 9, "Timeouts and Unbounded Delays"**: required a second time, for the unit's failure-detector half. The one sentence that matters: over an asynchronous network a crashed node and a slow node produce identical evidence
 - [Unreliable Failure Detectors for Reliable Distributed Systems](https://dl.acm.org/doi/10.1145/226643.226647): Chandra & Toueg, JACM 1996 (**ACM DL**; free copies are easy to find), optional and theory-heavy. Read for the framing rather than the algorithms: a failure detector is permitted to be wrong, and the useful questions are how wrong, how often, and how fast
 
 ---
@@ -80,7 +80,7 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 ## W05: Partitioning and the Shuffle
 
 - **DDIA Ch.7 (2nd ed.), "Sharding"**: required, the whole chapter. Key-range vs hash sharding, hot spots, rebalancing, and Kleppmann's deliberately skeptical treatment of consistent hashing for databases
-- [Spark RDD Programming Guide: Shuffle operations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations): required, short. The map-side-write then reduce-side-fetch structure this week builds, described by the system that made it famous
+- [Spark RDD Programming Guide: Shuffle operations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations): required, short. The map-side-write then reduce-side-fetch structure this unit builds, described by the system that made it famous
 - [Dynamo: Amazon's Highly Available Key-value Store](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf): DeCandia et al., SOSP 2007 (**free PDF**), optional. Section 4.2 is the canonical description of consistent hashing with virtual nodes, the technique the Python DSA Review implements
 
 ---
@@ -144,13 +144,13 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 
 ## W12: Attention, KV Cache, and Cache-Aware Routing
 
-- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 15** (optional): AI Inference and Serving. "Hosting a Model" and "Distributing a Model" give the production-serving framing for why the KV cache tradeoff this week measures matters outside a benchmark script.
+- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 15** (optional): AI Inference and Serving. "Hosting a Model" and "Distributing a Model" give the production-serving framing for why the KV cache tradeoff this unit measures matters outside a benchmark script.
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762): Vaswani et al. (2017) (**free on arXiv**), the transformer paper
 - [FlashAttention: Fast and Memory-Efficient Exact Attention](https://arxiv.org/abs/2205.14135): Dao et al. (2022) (**free on arXiv**), read the intro and Section 2
 - [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180): Kwon et al. (2023) (**free on arXiv**)
 - [Introducing Gateway API Inference Extension](https://kubernetes.io/blog/2025/06/05/introducing-gateway-api-inference-extension/): Kubernetes blog (June 2025), Part 2 required reading, short. Inference-aware routing on KV cache utilization and LoRA readiness, i.e. facts about a replica's state that a normal load balancer is built to ignore
 - [KV cache aware routing with llm-d](https://developers.redhat.com/articles/2025/10/07/master-kv-cache-aware-routing-llm-d-efficient-ai-inference): Red Hat, Part 2 optional. The same idea against real vLLM replicas, reporting up to 3x on time-to-first-token
-- [kubernetes-sigs/gateway-api-inference-extension](https://github.com/kubernetes-sigs/gateway-api-inference-extension): the production version of Part 2's `router.py`, written in Go and running as part of the control plane rather than the model server. Reading only, no build target; it's here to connect this week to W14
+- [kubernetes-sigs/gateway-api-inference-extension](https://github.com/kubernetes-sigs/gateway-api-inference-extension): the production version of Part 2's `router.py`, written in Go and running as part of the control plane rather than the model server. Reading only, no build target; it's here to connect this unit to W14
 - [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/): Jay Alammar (free blog), visual intro before the paper
 
 ---
@@ -166,15 +166,15 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 
 ## W14: Operating Kubernetes Operators (Kubeflow Trainer + Spark Operator)
 
-- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2**: Important Distributed System Concepts. Read "Idempotency" and "Orchestration and Kubernetes" before deploying either operator; the chapter argues directly for why a reconcile loop has to be idempotent, the same claim this week's Reflect section asks you to defend.
+- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2**: Important Distributed System Concepts. Read "Idempotency" and "Orchestration and Kubernetes" before deploying either operator; the chapter argues directly for why a reconcile loop has to be idempotent, the same claim this unit's Reflect section asks you to defend.
 - [Kubernetes Operators docs](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): official k8s docs
 - [Kubeflow Trainer documentation](https://www.kubeflow.org/docs/components/trainer/): architecture overview plus the `TrainJob`, `TrainingRuntime`, and `ClusterTrainingRuntime` APIs. Trainer v2 unified the older framework-specific CRDs (`PyTorchJob`, `MPIJob`, `JAXJob`, `XGBoostJob`) into one `TrainJob` plus a pluggable runtime, which is why it's the portable choice
 - [kubeflow/trainer releases](https://github.com/kubeflow/trainer/releases): pin a current `v2.x.y` before installing; the manifests move between releases, so don't copy a version tag out of a tutorial
-- [kubeflow/trainer source](https://github.com/kubeflow/trainer): search for `TrainJobReconciler`; the real reconcile loop this week has you read, not write
+- [kubeflow/trainer source](https://github.com/kubeflow/trainer): search for `TrainJobReconciler`; the real reconcile loop this unit has you read, not write
 - [Kubeflow Spark Operator documentation](https://kubeflow.github.io/spark-operator/): quick-start guide and the `SparkApplication` API reference
 - [Kueue overview](https://kueue.sigs.k8s.io/docs/overview/): fifteen minutes, read-only, for Part 4's written exercise. Gang admission on Kubernetes. The idea is older than Kubernetes (Ousterhout named gang scheduling in 1982, and Slurm and Borg both implement a version of it); Kueue is one current answer, not the concept
 - [Running Spark on Kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html): Apache Spark's own docs, for Part 2b. The `local://` scheme, `mainClass`/`mainApplicationFile`, and why your image's Spark version has to match what you compiled against
-- [Programming Kubernetes](https://www.oreilly.com/library/view/programming-kubernetes/9781492047094/): Hausenblas & Schimanski (O'Reilly), optional. Covers how operators like these two are actually built; useful context even though this week has you operate one rather than author one
+- [Programming Kubernetes](https://www.oreilly.com/library/view/programming-kubernetes/9781492047094/): Hausenblas & Schimanski (O'Reilly), optional. Covers how operators like these two are actually built; useful context even though this unit has you operate one rather than author one
 - [etcd: Set up a local cluster](https://etcd.io/docs/v3.5/dev-guide/local_cluster/): official docs for the 3-member local-cluster bootstrap Part 3 uses (run by hand here instead of via their `Procfile`/`goreman` wrapper)
 - [etcd-io/raft](https://github.com/etcd-io/raft): the standalone Raft library etcd actually runs (also vendored into Kubernetes itself, and used by CockroachDB and TiKV); Part 3 has you read `raft.go`'s `becomeLeader`/`campaign`, not the whole file
 - Recall W13's Raft paper (Ongaro & Ousterhout, 2014): Part 3 is where you watch the algorithm that paper describes run for real
@@ -197,9 +197,9 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 
 ## W16: Grand Capstone (optional)
 
-No required reading tied to this week's build. This week synthesizes W08, W09, W12, W13, W14, and W15; revisit those weeks' resources as needed.
+No required reading tied to this project's build. It synthesizes W08, W09, W12, W13, W14, and W15; revisit those units' resources as needed.
 
-- [MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html): for Part 5. Registered models, versions, and aliases. The mental model that transfers: a registry is a commit log with movable pointers, the same shape as the Delta transaction log from W08, applied to models instead of tables. **DDIA Chapter 13** (A Philosophy of Streaming Systems, renamed from "The Future of Data Systems" in the 2nd edition) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
+- [MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html): for Part 5. Registered models, versions, and aliases. The mental model that transfers: a registry is a commit log with movable pointers, the same shape as the Delta transaction log from W08, applied to models instead of tables. **DDIA Chapter 13** (A Philosophy of Streaming Systems, renamed from "The Future of Data Systems" in the 2nd edition) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the unit you're doing exactly that.
 
 ---
 
@@ -207,8 +207,8 @@ No required reading tied to this week's build. This week synthesizes W08, W09, W
 
 These aren't required but give you broader context:
 
-- **DDIA Chapter 8**, Transactions. No week in this curriculum implements isolation levels or multi-object transactions, so there's no clean place to attach it as required reading, but it's the one DDIA chapter this curriculum otherwise skips entirely, and it's foundational enough to be worth reading on its own rather than forced into an unrelated week.
-- **DDIA Chapter 4** (2nd ed.) also gained a Vector Embeddings section, folded into the storage-and-retrieval chapter alongside full-text and multidimensional indexing. No week currently builds against it, but it's the most directly AI-relevant new material in the 2nd edition and worth reading given the curriculum's focus on AI workflows; a natural pairing with W12's attention/KV-cache work if you want the retrieval side of the same systems.
+- **DDIA Chapter 8**, Transactions. No unit in this curriculum implements isolation levels or multi-object transactions, so there's no clean place to attach it as required reading, but it's the one DDIA chapter this curriculum otherwise skips entirely, and it's foundational enough to be worth reading on its own rather than forced into an unrelated unit.
+- **DDIA Chapter 4** (2nd ed.) also gained a Vector Embeddings section, folded into the storage-and-retrieval chapter alongside full-text and multidimensional indexing. No unit currently builds against it, but it's the most directly AI-relevant new material in the 2nd edition and worth reading given the curriculum's focus on AI workflows; a natural pairing with W12's attention/KV-cache work if you want the retrieval side of the same systems.
 - [The Google File System](https://dl.acm.org/doi/10.1145/945445.945450): Ghemawat et al., SOSP 2003, the original scale-out storage paper
 - [Bigtable: A Distributed Storage System for Structured Data](https://dl.acm.org/doi/10.1145/1365815.1365816): Chang et al., OSDI 2006
 - [The Chubby Lock Service for Loosely-Coupled Distributed Systems](https://research.google/pubs/the-chubby-lock-service-for-loosely-coupled-distributed-systems/): Burrows, Google, OSDI 2006, free PDF. Google's Paxos-based lock and small-file coordination service, the direct conceptual ancestor of etcd and ZooKeeper. A natural pairing with W13's Raft paper and W14's hands-on etcd cluster: same problem (a small, strongly-consistent coordination service other systems depend on), Paxos instead of Raft underneath. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.

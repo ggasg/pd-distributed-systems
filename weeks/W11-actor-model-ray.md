@@ -5,7 +5,7 @@ status: not-started
 
 # W11: The Actor Model and Ray
 
-> **Arc:** Distributed ML & Compute · **Language:** Python (Ray)
+> **Arc:** Distributed ML Systems · **Language:** Python (Ray)
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
@@ -19,7 +19,7 @@ A Ray-based actor system in Python that retrains the same data-parallel MNIST jo
 - [ ] Optional: [A Universal Modular ACTOR Formalism for Artificial Intelligence](https://www.ijcai.org/Proceedings/73/Papers/027B.pdf) (Hewitt, Bishop, Steiger, IJCAI 1973): read Sections 1–3. This is the original actor model paper, no Erlang or Akka involved. The core claim: an actor is a computational primitive that has private state, communicates only via asynchronous messages, and processes one message at a time. Everything Ray does with actors is this idea, 45 years later.
 - [ ] [Ray: A Distributed Framework for Emerging AI Applications](https://www.usenix.org/system/files/osdi18-moritz.pdf) (Moritz et al., OSDI 2018): read Section 3 (Programming Model) closely, skim the rest. Focus on how Ray unifies stateless *tasks* and stateful *actors* under one API, and why that distinction exists at all.
 
-**A note on why this week uses Ray specifically.** Ray moved to the PyTorch Foundation, under the Linux Foundation, in October 2025, alongside PyTorch and vLLM. Anyscale, the company originally behind it, was acquired by Nscale in 2026, and the project's neutral governance is the reason that acquisition changes nothing about what you're learning here: the framework is community-governed and runs on any infrastructure. So this week is not a bet on a vendor. It is the only mainstream way to work with the actor model in Python ML infrastructure, and the actor model is the actual subject. Ray appears exactly once in this curriculum, here, for that reason; the orchestration layer in W14 and W16 deliberately uses the vendor-neutral Kubeflow Trainer instead, so no single framework carries more of this plan than it has earned.
+**A note on why this unit uses Ray specifically.** Ray moved to the PyTorch Foundation, under the Linux Foundation, in October 2025, alongside PyTorch and vLLM. Anyscale, the company originally behind it, was acquired by Nscale in 2026, and the project's neutral governance is the reason that acquisition changes nothing about what you're learning here: the framework is community-governed and runs on any infrastructure. So this unit is not a bet on a vendor. It is the only mainstream way to work with the actor model in Python ML infrastructure, and the actor model is the actual subject. Ray appears exactly once in this curriculum, here, for that reason; the orchestration layer in W14 and W16 deliberately uses the vendor-neutral Kubeflow Trainer instead, so no single framework carries more of this plan than it has earned.
 
 **Depth: read Section 3 of the Ray paper.** Hewitt 1973 is a skim; it is worth seeing the original framing, but the actor model's content here comes from using it, not from the paper.
 
@@ -37,7 +37,7 @@ Scenario: reimplement W09's data-parallel training job, but with two changes: wo
 - [ ] `worker_actor.py`: `@ray.remote class TrainerWorker`. Holds a local copy of the model and optimizer as actor state (set once in `__init__`, mutated across calls, this is the part a stateless task couldn't do). Methods: `compute_gradients(batch) -> grads`, `apply_gradients(grads) -> None`, `set_weights(weights) -> None`, `get_weights() -> weights`.
 - [ ] `parameter_server_actor.py`: `@ray.remote class ParameterServer`. Holds the canonical model weights. Methods: `push_gradients(worker_id, grads) -> None` (accumulates gradients from each worker; once all N workers for this round have pushed, averages them and updates its own weights), `pull_weights() -> weights`. Note that Ray guarantees calls to a single actor are processed one at a time, so `push_gradients` from concurrent workers can safely mutate shared accumulator state with no explicit lock.
 - [ ] `train.py`: `ray.init()`, spin up N `TrainerWorker` actors and 1 `ParameterServer` actor. Each round: workers `pull_weights()`, run a local batch through `compute_gradients()`, `push_gradients()` to the server; once the server has averaged, workers `pull_weights()` again for the next round. Train for 5 epochs on MNIST, same shard split as W09.
-- [ ] `compare.py`: run the same training job three ways and print wall-clock time plus final accuracy for each: (1) single-process sequential baseline, (2) W09's raw-socket ring-allreduce (import directly from `code/distributed-training/`), (3) this week's Ray actor-based parameter server.
+- [ ] `compare.py`: run the same training job three ways and print wall-clock time plus final accuracy for each: (1) single-process sequential baseline, (2) W09's raw-socket ring-allreduce (import directly from `code/distributed-training/`), (3) this unit's Ray actor-based parameter server.
 
 **Verify:** all three implementations in `compare.py` converge to comparable accuracy (within a couple percentage points). Run `ray list actors` (or `ray.util.state.list_actors()`) during training and confirm N+1 actors are alive.
 

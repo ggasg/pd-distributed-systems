@@ -21,10 +21,10 @@ Instrument your W05 shuffle (Java) with Prometheus metrics, OpenTelemetry traces
 - [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3** (The Sidecar Pattern): read before Part 3 below. You're about to build a log-aggregator sidecar and wire it into a node Pod of the `TrainJob` from W14 without ever naming what you're doing; this chapter names it, and walks through the same "modular container with its own small API, composed alongside a main container it knows nothing about" design your log aggregator follows.
 - [ ] [Prometheus data model + metric types](https://prometheus.io/docs/concepts/data_model/): Counter vs Gauge vs Histogram vs Summary. Know when to use each. When to NOT use a Summary. (~20 min)
 - [ ] Optional: [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/): read "Signals > Traces" and "Signals > Metrics". Understand what a Span is, what attributes are for, how traces differ from metrics. (~25 min)
-- [ ] **DDIA Chapter 2** (2nd ed.), Defining Nonfunctional Requirements. This is where reliability, scalability, and maintainability get defined precisely rather than used as adjectives, and where response-time percentiles and tail latency are treated properly. It is deliberately read here rather than in W00: in week zero it is vocabulary with nothing to attach to, and here you have a running system, a histogram you are about to configure wrong on purpose, and a p99 that is about to lie to you. Read it as the chapter that tells you what the numbers on your dashboard are supposed to mean.
+- [ ] **DDIA Chapter 2** (2nd ed.), Defining Nonfunctional Requirements. This is where reliability, scalability, and maintainability get defined precisely rather than used as adjectives, and where response-time percentiles and tail latency are treated properly. It is deliberately read here rather than in W00: there it is vocabulary with nothing to attach to, and here you have a running system, a histogram you are about to configure wrong on purpose, and a p99 that is about to lie to you. Read it as the chapter that tells you what the numbers on your dashboard are supposed to mean.
 - [ ] Optional: [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): free online, the four golden signals. Substantially overlaps DDIA Ch.2 above, so read it only if you want the same material from an operations angle rather than a design one. (~25 min)
 
-**Depth: study DDIA Ch.2.** This is the week's one deep reading and it is placed here on purpose, because percentiles and tail latency need a running system to mean anything. The Prometheus data model page is a short read. OpenTelemetry concepts, Burns Ch.3, and the SRE chapter are skims.
+**Depth: study DDIA Ch.2.** This is the unit's one deep reading and it is placed here on purpose, because percentiles and tail latency need a running system to mean anything. The Prometheus data model page is a short read. OpenTelemetry concepts, Burns Ch.3, and the SRE chapter are skims.
 
 **Key question:** Why are histograms better than averages for latency? What does p99 tell you that avg hides?
 
@@ -119,7 +119,7 @@ Add observability to `code/shuffle/` (your W05 shuffle). This is a better instru
 
 ## Reflect
 
-**What the four golden signals are and which ones your DD engine was "blind" to before this week:**
+**What the four golden signals are and which ones your DD engine was "blind" to before this unit:**
 
 **What your p99 looked like with mismatched histogram buckets, and coarse-buckets vs. too-many-buckets, which would you default to and why (from Break it, then decide above)?**
 

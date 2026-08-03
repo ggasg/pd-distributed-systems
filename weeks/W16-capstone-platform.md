@@ -8,7 +8,7 @@ status: not-started
 > **Arc:** Optional capstone · **Language:** Python (+ Helm/YAML), reuses W08, W09, W12, W13, W15; deploys via Kubeflow Trainer from W14
 > **Budget:** this one is a project, not a 5-hour unit. Expect 20 to 30 hours spread over as long as it takes, and treat each Part as its own sitting. It is optional for exactly this reason.
 
-> **Status:** Optional / stretch week. Not required to finish the core curriculum (W00 to W15).
+> **Status:** Optional stretch project, not a unit. Not required to finish the core curriculum (W00 to W15).
 
 **Prerequisite:** W08 (feature pipeline), W09 (distributed training), W12 (attention + KV cache), W13 (Chandy-Lamport snapshots), W14 (Kubernetes Operators), and W15 (Observability) all completed.
 
@@ -16,13 +16,13 @@ status: not-started
 
 A small end-to-end distributed ML platform on your kind cluster: a versioned feature pipeline feeds a tiny attention-based model that trains across multiple worker Pods via ring-allreduce, checkpoints itself so a killed worker resumes instead of retraining from scratch, runs as a `TrainJob` under the Kubeflow Trainer operator you installed in W14 (you're operating a real operator here, not extending one you wrote), lands in a model registry that records which data version produced it, and is served afterward from a specific registered version through a KV-cached inference endpoint, all instrumented with the Prometheus/Grafana stack from W15.
 
-**Why this week exists:** it chains six weeks into a single working system, end to end, on your own cluster: data in, model trained, failure survived, model served, everything observed. It's the closest thing in this curriculum to what you'd actually build on the job, and it's the only place the pieces get tested against each other rather than in isolation.
+**Why this unit exists:** it chains six units into a single working system, end to end, on your own cluster: data in, model trained, failure survived, model served, everything observed. It's the closest thing in this curriculum to what you'd actually build on the job, and it's the only place the pieces get tested against each other rather than in isolation.
 
 ---
 
 ## Read
 
-No new required reading tied to this week's build. If any of these feel rusty, skim your own notes before starting:
+No new required reading tied to this unit's build. If any of these feel rusty, skim your own notes before starting:
 
 - W09: ring-allreduce, and why it's bandwidth-efficient
 - W12: KV cache, and why it turns O(N²) generation into O(N)
@@ -30,9 +30,9 @@ No new required reading tied to this week's build. If any of these feel rusty, s
 - W14: the reconcile loop, and why it's level-triggered
 - W15: the four golden signals
 
-One genuinely new read, if you want it: **DDIA Chapter 13** (2nd ed.), A Philosophy of Streaming Systems (renamed from "The Future of Data Systems"). It's the book's own synthesis chapter (unbundling databases into composable derived-data systems, correctness as a property of the whole pipeline rather than any one component), and this is the week where that stops being abstract and becomes the actual shape of what you built: a feature store, a trainer, a checkpoint coordinator, an operator, and a server, each correct on its own, wired into one pipeline where correctness is a property of the whole. Fitting bookend to a curriculum that leaned on this book throughout.
+One genuinely new read, if you want it: **DDIA Chapter 13** (2nd ed.), A Philosophy of Streaming Systems (renamed from "The Future of Data Systems"). It's the book's own synthesis chapter (unbundling databases into composable derived-data systems, correctness as a property of the whole pipeline rather than any one component), and this is the unit where that stops being abstract and becomes the actual shape of what you built: a feature store, a trainer, a checkpoint coordinator, an operator, and a server, each correct on its own, wired into one pipeline where correctness is a property of the whole. Fitting bookend to a curriculum that leaned on this book throughout.
 
-**Depth: skim your own notes, study nothing new.** This week is synthesis. If a concept feels shaky, the fix is to reread what you wrote in that week's Reflect section, not to reread the paper.
+**Depth: skim your own notes, study nothing new.** This unit is synthesis. If a concept feels shaky, the fix is to reread what you wrote in that unit's Reflect section, not to reread the paper.
 
 **Key question:** If a worker dies mid-training and the operator restarts it, what exactly needs to be true about the checkpoint for the resumed training to be *correct*, not just "the process didn't crash"?
 
@@ -100,7 +100,7 @@ This is W08's lesson again, one level up. Replacing a `latest.txt` pointer with 
 
 ## Reflect
 
-**What was the hardest integration point? Where did two weeks' code not fit together as cleanly as you expected?**
+**What was the hardest integration point? Where did two units' code not fit together as cleanly as you expected?**
 
 **What does "consistent checkpoint" mean in your system, concretely? Not the textbook definition, the thing you actually had to guarantee.**
 

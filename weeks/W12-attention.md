@@ -5,7 +5,7 @@ status: not-started
 
 # W12: Attention, KV Cache, and Cache-Aware Routing
 
-> **Arc:** Distributed ML & Compute · **Language:** Python (NumPy only)
+> **Arc:** Distributed ML Systems · **Language:** Python (NumPy only)
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
@@ -38,7 +38,7 @@ Project: `code/attention/` (Python 3.12+, NumPy only)
 
 Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=256`.
 
-**Given, not built:** `attention.py`'s `MultiHeadAttention` class is provided as a starter file: `__init__` (random `W_q`/`W_k`/`W_v`/`W_o` projections, shape `[d_model, d_model]`), `scaled_dot_product(Q, K, V, mask=None)` (`softmax(QK^T / sqrt(d_head)) V`, with an optional causal mask), and `forward(X)` (split into heads, apply SDPA per head, concatenate, project with `W_o`). Read it closely enough to know what shape `forward(X)` expects and returns, since `kv_cache.py` and `generate.py` both call into it directly, but you won't need to modify it. Deriving this mechanism yourself is real, valuable work; it's just not what this week is testing.
+**Given, not built:** `attention.py`'s `MultiHeadAttention` class is provided as a starter file: `__init__` (random `W_q`/`W_k`/`W_v`/`W_o` projections, shape `[d_model, d_model]`), `scaled_dot_product(Q, K, V, mask=None)` (`softmax(QK^T / sqrt(d_head)) V`, with an optional causal mask), and `forward(X)` (split into heads, apply SDPA per head, concatenate, project with `W_o`). Read it closely enough to know what shape `forward(X)` expects and returns, since `kv_cache.py` and `generate.py` both call into it directly, but you won't need to modify it. Deriving this mechanism yourself is real, valuable work; it's just not what this unit is testing.
 
 - [ ] `kv_cache.py`: `KVCache` class:
   - Stores past keys and values per layer: `Dict[int, Tuple[np.ndarray, np.ndarray]]`
@@ -90,7 +90,7 @@ Same project, `code/attention/`. Still NumPy and the standard library.
 
 ### Where this lives in the real world (read only)
 
-Worth knowing, because it connects two weeks that otherwise sit apart. The production version of `router.py` is not part of the model server at all. It's a component of the Kubernetes control plane: the Gateway API Inference Extension is a Go project, and llm-d's Endpoint Picker is the same idea running as a Kubernetes-native service. Routing has to live there because it needs facts about every replica's state, and the thing that already tracks every replica is the control plane.
+Worth knowing, because it connects two units that otherwise sit apart. The production version of `router.py` is not part of the model server at all. It's a component of the Kubernetes control plane: the Gateway API Inference Extension is a Go project, and llm-d's Endpoint Picker is the same idea running as a Kubernetes-native service. Routing has to live there because it needs facts about every replica's state, and the thing that already tracks every replica is the control plane.
 
 That is the same layer W14 is about, and it's the honest answer to why this curriculum has you write Go at all. The tensors are C++ and the model is Python, but deciding *which* replica gets a request, and which GPU that replica runs on, is Go, and it is where an inference platform is actually engineered.
 

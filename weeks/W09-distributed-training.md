@@ -5,13 +5,13 @@ status: not-started
 
 # W09: Distributed Training
 
-> **Arc:** Distributed ML & Compute · **Language:** Python
+> **Arc:** Distributed ML Systems · **Language:** Python
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 Data-parallel training using Python multiprocessing and raw sockets, built entirely around the distributed mechanics rather than the model. You're given a small, already-implemented 2-layer MLP (forward, backward, and the ReLU/softmax/cross-entropy math all provided); deriving backpropagation by hand is real, valuable work that belongs to a dedicated ML/AI track, not this one. Two workers each train on half of MNIST using that provided model, exchange gradients via allreduce (ring-allreduce), and converge to the same result. No PyTorch distributed, no Horovod.
 
-**Scenario:** a training run that's been going for six hours stalls with no error, no crash, no log line, it's just stuck. One worker died mid-step and the other is blocked on a socket read that will never return. This is a real, common way distributed training jobs waste GPU-hours, and it's built directly into this week's implementation so you can watch it happen on a small, safe scale.
+**Scenario:** a training run that's been going for six hours stalls with no error, no crash, no log line, it's just stuck. One worker died mid-step and the other is blocked on a socket read that will never return. This is a real, common way distributed training jobs waste GPU-hours, and it's built directly into this unit's implementation so you can watch it happen on a small, safe scale.
 
 ---
 
@@ -34,7 +34,7 @@ Dependencies: `numpy`, `torch` (for data loading only, no `torch.distributed`), 
 
 Model: 2-layer MLP on MNIST (784 → 128 → 10). Implemented in NumPy only.
 
-**Given, not built:** `mlp.py` is provided as a starter file, an `MLP` class with `forward(X)`, `backward(X, Y)`, `params()` (returns list of weight arrays), and `apply_grads(grads)` already implemented (ReLU + softmax + cross-entropy, no PyTorch). Read it once so you know what `worker.py` is calling; you won't need to modify it. Deriving backpropagation by hand is a legitimate exercise on its own, it's just not this week's exercise: the thing actually being tested here is whether your ring-allreduce implementation correctly and efficiently synchronizes gradients across two independent processes, and handing you a working model keeps every hour of this week pointed at that question instead of splitting time with calculus.
+**Given, not built:** `mlp.py` is provided as a starter file, an `MLP` class with `forward(X)`, `backward(X, Y)`, `params()` (returns list of weight arrays), and `apply_grads(grads)` already implemented (ReLU + softmax + cross-entropy, no PyTorch). Read it once so you know what `worker.py` is calling; you won't need to modify it. Deriving backpropagation by hand is a legitimate exercise on its own, it's just not this unit's exercise: the thing actually being tested here is whether your ring-allreduce implementation correctly and efficiently synchronizes gradients across two independent processes, and handing you a working model keeps every hour of this unit pointed at that question instead of splitting time with calculus.
 
 - [ ] `ring_allreduce.py`: implement ring-allreduce for a list of NumPy arrays:
   - Each worker has a rank and knows the total number of workers
