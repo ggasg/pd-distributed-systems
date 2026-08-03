@@ -1,11 +1,12 @@
 ---
-week_number: 6
+week_number: 5
 status: not-started
 ---
 
-# W06: Partitioning and the Shuffle
+# W05: Partitioning and the Shuffle
 
 > **Arc:** Streaming and Dataflow · **Language:** Java
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 A working shuffle in Java: map tasks that split their output into per-partition spill files, reduce tasks that fetch their own partition from every map task, and a partitioner that decides which key goes where. Then you feed it a skewed key distribution and watch one reducer do most of the work.
@@ -21,6 +22,8 @@ If "shuffle" is a word you've heard without a firm picture behind it, here it is
 - [ ] [Spark RDD Programming Guide, "Shuffle operations"](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations): short, concrete, and describes exactly the map-side-write then reduce-side-fetch structure you're about to build. Read the "Performance Impact" subsection twice.
 - [ ] Optional: [The Snowflake Elastic Data Warehouse](https://dl.acm.org/doi/10.1145/2882903.2903741) (Dageville et al., SIGMOD 2016; also [free PDF](https://event.cwi.nl/lsde/papers/p215-dageville-snowflake.pdf)): Sections 3 and 4. Worth reading for how a system that separates storage from compute still has to solve the same data-exchange problem, just with object storage in the middle instead of local disk.
 
+**Depth: study DDIA Ch.7.** You build a partitioner and then reproduce the hot-spot problem the chapter describes, so the two reinforce each other directly. The Spark shuffle page is a short read. Snowflake and Dynamo are skims, and both are optional.
+
 **Key question:** Why does a shuffle write to disk at all, instead of streaming records straight from map tasks to reduce tasks over the network? What breaks if you don't?
 
 ---
@@ -31,7 +34,7 @@ Project: `code/shuffle/` (Java 21, Maven)
 
 Data model: `record Record(String key, int value) {}`. The job is a word-count-shaped aggregation, sum of `value` per `key`, deliberately simple so the mechanics stay the subject.
 
-- [ ] `Partitioner.java`: `sealed interface Partitioner permits HashPartitioner, RangePartitioner { int partitionFor(String key); }`. This is the same sealed-interface idiom you used for `StreamItem` in W05, reused rather than newly introduced. `HashPartitioner` is `Math.floorMod(key.hashCode(), numPartitions)`; use `floorMod`, not `%`, because `hashCode()` can be negative and `%` in Java preserves the sign, which would hand you a negative array index. `RangePartitioner` takes a sorted array of split-point keys and binary-searches (`Arrays.binarySearch`) to find the partition.
+- [ ] `Partitioner.java`: `sealed interface Partitioner permits HashPartitioner, RangePartitioner { int partitionFor(String key); }`. This is the same sealed-interface idiom you used for `StreamItem` in W04, reused rather than newly introduced. `HashPartitioner` is `Math.floorMod(key.hashCode(), numPartitions)`; use `floorMod`, not `%`, because `hashCode()` can be negative and `%` in Java preserves the sign, which would hand you a negative array index. `RangePartitioner` takes a sorted array of split-point keys and binary-searches (`Arrays.binarySearch`) to find the partition.
 - [ ] `MapTask.java`: takes a `List<Record>` and a `Partitioner`, and writes one file per reduce partition into `spill/map-<mapId>/part-<partitionId>`. Each file is plain text, one `key,value` pair per line. Writing R files instead of one is the whole point: a reduce task should be able to read only what belongs to it.
 - [ ] `ReduceTask.java`: for partition `p`, read `spill/map-*/part-<p>` from every map task, sum values per key, and write `output/part-<p>`. Return the number of records it processed, you will need that number later.
 - [ ] `Shuffle.java`: wire M map tasks and R reduce tasks together and run them. Keep it single-JVM and run the tasks on plain threads (or sequentially, which is fine and easier to debug). The network is simulated by the filesystem here, deliberately: real spill-to-disk then fetch is what Spark actually does, so this is a simplification of scale, not of structure.
@@ -48,7 +51,7 @@ Data model: `record Record(String key, int value) {}`. The job is a word-count-s
 
 ---
 
-## 🐍 Python DSA Review (optional)
+## Rehearse it in Python first (optional, 20 minutes)
 
 **Consistent hashing ring**: the standard alternative to modulo partitioning, and the reason adding a node to a cache cluster doesn't invalidate every key at once.
 

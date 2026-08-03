@@ -1,26 +1,30 @@
 ---
-week_number: 20
+week_number: 16
 status: not-started
 ---
 
-# W20: Observability: Metrics, Tracing, Logging
+# W16: Observability: Metrics, Tracing, Logging
 
 > **Arc:** Infrastructure · **Language:** Java + Go
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
-Instrument your W07 Differential Dataflow engine (Java) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
+Instrument your W06 Differential Dataflow engine (Java) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
 
 **Scenario:** a dashboard with a confident-looking p99 line is worse than no dashboard at all if the number on it is wrong, because now everyone trusts it. Histogram bucket boundaries are the single easiest way to make that happen silently, and the exercise below shows you exactly how.
 
-**Prerequisites:** W00 (kind + Prometheus + Grafana), W07 (DD engine).
+**Prerequisites:** W00 (kind + Prometheus + Grafana), W06 (DD engine).
 
 ---
 
 ## Read
-- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3** (The Sidecar Pattern): read before Part 3 below. You're about to build a log-aggregator sidecar and wire it into a node Pod of the `TrainJob` from W19 without ever naming what you're doing; this chapter names it, and walks through the same "modular container with its own small API, composed alongside a main container it knows nothing about" design your log aggregator follows.
+- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3** (The Sidecar Pattern): read before Part 3 below. You're about to build a log-aggregator sidecar and wire it into a node Pod of the `TrainJob` from W15 without ever naming what you're doing; this chapter names it, and walks through the same "modular container with its own small API, composed alongside a main container it knows nothing about" design your log aggregator follows.
 - [ ] [Prometheus data model + metric types](https://prometheus.io/docs/concepts/data_model/): Counter vs Gauge vs Histogram vs Summary. Know when to use each. When to NOT use a Summary. (~20 min)
-- [ ] [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/): read "Signals > Traces" and "Signals > Metrics". Understand what a Span is, what attributes are for, how traces differ from metrics. (~25 min)
-- [ ] [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): free online. The four golden signals. (~25 min)
+- [ ] Optional: [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/): read "Signals > Traces" and "Signals > Metrics". Understand what a Span is, what attributes are for, how traces differ from metrics. (~25 min)
+- [ ] **DDIA Chapter 2** (2nd ed.), Defining Nonfunctional Requirements. This is where reliability, scalability, and maintainability get defined precisely rather than used as adjectives, and where response-time percentiles and tail latency are treated properly. It is deliberately read here rather than in W00: in week zero it is vocabulary with nothing to attach to, and here you have a running system, a histogram you are about to configure wrong on purpose, and a p99 that is about to lie to you. Read it as the chapter that tells you what the numbers on your dashboard are supposed to mean.
+- [ ] Optional: [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): free online, the four golden signals. Substantially overlaps DDIA Ch.2 above, so read it only if you want the same material from an operations angle rather than a design one. (~25 min)
+
+**Depth: study DDIA Ch.2.** This is the week's one deep reading and it is placed here on purpose, because percentiles and tail latency need a running system to mean anything. The Prometheus data model page is a short read. OpenTelemetry concepts, Burns Ch.3, and the SRE chapter are skims.
 
 **Key question:** Why are histograms better than averages for latency? What does p99 tell you that avg hides?
 
@@ -30,7 +34,7 @@ Instrument your W07 Differential Dataflow engine (Java) with Prometheus metrics,
 
 **Part 1: Instrument the DD Engine (Java)**
 
-Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
+Add observability to `code/dd-scratch/` (your W06 Differential Dataflow engine).
 
 - [ ] Add dependencies via Maven (`pom.xml`):
   - [`io.prometheus:prometheus-metrics-core`](https://github.com/prometheus/client_java) (the same Prometheus Java client W00 already uses) plus `prometheus-metrics-exporter-httpserver`, which gives you a standalone metrics HTTP server without wiring `/metrics` into your own `HttpServer` by hand this time. Note the artifact names: the pre-1.0 client used `simpleclient_*`, and a lot of tutorials still show that. The 1.x API is what you want, and it reads slightly differently, `builder()` rather than `build()` and `labelValues()` rather than `labels()`
@@ -62,7 +66,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
 **Part 2: Grafana Dashboard**
 
-- [ ] Containerize the instrumented DD engine (`Dockerfile`: the same multi-stage `maven:3.9-eclipse-temurin-21` builder → `eclipse-temurin:21-jre-alpine` runtime shape as W00 and W17; k8s `Deployment` + `ServiceMonitor`)
+- [ ] Containerize the instrumented DD engine (`Dockerfile`: the same multi-stage `maven:3.9-eclipse-temurin-21` builder → `eclipse-temurin:21-jre-alpine` runtime shape as W00 and W14; k8s `Deployment` + `ServiceMonitor`)
 - [ ] Deploy to kind: `kind load docker-image dd-engine:latest --name pd-systems && kubectl apply -f k8s/`
 - [ ] In Grafana, create a dashboard with 4 panels:
   - `rate(updates_processed_total[1m])`: update throughput (graph)
@@ -71,16 +75,18 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   - `active_keys`: gauge value over time (graph)
 - [ ] Export the dashboard as `config/grafana-dashboard.json` (Grafana → Share → Export)
 
-**Part 3: Go log aggregator, wired into W19's TrainJob**
+**Part 3 (optional, stretch): Go log aggregator, wired into W15's TrainJob**
 
-- [ ] `tools/log-aggregator/main.go`: HTTP server (`net/http`, standard library, matching the same "no framework needed for two routes" approach every other small service in this curriculum uses) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W12's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `sync.RWMutex`, not a plain `sync.Mutex`. A 100-line cap means a real burst, a tight retry loop, a noisy dependency, anything logging faster than something reads `/logs`, silently evicts the oldest lines before anyone sees them. Decide whether that's acceptable for this sidecar's actual job (a debugging aid, not a durability guarantee) or whether you'd rather have `POST /log` block or reject once the buffer's full instead of silently dropping the oldest entry; whichever you pick, say what it would cost the trainer container if `POST /log` ever blocked on a full buffer. That's not a stylistic preference: `POST /log` is a rare write, `GET /logs` can be a frequent read, and a plain `Mutex` serializes every read behind every other read even though none of them mutate anything; `RWMutex`'s `RLock`/`RUnlock` let concurrent readers through together and only blocks them against the occasional writer. Go's runtime doesn't have the virtual-thread-pinning failure mode a `synchronized` block causes on the JVM, goroutines don't get pinned to an OS thread by holding a lock, but an unnecessarily exclusive lock is still a real, measurable throughput cost under concurrent reads, just a different mechanism than pinning.
+> Parts 1 and 2 are the unit. The sidecar is a satisfying build and a genuinely different pattern, but it is a second sitting, not the same one.
+
+- [ ] `tools/log-aggregator/main.go`: HTTP server (`net/http`, standard library, matching the same "no framework needed for two routes" approach every other small service in this curriculum uses) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W10's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `sync.RWMutex`, not a plain `sync.Mutex`. A 100-line cap means a real burst, a tight retry loop, a noisy dependency, anything logging faster than something reads `/logs`, silently evicts the oldest lines before anyone sees them. Decide whether that's acceptable for this sidecar's actual job (a debugging aid, not a durability guarantee) or whether you'd rather have `POST /log` block or reject once the buffer's full instead of silently dropping the oldest entry; whichever you pick, say what it would cost the trainer container if `POST /log` ever blocked on a full buffer. That's not a stylistic preference: `POST /log` is a rare write, `GET /logs` can be a frequent read, and a plain `Mutex` serializes every read behind every other read even though none of them mutate anything; `RWMutex`'s `RLock`/`RUnlock` let concurrent readers through together and only blocks them against the occasional writer. Go's runtime doesn't have the virtual-thread-pinning failure mode a `synchronized` block causes on the JVM, goroutines don't get pinned to an OS thread by holding a lock, but an unnecessarily exclusive lock is still a real, measurable throughput cost under concurrent reads, just a different mechanism than pinning.
 - [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.26` builder → `gcr.io/distroless/static` runtime, the same shape as W00's), `EXPOSE 8080`.
-- [ ] Build and load into the kind cluster from W19:
+- [ ] Build and load into the kind cluster from W15:
   ```bash
   docker build -t log-aggregator:latest tools/log-aggregator
   kind load docker-image log-aggregator:latest --name pd-systems
   ```
-- [ ] Add the sidecar to your W19 `TrainJob`'s node Pod template (`code/operator/config/train-job.yaml`), as a second entry alongside the existing trainer container:
+- [ ] Add the sidecar to your W15 `TrainJob`'s node Pod template (`code/operator/config/train-job.yaml`), as a second entry alongside the existing trainer container:
   ```yaml
   - name: log-aggregator
     image: log-aggregator:latest
@@ -103,11 +109,11 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
   kubectl exec $POD -c <trainer-container> -- wget -qO- localhost:8080/logs
   # the posted line should come back
   ```
-  Spark Operator's `spec.executor.sidecars` field is the equivalent mechanism on the other operator from W19, worth knowing exists if you want to try the same thing there.
+  Spark Operator's `spec.executor.sidecars` field is the equivalent mechanism on the other operator from W15, worth knowing exists if you want to try the same thing there.
 
 **Minimum bar:** the node Pod runs two containers; the trainer container reaches the sidecar over `localhost` with no Service or DNS involved; a log line posted from the trainer round-trips through `GET /logs`.
 
-**If you also stood up Spark Operator in W19:** Kubeflow's Spark Operator supports the same idea natively too, `spec.driver.sidecars` and `spec.executor.sidecars` on a `SparkApplication`. Wiring your log aggregator in there as well is optional, not required for the minimum bar, but worth doing if you want the comparison: a batch job's driver/executor Pods are short-lived, so the sidecar's job there is closer to "capture logs before the Pod disappears" than the standing-cluster case above.
+**If you also stood up Spark Operator in W15:** Kubeflow's Spark Operator supports the same idea natively too, `spec.driver.sidecars` and `spec.executor.sidecars` on a `SparkApplication`. Wiring your log aggregator in there as well is optional, not required for the minimum bar, but worth doing if you want the comparison: a batch job's driver/executor Pods are short-lived, so the sidecar's job there is closer to "capture logs before the Pod disappears" than the standing-cluster case above.
 
 ---
 
@@ -121,7 +127,7 @@ Add observability to `code/dd-scratch/` (your W07 Differential Dataflow engine).
 
 **What tracing reveals that metrics alone can't (think: which operator is slow for which specific inputs):**
 
-**How you'd extend this instrumentation to W12's distributed training setup:**
+**How you'd extend this instrumentation to W10's distributed training setup:**
 
 **What you'd change to have the DD engine actually ship its JSON log lines to the sidecar over `localhost:8080/log` instead of stdout (the exercise above only proves connectivity via a synthetic curl, not the real log path):**
 

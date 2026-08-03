@@ -8,24 +8,30 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 | Book | Author | Weeks | Notes |
 |------|--------|-------|-------|
-| [Designing Data-Intensive Applications (DDIA), 2nd ed.](https://dataintensive.net) | Kleppmann & Riccomini (2026) | W00, W01, W02, W03, W04, W05, W06, W09 (optional), W17 (optional), W18 (Option A, plus optional companion), W21 (optional) | The single most useful book for this curriculum. Buy it. 2nd edition (Feb 2026) restructures the whole book: 12 chapters became 14, and every chapter after the first is renumbered. Chapter references below are to the 2nd edition. |
-| [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W04, W17 | For concurrency primitives and correctness |
-| [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W20 | O'Reilly; pairs well with the Google SRE chapter |
-| [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W20 | **Free online.** Read Ch. 6 (Monitoring Distributed Systems) |
-| [Designing Distributed Systems, 2nd ed.](https://info.microsoft.com/rs/157-GQE-382/images/EN-CNTNT-eBook-DesigningDistributedSystems.pdf) | Burns (2024) | W16 (optional), W19, W20 | O'Reilly; free PDF via Microsoft's sponsored download. Kubernetes-native pattern catalog: sidecar, ambassador, adapter, plus a new AI Inference and Serving chapter in the 2nd edition |
+| [Designing Data-Intensive Applications (DDIA), 2nd ed.](https://dataintensive.net) | Kleppmann & Riccomini (2026) | Ch.1 pre-curriculum, then W01, W02, W03, W04, W05, W08 (optional), W14 (optional), W16, W17 (optional) | The single most useful book for this curriculum. Buy it. 2nd edition (Feb 2026) restructures the whole book: 12 chapters became 14, and every chapter after the first is renumbered. Chapter references below are to the 2nd edition. |
+| [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W03, W14 | For concurrency primitives and correctness |
+| [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W16 | O'Reilly; pairs well with the Google SRE chapter |
+| [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W16 (optional) | **Free online.** Ch. 6, optional; overlaps DDIA Ch.2 |
+| [Designing Distributed Systems, 2nd ed.](https://info.microsoft.com/rs/157-GQE-382/images/EN-CNTNT-eBook-DesigningDistributedSystems.pdf) | Burns (2024) | W13 (optional), W15, W16 | O'Reilly; free PDF via Microsoft's sponsored download. Kubernetes-native pattern catalog: sidecar, ambassador, adapter, plus a new AI Inference and Serving chapter in the 2nd edition |
 
 ---
 
 ## External Reading Lists
 
-- [A Distributed Systems Reading List](https://dancres.github.io/Pages/) (Dan Creswell): a broad, long-running collection of foundational distributed-systems papers and essays, organized by theme (Google, Amazon, Consensus, Paxos, Gossip Protocols, P2P, and more). Some of it predates this curriculum's focus on ML/AI workloads and isn't a required source anywhere here, but it's a good browsing list once you're past a given week and want more of that theme. Percolator (W07), Dremel (W08), and Chubby (extra-time list below) were added to this curriculum directly from its "Google" section; see the 2026-07-26 CONTEXT.md note for the full audit of that section against what's already covered.
+- [A Distributed Systems Reading List](https://dancres.github.io/Pages/) (Dan Creswell): a broad, long-running collection of foundational distributed-systems papers and essays, organized by theme (Google, Amazon, Consensus, Paxos, Gossip Protocols, P2P, and more). Some of it predates this curriculum's focus on ML/AI workloads and isn't a required source anywhere here, but it's a good browsing list once you're past a given week and want more of that theme. Percolator (W06), Dremel (W07), and Chubby (extra-time list below) were added to this curriculum directly from its "Google" section; see the 2026-07-26 CONTEXT.md note for the full audit of that section against what's already covered.
+
+---
+
+## Before You Start (outside any week's budget)
+
+- **DDIA Chapter 1** (2nd ed.), Trade-Offs in Data Systems Architecture. **Depth: skim.** Read this once, whenever you like, before or during W00. It is orientation rather than prerequisite: nothing in any week depends on having read it, and it contains no mechanism you will implement. What it gives you is the operational-versus-analytical and distributed-versus-single-node framing that the whole curriculum is arranged around, which makes the difference between W01's LSM-tree and W07's columnar executor legible as a deliberate contrast rather than two unrelated builds. Forty-five minutes at skim depth. Do not study it.
+
+DDIA Chapter 2 used to sit alongside it here. It now lives in W16, where reliability, scalability, and tail latency have a running system to attach to.
 
 ---
 
 ## W00: Infrastructure Setup
 
-- **DDIA Chapter 1**: Trade-Offs in Data Systems Architecture. Read before anything else in the curriculum; it isn't tied to this week's build specifically. New in the 2nd edition: the operational-vs-analytical and distributed-vs-single-node framing that used to be implicit is now made explicit up front.
-- **DDIA Chapter 2**: Defining Nonfunctional Requirements. The direct continuation of the old Chapter 1 (Reliability and Fault Tolerance, Scalability, Maintainability); read it right after Chapter 1, same sitting.
 - [kind docs](https://kind.sigs.k8s.io/): Kubernetes in Docker
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack): Helm chart for Prometheus + Grafana
 - [Prometheus Java client library](https://github.com/prometheus/client_java)
@@ -41,15 +47,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W02: Encoding and Wire Formats
-
-- **DDIA Chapter 5**: Encoding and Evolution
-- [Protocol Buffers Encoding](https://protobuf.dev/programming-guides/encoding/): Google docs; the varint encoding spec
-- [MessagePack spec](https://github.com/msgpack/msgpack/blob/master/spec.md): binary JSON alternative worth understanding
-
----
-
-## W03: MapReduce and Its Limits
+## W02: MapReduce and Its Limits
 
 - **DDIA Chapter 11**: Batch Processing. Read this first: it tells the MapReduce-to-Spark story as one continuous narrative and frames it as a point on a spectrum, not a standalone system.
 - [MapReduce: Simplified Data Processing on Large Clusters](https://static.googleusercontent.com/media/research.google.com/en//archive/mapreduce-osdi04.pdf): Dean & Ghemawat, OSDI 2004 (**free PDF**)
@@ -59,7 +57,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W04: Clocks, Causality, Time, and Unreliable Networks
+## W03: Clocks, Causality, Time, and Unreliable Networks
 
 - [Time, Clocks, and the Ordering of Events in a Distributed System](https://dl.acm.org/doi/10.1145/359545.359563): Lamport (1978) (**ACM DL; 10 pages**), read all of it
 - **DDIA Chapter 9**: The Trouble with Distributed Systems (clocks, NTP, monotonic clocks)
@@ -70,7 +68,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W05: Stream Processing Primitives
+## W04: Stream Processing Primitives
 
 - [The Dataflow Model](https://research.google/pubs/the-dataflow-model-a-practical-approach-to-balancing-correctness-latency-and-cost-in-massive-scale-unbounded-out-of-order-data-processing/): Akidau et al., VLDB 2015 (**free PDF via Google Research**), the paper behind Apache Beam and Flink's model
 - **DDIA Chapter 12**: Stream Processing (watermarks, windows, exactly-once)
@@ -80,7 +78,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W06: Partitioning and the Shuffle
+## W05: Partitioning and the Shuffle
 
 - **DDIA Ch.7 (2nd ed.), "Sharding"**: required, the whole chapter. Key-range vs hash sharding, hot spots, rebalancing, and Kleppmann's deliberately skeptical treatment of consistent hashing for databases
 - [Spark RDD Programming Guide: Shuffle operations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations): required, short. The map-side-write then reduce-side-fetch structure this week builds, described by the system that made it famous
@@ -89,7 +87,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W07: Differential Dataflow and Incremental View Maintenance
+## W06: Differential Dataflow and Incremental View Maintenance
 
 - [Differential Dataflow](https://github.com/frankmcsherry/blog/blob/master/posts/2015-09-29.md): McSherry (2013/2015), blog post (**free**), more accessible than the formal paper
 - [Differential Dataflow (formal paper)](https://dl.acm.org/doi/10.1145/2588555.2610364): McSherry, Murray et al., CIDR 2013 (Part 1 reading, Sections 1–2 only)
@@ -102,38 +100,30 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W08: Query Execution
+## W07: Query Execution
 
 - [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032): Graefe (1994), the iterator model; skim for the `open/next/close` interface
 - [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf): Boncz, Zukowski, Nes, CIDR 2005 (**free PDF**), the vectorized execution paper
 - [Dremel: Interactive Analysis of Web-Scale Datasets](https://research.google/pubs/dremel-interactive-analysis-of-web-scale-datasets/): Melnik et al., Google, VLDB 2010 (**free PDF**), optional. Columnar storage (the ancestor of Parquet) plus a multi-level serving tree that fans aggregation out across thousands of machines, the distributed-scale continuation of the single-node vectorized-execution argument above. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.
 - [An Overview of Query Optimization in Relational Systems](https://dl.acm.org/doi/10.1145/275487.275492): Chaudhuri (1998), optional background
-- [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended. A real, actively maintained vectorized query engine in C++, already in your stack via W11's feature store.
+- [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended. A real, actively maintained vectorized query engine in C++, already in your stack via W09's feature store.
 - [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html): optional, context only (a free public blog post, not something you install or test against). Databricks' vectorized engine, written from the ground up in C++, built to replace JVM-based Spark execution for the exact row-vs-vectorized reasons this week benchmarks.
 - [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional. `IProcessor` and `Chunk`-based batching, a second C++ production reference with a different pipeline design than DuckDB or Photon.
 
 ---
 
-## W09: Query Planning: Rules, Then Costs
+## W08: Query Planning: Rules, Then Costs
 
 - **DDIA Chapter 3** (optional): Data Models and Query Languages. Read "Query Languages for Data": the declarative-vs-imperative distinction it draws is exactly why `LogicalPlan` can be rewritten by `PushDownFilter` before anything executes.
 - [Spark SQL: Relational Data Processing in Spark](https://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf): Armbrust et al., SIGMOD 2015 (**free PDF**), Section 4 describes Catalyst directly
 - [Catalyst source: `TreeNode.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/trees/TreeNode.scala): the real `transform`/`transformDown`/`transformUp` combinators
 - [Catalyst source: `Optimizer.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/optimizer/Optimizer.scala): search for `PushDownPredicates`, the production version of Part 1's rewrite rule
 - [How Good Are Query Optimizers, Really?](http://www.vldb.org/pvldb/vol9/p204-leis.pdf): Leis et al., VLDB 2015 (**free PDF**), Part 2 required reading, Sections 1 and 3. Measures how far real optimizers' cardinality estimates drift as joins stack up, and why the error compounds rather than averaging out
-- [Spark: Adaptive Query Execution](https://spark.apache.org/docs/latest/sql-performance-tuning.html#adaptive-query-execution): Part 2 required reading, short. Coalescing shuffle partitions, runtime join-strategy switching, and skew-join splitting, all of which exist because pre-execution estimates weren't good enough. The skew handling is W06's salting exercise done automatically
+- [Spark: Adaptive Query Execution](https://spark.apache.org/docs/latest/sql-performance-tuning.html#adaptive-query-execution): Part 2 required reading, short. Coalescing shuffle partitions, runtime join-strategy switching, and skew-join splitting, all of which exist because pre-execution estimates weren't good enough. The skew handling is W05's salting exercise done automatically
 
 ---
 
-## W10: Aggregation Algebra: Monoids and Semigroups
-
-- [Spark: User Defined Aggregate Functions](https://spark.apache.org/docs/latest/sql-ref-functions-udf-aggregate.html) and the [`Aggregator` scaladoc](https://spark.apache.org/docs/latest/api/scala/org/apache/spark/sql/expressions/Aggregator.html): required. `zero`, `merge`, and `finish` are the monoid identity, the associative combine, and the final projection, under Spark's names. Spark's own documented example is average, which is this week's exercise
-- [Spark source: `RDD.scala`](https://github.com/apache/spark/blob/master/core/src/main/scala/org/apache/spark/rdd/RDD.scala): required, find `treeAggregate`. Separate `seqOp` and `combOp`, combined in a tree of configurable depth. This is W10's `reduceTree` running in production, and associativity is what permits it
-- [`cats.kernel.Semigroup`](https://github.com/typelevel/cats/blob/main/kernel/src/main/scala/cats/kernel/Semigroup.scala) and [`Monoid`](https://github.com/typelevel/cats/blob/main/kernel/src/main/scala/cats/kernel/Monoid.scala): optional, two small files. The general-purpose Scala versions of W10's provided starter files. The surrounding library is deep FP territory and belongs to a dedicated track, not this curriculum
-
----
-
-## W11: ML Data Pipelines
+## W09: ML Data Pipelines
 
 - [Hidden Technical Debt in Machine Learning Systems](https://papers.nips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf): Sculley et al., NeurIPS 2015 (**free PDF**)
 - [Delta Lake: High-Performance ACID Table Storage](https://www.vldb.org/pvldb/vol13/p3411-armbrust.pdf): Armbrust et al., VLDB 2020 (**free PDF**)
@@ -145,7 +135,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W12: Distributed Training
+## W10: Distributed Training
 
 - [Horovod: fast and easy distributed deep learning in TensorFlow](https://arxiv.org/abs/1802.05799): Sergeev & Del Balso (2018) (**free on arXiv**), focus on Section 3 (ring-allreduce)
 - [PyTorch Distributed: Experiences on Accelerating Data Parallel Training](https://arxiv.org/abs/2006.15704): Li et al. (2020) (**free on arXiv**), how DDP actually works
@@ -154,7 +144,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W13: Beyond Data Parallelism
+## W11: Beyond Data Parallelism
 
 - [Megatron-LM: Training Multi-Billion Parameter Language Models Using Model Parallelism](https://arxiv.org/abs/1909.08053): Shoeybi et al. (2019) (**free on arXiv**), Sections 1 and 3. Column-parallel then row-parallel composition, and why one all-reduce per MLP block is enough
 - [GPipe: Efficient Training of Giant Neural Networks using Pipeline Parallelism](https://arxiv.org/abs/1811.06965): Huang et al., NeurIPS 2019 (**free on arXiv**), Sections 1-3. Microbatching and the bubble
@@ -163,7 +153,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W14: The Actor Model and Ray
+## W12: The Actor Model and Ray
 
 - [A Universal Modular ACTOR Formalism for Artificial Intelligence](https://www.ijcai.org/Proceedings/73/Papers/027B.pdf): Hewitt, Bishop, Steiger, IJCAI 1973 (**free PDF**), the original actor model paper
 - [Ray: A Distributed Framework for Emerging AI Applications](https://www.usenix.org/system/files/osdi18-moritz.pdf): Moritz et al., OSDI 2018 (**free PDF via USENIX**), Section 3 is the unified task/actor programming model
@@ -171,15 +161,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ---
 
-## W15: GPU Memory and Compute
-
-- [CUDA C++ Programming Guide](https://docs.nvidia.com/cuda/cuda-c-programming-guide/): NVIDIA docs; read Chapters 1–3 (Architecture, Programming Model, Memory Hierarchy)
-- [Roofline: An Insightful Visual Performance Model](https://people.eecs.berkeley.edu/~kubitron/cs252/handouts/papers/RooflineVyNoYellow.pdf): Williams, Waterman, Patterson, CACM 2009 (**free PDF**)
-- [Numba CUDA docs](https://numba.readthedocs.io/en/stable/cuda/index.html): Python GPU programming
-
----
-
-## W16: Attention, KV Cache, and Cache-Aware Routing
+## W13: Attention, KV Cache, and Cache-Aware Routing
 
 - **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 15** (optional): AI Inference and Serving. "Hosting a Model" and "Distributing a Model" give the production-serving framing for why the KV cache tradeoff this week measures matters outside a benchmark script.
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762): Vaswani et al. (2017) (**free on arXiv**), the transformer paper
@@ -187,27 +169,21 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 - [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180): Kwon et al. (2023) (**free on arXiv**)
 - [Introducing Gateway API Inference Extension](https://kubernetes.io/blog/2025/06/05/introducing-gateway-api-inference-extension/): Kubernetes blog (June 2025), Part 2 required reading, short. Inference-aware routing on KV cache utilization and LoRA readiness, i.e. facts about a replica's state that a normal load balancer is built to ignore
 - [KV cache aware routing with llm-d](https://developers.redhat.com/articles/2025/10/07/master-kv-cache-aware-routing-llm-d-efficient-ai-inference): Red Hat, Part 2 optional. The same idea against real vLLM replicas, reporting up to 3x on time-to-first-token
-- [kubernetes-sigs/gateway-api-inference-extension](https://github.com/kubernetes-sigs/gateway-api-inference-extension): the production version of Part 2's `router.py`, written in Go and running as part of the control plane rather than the model server. Reading only, no build target; it's here to connect this week to W19
+- [kubernetes-sigs/gateway-api-inference-extension](https://github.com/kubernetes-sigs/gateway-api-inference-extension): the production version of Part 2's `router.py`, written in Go and running as part of the control plane rather than the model server. Reading only, no build target; it's here to connect this week to W15
 - [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/): Jay Alammar (free blog), visual intro before the paper
 
 ---
 
-## W17: Fault Tolerance and Snapshots
+## W14: Fault Tolerance and Snapshots
 
 - [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456): Chandy & Lamport (1985), 10 pages; read all of it
 - [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603): Carbone et al. (2015) (**free on arXiv**), Flink's ABS algorithm
 - **DDIA Chapter 10** (optional): Consistency and Consensus, the linearizability section specifically. It sharpens the distinction between "consistent cut" (what Chandy-Lamport gives you) and linearizability (a stronger guarantee it doesn't).
-- [In Search of an Understandable Consensus Algorithm](https://raft.github.io/raft.pdf): Ongaro & Ousterhout, USENIX ATC 2014 (**free PDF**), the Raft paper. Not implemented anywhere in this curriculum (see W18's Option A note), but it's the algorithm underneath etcd, watched directly in W19. Read Sections 1–5.
+- [In Search of an Understandable Consensus Algorithm](https://raft.github.io/raft.pdf): Ongaro & Ousterhout, USENIX ATC 2014 (**free PDF**), the Raft paper. Not implemented anywhere in this curriculum (see a deliberate scope call), but it's the algorithm underneath etcd, watched directly in W15. Read Sections 1–5.
 
 ---
 
-## W18: Capstone
-
-No required reading. You're synthesizing earlier weeks. **If you choose Option A** (distributed KV store): **DDIA Chapter 6**, Replication. Read "Leaders and Followers" before writing `promote()`. Optional companion: **DDIA Chapter 7**, Sharding (renamed from "Partitioning" in the 2nd edition), the other half of the scaling story, not implemented by this exercise but worth reading for the concept. You already read it as required material in W06, so this is a reread rather than a new one.
-
----
-
-## W19: Operating Kubernetes Operators (Kubeflow Trainer + Spark Operator)
+## W15: Operating Kubernetes Operators (Kubeflow Trainer + Spark Operator)
 
 - **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2**: Important Distributed System Concepts. Read "Idempotency" and "Orchestration and Kubernetes" before deploying either operator; the chapter argues directly for why a reconcile loop has to be idempotent, the same claim this week's Reflect section asks you to defend.
 - [Kubernetes Operators docs](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): official k8s docs
@@ -215,33 +191,34 @@ No required reading. You're synthesizing earlier weeks. **If you choose Option A
 - [kubeflow/trainer releases](https://github.com/kubeflow/trainer/releases): pin a current `v2.x.y` before installing; the manifests move between releases, so don't copy a version tag out of a tutorial
 - [kubeflow/trainer source](https://github.com/kubeflow/trainer): search for `TrainJobReconciler`; the real reconcile loop this week has you read, not write
 - [Kubeflow Spark Operator documentation](https://kubeflow.github.io/spark-operator/): quick-start guide and the `SparkApplication` API reference
-- [Kueue documentation](https://kueue.sigs.k8s.io/docs/): job queueing and gang admission for Kubernetes. Part 4 uses `ResourceFlavor`, `ClusterQueue`, and `LocalQueue`; the [batch user quickstart](https://kueue.sigs.k8s.io/docs/tasks/run/jobs/) has a working example of all three
+- [Kueue overview](https://kueue.sigs.k8s.io/docs/overview/): fifteen minutes, read-only, for Part 4's written exercise. Gang admission on Kubernetes. The idea is older than Kubernetes (Ousterhout named gang scheduling in 1982, and Slurm and Borg both implement a version of it); Kueue is one current answer, not the concept
 - [Running Spark on Kubernetes](https://spark.apache.org/docs/latest/running-on-kubernetes.html): Apache Spark's own docs, for Part 2b. The `local://` scheme, `mainClass`/`mainApplicationFile`, and why your image's Spark version has to match what you compiled against
 - [Programming Kubernetes](https://www.oreilly.com/library/view/programming-kubernetes/9781492047094/): Hausenblas & Schimanski (O'Reilly), optional. Covers how operators like these two are actually built; useful context even though this week has you operate one rather than author one
 - [etcd: Set up a local cluster](https://etcd.io/docs/v3.5/dev-guide/local_cluster/): official docs for the 3-member local-cluster bootstrap Part 3 uses (run by hand here instead of via their `Procfile`/`goreman` wrapper)
 - [etcd-io/raft](https://github.com/etcd-io/raft): the standalone Raft library etcd actually runs (also vendored into Kubernetes itself, and used by CockroachDB and TiKV); Part 3 has you read `raft.go`'s `becomeLeader`/`campaign`, not the whole file
-- Recall W17's Raft paper (Ongaro & Ousterhout, 2014): Part 3 is where you watch the algorithm that paper describes run for real
+- Recall W14's Raft paper (Ongaro & Ousterhout, 2014): Part 3 is where you watch the algorithm that paper describes run for real
 
 ---
 
-## W20: Observability: Metrics, Tracing, Logging
+## W16: Observability: Metrics, Tracing, Logging
 
 - **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3**: The Sidecar Pattern. Read before Part 3; names the pattern your log-aggregator sidecar already implements.
 - [Prometheus data model](https://prometheus.io/docs/concepts/data_model/) + [metric types](https://prometheus.io/docs/concepts/metric_types/)
 - [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/)
-- [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): **free online**
+- **DDIA Chapter 2**: Defining Nonfunctional Requirements. Moved here from W00 on purpose: percentiles and tail latency mean something once you have a system emitting them
+- [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): **free online**, optional, overlaps DDIA Ch.2 heavily
 - [Grafana dashboarding docs](https://grafana.com/docs/grafana/latest/dashboards/)
-- [Prometheus Java client](https://github.com/prometheus/client_java): used to instrument the W07 DD engine (same library W00 already uses)
+- [Prometheus Java client](https://github.com/prometheus/client_java): used to instrument the W06 DD engine (same library W00 already uses)
 - [OpenTelemetry Java SDK](https://opentelemetry.io/docs/languages/java/): official docs, used for the `ScopedSpan` tracing setup
 - [Go `net/http` docs](https://pkg.go.dev/net/http): the standard library package the Part 3 log-aggregator sidecar is built on
 
 ---
 
-## W21: Grand Capstone (optional)
+## W17: Grand Capstone (optional)
 
-No required reading tied to this week's build. This week synthesizes W11, W12, W16, W17, W19, and W20; revisit those weeks' resources as needed.
+No required reading tied to this week's build. This week synthesizes W09, W10, W13, W14, W15, and W16; revisit those weeks' resources as needed.
 
-- [MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html): for Part 5. Registered models, versions, and aliases. The mental model that transfers: a registry is a commit log with movable pointers, the same shape as the Delta transaction log from W11, applied to models instead of tables. **DDIA Chapter 13** (A Philosophy of Streaming Systems, renamed from "The Future of Data Systems" in the 2nd edition) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
+- [MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html): for Part 5. Registered models, versions, and aliases. The mental model that transfers: a registry is a commit log with movable pointers, the same shape as the Delta transaction log from W09, applied to models instead of tables. **DDIA Chapter 13** (A Philosophy of Streaming Systems, renamed from "The Future of Data Systems" in the 2nd edition) is optional but a fitting bookend: the book's own synthesis chapter, on unbundling databases into composable derived-data systems, read in the week you're doing exactly that.
 
 ---
 
@@ -250,11 +227,11 @@ No required reading tied to this week's build. This week synthesizes W11, W12, W
 These aren't required but give you broader context:
 
 - **DDIA Chapter 8**, Transactions. No week in this curriculum implements isolation levels or multi-object transactions, so there's no clean place to attach it as required reading, but it's the one DDIA chapter this curriculum otherwise skips entirely, and it's foundational enough to be worth reading on its own rather than forced into an unrelated week.
-- **DDIA Chapter 4** (2nd ed.) also gained a Vector Embeddings section, folded into the storage-and-retrieval chapter alongside full-text and multidimensional indexing. No week currently builds against it, but it's the most directly AI-relevant new material in the 2nd edition and worth reading given the curriculum's focus on AI workflows; a natural pairing with W16's attention/KV-cache work if you want the retrieval side of the same systems.
+- **DDIA Chapter 4** (2nd ed.) also gained a Vector Embeddings section, folded into the storage-and-retrieval chapter alongside full-text and multidimensional indexing. No week currently builds against it, but it's the most directly AI-relevant new material in the 2nd edition and worth reading given the curriculum's focus on AI workflows; a natural pairing with W13's attention/KV-cache work if you want the retrieval side of the same systems.
 - [The Google File System](https://dl.acm.org/doi/10.1145/945445.945450): Ghemawat et al., SOSP 2003, the original scale-out storage paper
 - [Bigtable: A Distributed Storage System for Structured Data](https://dl.acm.org/doi/10.1145/1365815.1365816): Chang et al., OSDI 2006
-- [The Chubby Lock Service for Loosely-Coupled Distributed Systems](https://research.google/pubs/the-chubby-lock-service-for-loosely-coupled-distributed-systems/): Burrows, Google, OSDI 2006, free PDF. Google's Paxos-based lock and small-file coordination service, the direct conceptual ancestor of etcd and ZooKeeper. A natural pairing with W17's Raft paper and W19's hands-on etcd cluster: same problem (a small, strongly-consistent coordination service other systems depend on), Paxos instead of Raft underneath. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.
-- [Spanner](https://dl.acm.org/doi/10.1145/2491245): Corbett et al. (2012), full read after W04
+- [The Chubby Lock Service for Loosely-Coupled Distributed Systems](https://research.google/pubs/the-chubby-lock-service-for-loosely-coupled-distributed-systems/): Burrows, Google, OSDI 2006, free PDF. Google's Paxos-based lock and small-file coordination service, the direct conceptual ancestor of etcd and ZooKeeper. A natural pairing with W14's Raft paper and W15's hands-on etcd cluster: same problem (a small, strongly-consistent coordination service other systems depend on), Paxos instead of Raft underneath. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.
+- [Spanner](https://dl.acm.org/doi/10.1145/2491245): Corbett et al. (2012), full read after W03
 - [Amazon Dynamo](https://dl.acm.org/doi/10.1145/1294261.1294281): DeCandia et al., SOSP 2007, consistent hashing, vector clocks in practice
 - [CAP Twelve Years Later](https://www.infoq.com/articles/cap-twelve-years-later-how-the-rules-have-changed/): Brewer (2012), free
-- [CRDT: Conflict-free Replicated Data Types](https://hal.science/hal-00932836): Shapiro et al. (2011), natural follow-on to W04
+- [CRDT: Conflict-free Replicated Data Types](https://hal.science/hal-00932836): Shapiro et al. (2011), natural follow-on to W03

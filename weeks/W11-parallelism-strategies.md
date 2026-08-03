@@ -1,16 +1,17 @@
 ---
-week_number: 13
+week_number: 11
 status: not-started
 ---
 
-# W13: Beyond Data Parallelism
+# W11: Beyond Data Parallelism
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
-Three ways to split a model, rather than the data, across two processes: tensor parallelism (cut a single matrix multiply in half), pipeline parallelism (put different layers on different workers), and sharded optimizer state (each worker keeps only its slice of the optimizer's bookkeeping). You'll reuse the ring-allreduce you wrote in W12 as the communication layer for all three.
+Three ways to split a model, rather than the data, across two processes: tensor parallelism (cut a single matrix multiply in half), pipeline parallelism (put different layers on different workers), and sharded optimizer state (each worker keeps only its slice of the optimizer's bookkeeping). You'll reuse the ring-allreduce you wrote in W10 as the communication layer for all three.
 
-Here's the framing, plainly. W12 was **data parallelism**: every worker holds a complete copy of the model and they split the data between them. That works right up until the model itself no longer fits in one worker's memory, at which point it stops being an option at all and you have to cut the model up instead. Everything this week is about how you cut it, and what each cut costs you in communication.
+Here's the framing, plainly. W10 was **data parallelism**: every worker holds a complete copy of the model and they split the data between them. That works right up until the model itself no longer fits in one worker's memory, at which point it stops being an option at all and you have to cut the model up instead. Everything this week is about how you cut it, and what each cut costs you in communication.
 
 **Scenario:** you have a model that trains fine on one machine and a bigger one that does not fit at all. Somebody asks which parallelism strategy to use, and the honest answer depends on numbers you don't have yet: how much has to cross the network per step, and how much of the time each worker spends waiting. This week you measure both on something small enough to see clearly.
 
@@ -22,6 +23,8 @@ Here's the framing, plainly. W12 was **data parallelism**: every worker holds a 
 - [ ] [ZeRO](https://arxiv.org/abs/1910.02054) (Rajbhandari et al., SC 2020): read Section 5 and the stage table. You do not need the full memory analysis. What you want is the three stages: shard the optimizer state, then the gradients, then the parameters themselves, each stage saving more memory and costing more communication.
 - [ ] Optional: [PyTorch FSDP](https://arxiv.org/abs/2304.11277) (Zhao et al., VLDB 2023): what ZeRO looks like once it's a production API people actually call. Useful if you want to see how the theory above landed in the framework.
 
+**Depth: study Section 3 of Megatron-LM.** The column-then-row composition is the one non-obvious idea this week, and you implement it. GPipe and ZeRO are reads, and you only need the named sections. FSDP is an optional skim.
+
 **Key question:** Tensor parallelism communicates once per layer; pipeline parallelism communicates once per stage boundary. Given that, which one would you put inside a single machine across its GPUs, and which one across machines on a slower network? The answer follows directly from how often each one talks.
 
 ---
@@ -30,24 +33,24 @@ Here's the framing, plainly. W12 was **data parallelism**: every worker holds a 
 
 Project: `code/parallelism/` (Python 3.13+)
 
-Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `all_gather` directly from `code/distributed-training/` (W12), so this week builds on real code you already wrote rather than a fresh abstraction.
+Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `all_gather` directly from `code/distributed-training/` (W10), so this week builds on real code you already wrote rather than a fresh abstraction.
 
-**Given, not built:** `layers.py` is provided, a `Linear` class with `forward` and `backward` and a GeLU activation, all NumPy. Same principle as W12: the calculus is not what's being tested here.
+**Given, not built:** `layers.py` is provided, a `Linear` class with `forward` and `backward` and a GeLU activation, all NumPy. Same principle as W10: the calculus is not what's being tested here.
 
-**Part 1: Tensor parallelism (2 days)**
+**Part 1: Tensor parallelism**
 
 - [ ] `tensor_parallel.py`: implement `ColumnParallelLinear` and `RowParallelLinear` for two workers.
   - Column-parallel: split the weight matrix `A` by columns, so worker `i` holds `A_i`. Each worker computes `X @ A_i` on the full input and the outputs are concatenated. No communication needed in the forward pass, the halves are just two pieces of one wider output.
   - Row-parallel: split the weight matrix `B` by rows and the input by columns, so worker `i` computes `X_i @ B_i`. Each worker now holds a *partial sum* of the correct output, and an all-reduce is what turns those partials into the real answer.
 - [ ] `mlp_block.py`: chain them the way Megatron does, column-parallel then GeLU then row-parallel, and confirm the whole block needs exactly one all-reduce. Assert the result matches a single-process reference implementation to within floating-point tolerance.
 
-**Part 2: Pipeline parallelism (2 days)**
+**Part 2: Pipeline parallelism**
 
 - [ ] `pipeline_parallel.py`: split a 4-layer MLP into two stages, layers 1 and 2 on worker 0, layers 3 and 4 on worker 1. Forward activations cross the stage boundary over a socket; gradients cross back the other way. Start with one batch at a time.
 - [ ] `microbatch.py`: split each batch into `M` microbatches and feed them into the pipeline back to back, so worker 1 can start on microbatch 1 while worker 0 is already working on microbatch 2.
 - [ ] `bubble.py`: instrument both workers with timers that record idle time, then sweep `M` from 1 to 16 and print measured bubble fraction alongside the theoretical `(S-1)/(M+S-1)`. With two stages and `M=1` you should measure close to 50 percent idle, which is a genuinely shocking number the first time you see it, and it should fall off quickly as `M` rises.
 
-**Part 3: Sharded optimizer state (1 day)**
+**Part 3: Sharded optimizer state**
 
 - [ ] `shard_optimizer.py`: implement ZeRO stage 1 for SGD with momentum. Each worker keeps momentum buffers for only its shard of the parameters, applies its own slice of the update, and then all-gathers the updated parameters so everyone ends the step with a complete model. Print peak memory per worker (`tracemalloc` is enough) against a non-sharded baseline, and confirm the loss curve is identical, because this is purely a memory optimization and must not change the math at all.
 
@@ -60,7 +63,7 @@ Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `al
 
 ---
 
-## 🐍 Python DSA Review (optional)
+## Rehearse it in Python first (optional, 20 minutes)
 
 **Balanced array partitioning (binary search on the answer)**: deciding which layers go on which pipeline stage is exactly the problem of splitting a list into `k` contiguous chunks while minimizing the largest chunk. Get this wrong and one stage becomes the bottleneck for the entire pipeline.
 

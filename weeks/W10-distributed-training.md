@@ -1,11 +1,12 @@
 ---
-week_number: 12
+week_number: 10
 status: not-started
 ---
 
-# W12: Distributed Training
+# W10: Distributed Training
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 Data-parallel training using Python multiprocessing and raw sockets, built entirely around the distributed mechanics rather than the model. You're given a small, already-implemented 2-layer MLP (forward, backward, and the ReLU/softmax/cross-entropy math all provided); deriving backpropagation by hand is real, valuable work that belongs to a dedicated ML/AI track, not this one. Two workers each train on half of MNIST using that provided model, exchange gradients via allreduce (ring-allreduce), and converge to the same result. No PyTorch distributed, no Horovod.
@@ -16,8 +17,10 @@ Data-parallel training using Python multiprocessing and raw sockets, built entir
 
 ## Read
 - [ ] [Horovod: fast and easy distributed deep learning in TensorFlow](https://arxiv.org/abs/1802.05799) (Sergeev & Del Balso, 2018): focus on Section 3 (ring-allreduce algorithm). Understand exactly what bytes are being sent and why ring topology uses bandwidth efficiently.
-- [ ] PyTorch DDP source, read [`torch/distributed/distributed_c10d.py`](https://github.com/pytorch/pytorch/blob/main/torch/distributed/distributed_c10d.py), specifically the `all_reduce` function and its docstring. You don't need to understand the CUDA path, just the concept.
+- [ ] Optional: PyTorch DDP source, read [`torch/distributed/distributed_c10d.py`](https://github.com/pytorch/pytorch/blob/main/torch/distributed/distributed_c10d.py), specifically the `all_reduce` function and its docstring. You don't need to understand the CUDA path, just the concept.
 - [ ] [NCCL: Collective Operations](https://docs.nvidia.com/deeplearning/nccl/user-guide/docs/usage/collectives.html): a short reference page, read for vocabulary rather than API detail. The operations you'll care about are `AllReduce`, `ReduceScatter`, and `AllGather`. The one fact worth carrying out of it: an allreduce is not a primitive. It is a reduce-scatter followed by an all-gather, which is exactly the two phases you're about to implement, and knowing they have standard names makes every distributed-training doc you read afterwards legible.
+
+**Depth: study Section 3 of Horovod.** You implement ring-allreduce from it and then verify your byte counts against its math, which is the tightest paper-to-code loop in the curriculum. The NCCL collectives page is a short read for vocabulary. The DDP source is a skim.
 
 **Key question:** Why is ring-allreduce more bandwidth-efficient than a parameter server for large gradients? Work out the math for N workers and a gradient of size G. You should land on each worker sending roughly 2G(N-1)/N bytes, and you should be able to say why that quantity barely changes as N grows.
 
@@ -51,66 +54,13 @@ Model: 2-layer MLP on MNIST (784 → 128 → 10). Implemented in NumPy only.
 
 **Break it, then decide:**
 - [ ] Mid-training, `kill -9` one worker's process partway through a `ring_allreduce` call (right after it's sent its chunk but before it's received the reply). Watch the surviving worker: it's blocked on a socket `recv()` that will never be satisfied, so the whole job hangs indefinitely rather than crashing or erroring. Confirm this by timing out yourself (Ctrl-C) after a minute, since nothing in the current implementation will do it for you.
-- [ ] What you just watched is W04's ambiguity with real money attached: the surviving worker cannot tell whether its peer died or is merely slow, and the only instrument available is a timeout you have to choose. With only 2 workers, there's no way to "route around" the dead one, a ring-allreduce with one member missing isn't a smaller ring, it's a broken one. Given that, is a socket read timeout (fail the whole step loudly and let the caller decide whether to restart both workers from the last checkpoint) the right fix here, or is that only a stopgap that stops mattering once you're past 2 workers, where a real system could exclude a dead node and re-derive a smaller ring instead of failing the whole job? Add a timeout to `ring_allreduce.py`'s socket calls either way, and write down at what worker count you think "fail the whole step" stops being good enough.
+- [ ] What you just watched is W03's ambiguity with real money attached: the surviving worker cannot tell whether its peer died or is merely slow, and the only instrument available is a timeout you have to choose. With only 2 workers, there's no way to "route around" the dead one, a ring-allreduce with one member missing isn't a smaller ring, it's a broken one. Given that, is a socket read timeout (fail the whole step loudly and let the caller decide whether to restart both workers from the last checkpoint) the right fix here, or is that only a stopgap that stops mattering once you're past 2 workers, where a real system could exclude a dead node and re-derive a smaller ring instead of failing the whole job? Add a timeout to `ring_allreduce.py`'s socket calls either way, and write down at what worker count you think "fail the whole step" stops being good enough.
 
 **Go gradient server (secondary tool):**
 
 - [ ] `tools/grad_server/main.go`: replace the raw-socket allreduce with a Go HTTP gradient aggregation server, using `net/http` (standard library, no framework). Python workers POST their gradients as JSON arrays to `POST /gradients` (include `{"rank": 0, "gradients": [[...]]})`); once all workers have posted, the server averages them and returns the result. Python workers GET `/gradients/averaged` to fetch the result. Use a `sync.WaitGroup` (or poll a size check under a `sync.Mutex`) to collect worker submissions safely across the goroutines handling each request. Keep under 100 lines.
 
 This is a realistic pattern: Go handles the coordination service, Python handles the ML compute.
-
----
-
-## 🐍 Python DSA Review (optional)
-
-**Ring buffer (circular array)**: ring-allreduce passes gradient chunks around a logical ring of workers. A ring buffer is the underlying data structure for any fixed-capacity FIFO queue without allocation.
-
-```python
-# ring_buffer.py
-class RingBuffer:
-    def __init__(self, capacity: int):
-        self._buf = [None] * capacity
-        self._cap = capacity
-        self._head = 0   # index of oldest item
-        self._size = 0
-
-    def push(self, item) -> None:
-        tail = (self._head + self._size) % self._cap
-        self._buf[tail] = item
-        if self._size < self._cap:
-            self._size += 1
-        else:
-            self._head = (self._head + 1) % self._cap  # overwrite oldest
-
-    def pop(self):
-        if self._size == 0:
-            raise IndexError("pop from empty RingBuffer")
-        item = self._buf[self._head]
-        self._head = (self._head + 1) % self._cap
-        self._size -= 1
-        return item
-
-    def __len__(self): return self._size
-
-# Test: capacity 3, push 4 items, oldest evicted
-rb = RingBuffer(3)
-for i in range(4): rb.push(i)
-assert len(rb) == 3
-assert rb.pop() == 1  # 0 was evicted
-
-# Ring-allreduce mental model: N workers in a ring, each holds one chunk
-# After N-1 scatter-reduce steps, every worker has partial sum of its chunk
-# After N-1 all-gather steps, every worker has full gradient
-def ring_indices(rank: int, n_workers: int, n_steps: int) -> list[int]:
-    """Which chunk indices does worker `rank` send at each step?"""
-    return [(rank - step) % n_workers for step in range(n_steps)]
-
-assert ring_indices(0, 4, 4) == [0, 3, 2, 1]
-```
-
-**Connection:** `ring_allreduce.py` sends gradient chunks in exactly this circular pattern. The ring buffer is also the right data structure for the log-aggregator sidecar in W20: fixed memory, O(1) push/pop.
-
----
 
 ## Reflect
 

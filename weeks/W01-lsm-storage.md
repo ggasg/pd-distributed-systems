@@ -6,6 +6,7 @@ status: not-started
 # W01: LSM-Trees and Storage Engines
 
 > **Arc:** Data Systems Internals · **Language:** Go
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 A minimal LSM-tree: MemTable (in-memory sorted buffer) → SSTable (sorted file on disk) → merge read path. No compaction. Passes put/get/scan tests.
@@ -15,9 +16,11 @@ A minimal LSM-tree: MemTable (in-memory sorted buffer) → SSTable (sorted file 
 ---
 
 ## Read
-- [ ] DDIA Ch.4 (2nd ed.): focus on B-Trees vs LSM-Trees; understand SSTables, compaction strategies, and bloom filters. Optional, AI-adjacent extension in this edition: the chapter's new Vector Embeddings section, if you want the retrieval-side counterpart to W16's attention work. (DDIA is a book, not a free PDF. See [RESOURCES.md](../RESOURCES.md) if you don't have a copy yet; it's referenced again in W02, W04, and W05.)
+- [ ] DDIA Ch.4 (2nd ed.): focus on B-Trees vs LSM-Trees; understand SSTables, compaction strategies, and bloom filters. Optional, AI-adjacent extension in this edition: the chapter's new Vector Embeddings section, if you want the retrieval-side counterpart to W13's attention work. (DDIA is a book, not a free PDF. See [RESOURCES.md](../RESOURCES.md) if you don't have a copy yet; it's referenced again in W02, W03, and W04.)
 - [ ] LevelDB source (30 min skim): [`db/memtable.h`](https://github.com/google/leveldb/blob/main/db/memtable.h), [`db/version_set.cc`](https://github.com/google/leveldb/blob/main/db/version_set.cc): read to see how it's actually done, not to understand every line. LevelDB is C++, this is the algorithm, not the syntax, worth reading regardless of your build language.
-- [ ] [BadgerDB source](https://github.com/dgraph-io/badger): the JVM-native Cassandra pointer from earlier versions of this week doesn't apply anymore, this is its Go replacement, and arguably a closer match: a real, actively maintained, pure-Go LSM-tree key-value store. Skim `memtable.go` and `levels.go` (or their current equivalents, the exact filenames drift as the project evolves): a production Go engine solving the exact problem this week builds a toy version of, in the same language you're about to write it in.
+- [ ] Optional: [BadgerDB source](https://github.com/dgraph-io/badger): the JVM-native Cassandra pointer from earlier versions of this week doesn't apply anymore, this is its Go replacement, and arguably a closer match: a real, actively maintained, pure-Go LSM-tree key-value store. Skim `memtable.go` and `levels.go` (or their current equivalents, the exact filenames drift as the project evolves): a production Go engine solving the exact problem this week builds a toy version of, in the same language you're about to write it in.
+
+**Depth: study DDIA Ch.4.** You are implementing the mechanism it describes, so this is the one to sit with. LevelDB and BadgerDB are skims: open them to see how a real engine shapes the same idea, close them after twenty minutes. The 1996 LSM paper is optional history.
 
 **Key question to answer before coding:** Why does an LSM-tree have better write throughput than a B-tree, and what's the cost?
 
@@ -34,7 +37,7 @@ Project: `code/lsm/` (Go modules)
 
 **Constraints:** standard library only, no external dependencies beyond what's already in `go.mod`. Implement your own byte-slice comparator (`bytes.Compare` is fine to use; don't reach for a third-party sorted-map package).
 
-**Minimum bar:** `put`, `get`, and `scan` pass through the full path, MemTable to SSTable to merged read. No compaction, no WAL, no bloom filter. Those are the gaps the exercise below makes you name, not gaps you have to close this week.
+**Minimum bar:** `put`, `get`, and `scan` pass through the full path, MemTable to SSTable to merged read. That is the whole unit. No compaction, no WAL, no bloom filter, no levelled merge; those are the gaps the exercise below has you name rather than close, and naming them accurately is worth more here than building them.
 
 **Break it, then decide:**
 - [ ] Durability check: `Put` 100 keys, confirm they haven't hit your flush threshold yet (still sitting only in the `MemTable`), then kill the process before calling any explicit flush and restart a fresh `LSMTree` pointed at the same directory. Confirm those 100 keys are gone. Nothing in this week's build writes an intentions log before an entry lands in the `MemTable`, so anything not yet flushed to an `SSTable` doesn't survive a crash. That's not a bug in your code, it's a real simplification; production engines cut this corner differently, by appending every write to a WAL before touching the `MemTable`, so a crash replays the log instead of losing data.
@@ -42,7 +45,7 @@ Project: `code/lsm/` (Go modules)
 
 ---
 
-## 🐍 Python DSA Review (optional)
+## Rehearse it in Python first (optional, 20 minutes)
 
 **Binary search + sorted k-way merge**: the two algorithms inside every SSTable read and compaction.
 

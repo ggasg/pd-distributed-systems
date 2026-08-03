@@ -33,7 +33,9 @@ Project: `code/[directory]/` ([Language + version])
 
 ---
 
-## 🐍 Python DSA Review (optional)
+## Rehearse it in Python first (optional, 20 minutes)
+
+> Include this only if it earns its place: the unit is built in a language you're still learning, or the exercise teaches something the build itself doesn't. Skip it otherwise.
 
 **[Data structure or algorithm name]**: [one sentence on why it's relevant to this week]
 

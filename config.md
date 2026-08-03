@@ -12,7 +12,9 @@ Edit `start_date` to shift the entire schedule. [[Home]] recalculates all week d
 | `start_date` | 2026-07-13 | W01 begins this date (Monday) |
 | `week_duration_days` | 7 | Days per study week |
 
-**W00** (Infrastructure Setup) is the week *before* start_date (Jul 6 – Jul 12 with the current config).
+**W00** (Infrastructure Setup) is the unit *before* start_date.
+
+**These dates are a running order, not deadlines.** Each unit is scoped to about 5 hours of work rather than to seven calendar days. If a unit takes you ten days, that is the plan working as intended, not you falling behind.
 
 ---
 

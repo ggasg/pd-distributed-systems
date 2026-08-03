@@ -1,11 +1,12 @@
 ---
-week_number: 8
+week_number: 7
 status: not-started
 ---
 
-# W08: Query Execution
+# W07: Query Execution
 
 > **Arc:** Streaming and Dataflow · **Language:** Go
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 A vectorized query executor in Go: columnar filter + hash join + projection over in-memory data. Benchmark it against a row-at-a-time version of the same pipeline and measure the speedup.
@@ -20,9 +21,11 @@ A vectorized query executor in Go: columnar filter + hash join + projection over
 - [ ] [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032) (Graefe, 1994): read Sections 1–3. This defines the iterator model (the `next()` interface) that every query engine for 20 years was built on.
 - [ ] [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf) (Boncz et al., CIDR 2005): read Sections 1–3. This is the argument for vectorized execution and why Volcano is CPU-cache unfriendly.
 - [ ] Optional: [Dremel: Interactive Analysis of Web-Scale Datasets](https://research.google/pubs/dremel-interactive-analysis-of-web-scale-datasets/) (Melnik et al., Google, VLDB 2010): read Sections 1–3. Same columnar-storage instinct as MonetDB/X100, but scaled a level up: Dremel shreds nested records into columns (the ancestor of Parquet's on-disk format) and spreads the aggregation itself across a multi-level serving tree of thousands of machines. Read it for what changes when "vectorize the scan" becomes "vectorize the scan, then fan the aggregation out across a cluster."
-- [ ] [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++ (a different language than this week's build, the lesson is the technique, not the syntax), and one you already depend on via W11's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this week.
+- [ ] Optional: [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++ (a different language than this week's build, the lesson is the technique, not the syntax), and one you already depend on via W09's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this week.
 - [ ] Optional, context only (a free public blog post, not something you install or test against): [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html). Photon is "written from the ground up in C++" specifically to replace the JVM-based Spark execution engine for exactly this reason: columnar batches, tight vectorized loops, SIMD, none of it playing well with a garbage collector or a heap of boxed objects. Your actual hands-on comparison this week is DuckDB (and optionally ClickHouse) below; this is just confirmation the same technique is load-bearing in production, regardless of which non-GC'd language a given engine picks.
-- [ ] [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional: ClickHouse is C++ end to end; skim `IProcessor` and how the pull-based pipeline batches rows into `Chunk`s. A second real reference point alongside DuckDB and Photon, from a different target company with a different pipeline design.
+- [ ] Optional: [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional: ClickHouse is C++ end to end; skim `IProcessor` and how the pull-based pipeline batches rows into `Chunk`s. A second real reference point alongside DuckDB and Photon, from a different target company with a different pipeline design.
+
+**Depth: study Sections 1 to 3 of MonetDB/X100.** It contains the argument your benchmark is about to either confirm or fail to reproduce, which makes it worth real attention. Volcano is a read. Dremel, DuckDB, Photon, and ClickHouse are all skims and all optional.
 
 **Key question:** Why does calling `next()` once per row hurt CPU performance even when the logic is simple? What does processing a batch of 1024 rows at a time fix?
 
@@ -55,7 +58,7 @@ Data model: a table of 1M rows with columns `[]int32` for `id`, `dept`, `salary`
 
 ---
 
-## 🐍 Python DSA Review (optional)
+## Rehearse it in Python first (optional, 20 minutes)
 
 **Hash join + binary search on sorted arrays**: the two algorithms your Go `hash_join.go` and `column_filter.go` implement. Python makes the probe/build logic easy to inspect.
 
@@ -110,6 +113,6 @@ assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
 
 **Allocation behavior across selectivities, and hash join vs. sort-merge for a left side bigger than memory (from Break it, then decide above):**
 
-**Where did a value-type slice buy you speed?** Your vectorized executor builds and fills `[]int32` slices directly, real contiguous memory, not a slice of pointers to scattered structs. Notice that Go never forces immutability on you the way W05 and W07's Java code does by construction (`filter`/`consolidate` returning new values), so this trade-off was always available and always invisible until you looked for it. Point to one specific place in `column_filter.go` or `hash_join.go` where you wrote into a pre-sized slice by index instead of building a fresh one and estimate what it would've cost you in speed to instead allocate a new slice per step and chain functional-style transforms, the way `filter`/`consolidate` in W07 do by construction.
+**Where did a value-type slice buy you speed?** Your vectorized executor builds and fills `[]int32` slices directly, real contiguous memory, not a slice of pointers to scattered structs. Notice that Go never forces immutability on you the way W04 and W06's Java code does by construction (`filter`/`consolidate` returning new values), so this trade-off was always available and always invisible until you looked for it. Point to one specific place in `column_filter.go` or `hash_join.go` where you wrote into a pre-sized slice by index instead of building a fresh one and estimate what it would've cost you in speed to instead allocate a new slice per step and chain functional-style transforms, the way `filter`/`consolidate` in W06 do by construction.
 
 **What I'd do differently:**

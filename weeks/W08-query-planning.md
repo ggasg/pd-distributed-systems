@@ -1,24 +1,25 @@
 ---
-week_number: 9
+week_number: 8
 status: not-started
 ---
 
-# W09: Query Planning: Rules, Then Costs
+# W08: Query Planning: Rules, Then Costs
 
 > **Arc:** Streaming and Dataflow · **Language:** Scala
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 A toy version of Spark's Catalyst optimizer, in two halves that answer different questions.
 
-Part 1 (3 days) is rule-based planning: a logical query plan as an algebraic data type (Scala case classes), rewrite rules as pattern-matching partial functions, and a generic `transform` combinator that applies them recursively across the tree. Every rule here is a rewrite that is always safe, because it preserves the result no matter what the data looks like.
+Part 1 is rule-based planning: a logical query plan as an algebraic data type (Scala case classes), rewrite rules as pattern-matching partial functions, and a generic `transform` combinator that applies them recursively across the tree. Every rule here is a rewrite that is always safe, because it preserves the result no matter what the data looks like.
 
-Part 2 (2 days) is cost-based planning, which is a different kind of thing entirely and it is worth being clear about the difference before you start. A cost-based optimizer does not know that its rewrite is correct-and-faster. It *estimates* how much data each plan would move, using statistics about the tables, and picks the cheapest guess. When the statistics are good this is enormously more powerful than rules. When they are wrong it confidently ships a terrible plan and tells you nothing. You'll build both halves and then break the second one on purpose.
+Part 2 is cost-based planning, which is a different kind of thing entirely and it is worth being clear about the difference before you start. A cost-based optimizer does not know that its rewrite is correct-and-faster. It *estimates* how much data each plan would move, using statistics about the tables, and picks the cheapest guess. When the statistics are good this is enormously more powerful than rules. When they are wrong it confidently ships a terrible plan and tells you nothing. You'll build both halves and then break the second one on purpose.
 
-This is the capstone to Arc 2: W05 to W08 built the individual operators (windowed aggregation, the shuffle, incremental views, vectorized execution); this week builds the thing that arranges and rewrites those operators into an optimized plan, the way a real MPP engine does.
+This is the capstone to Arc 2: W04 to W07 built the individual operators (windowed aggregation, the shuffle, incremental views, vectorized execution); this week builds the thing that arranges and rewrites those operators into an optimized plan, the way a real MPP engine does.
 
 **Scenario:** every rule you write in Part 1 is a small, local rewrite (push this filter, fold this constant) that has to compose safely with every other rule already in the optimizer, without you re-checking the whole system by hand each time you add one. That's the actual engineering problem a rule-based optimizer solves, and it's where the Part 1 exercises go looking for the gap between "the rule looks right" and "the rule is safe to run automatically, on any plan, forever." Part 2's scenario is the one you're more likely to actually get paged about: a query that ran in two minutes for a year and now runs for six hours, because a table grew and nobody refreshed its statistics.
 
-**Note on why Scala, specifically:** this isn't an arbitrary FP-language choice. Spark itself is written in Scala, and Catalyst (its query optimizer) is genuinely built the way this week has you build your toy version: case classes for plan nodes, pattern matching for rewrite rules, a `transform` combinator for tree recursion. Reading Catalyst's real source while writing a toy version in the same language gets you something W05 to W08 don't have: a reference implementation you can actually read in your own build language, not just a paper.
+**Note on why Scala, specifically:** this isn't an arbitrary FP-language choice. Spark itself is written in Scala, and Catalyst (its query optimizer) is genuinely built the way this week has you build your toy version: case classes for plan nodes, pattern matching for rewrite rules, a `transform` combinator for tree recursion. Reading Catalyst's real source while writing a toy version in the same language gets you something W04 to W07 don't have: a reference implementation you can actually read in your own build language, not just a paper.
 
 ---
 
@@ -47,13 +48,15 @@ If that reads naturally, go straight to `Expr.scala`/`LogicalPlan.scala` below: 
 
 ---
 
-## Part 1: Rule-Based Planning (3 days)
+## Part 1: Rule-Based Planning
 
 ### Read
 - [ ] Optional but recommended: **DDIA Chapter 3** (2nd ed.), Data Models and Query Languages. Read the "Query Languages for Data" section specifically. Kleppmann draws the declarative-vs-imperative line right where this week's `LogicalPlan` lives: a `Filter`/`Project`/`Join` tree describes *what* result you want, not the loop that computes it, the same distinction the chapter uses to explain why a declarative query language leaves room for an optimizer to rewrite the plan before executing it. That's the whole justification for `PushDownFilter` existing.
 - [ ] [Spark SQL: Relational Data Processing in Spark](https://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf) (Armbrust et al., SIGMOD 2015): read Sections 1–4. Section 4 describes Catalyst directly: the tree representation, rules, and the batches they're organized into (analysis, logical optimization, physical planning).
-- [ ] [Catalyst source: `TreeNode.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/trees/TreeNode.scala): skim `transform`, `transformDown`, and `transformUp`. This is the real version of the combinator you're about to build a simplified copy of.
-- [ ] [Catalyst source: predicate pushdown rule](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/optimizer/Optimizer.scala): search for `PushDownPredicates` (or a similarly named rule in the current file). This is a production version of the exact rewrite you'll implement below.
+- [ ] Optional: [Catalyst source: `TreeNode.scala`](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/trees/TreeNode.scala): skim `transform`, `transformDown`, and `transformUp`. This is the real version of the combinator you're about to build a simplified copy of.
+- [ ] Optional: [Catalyst source: predicate pushdown rule](https://github.com/apache/spark/blob/master/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/optimizer/Optimizer.scala): search for `PushDownPredicates` (or a similarly named rule in the current file). This is a production version of the exact rewrite you'll implement below.
+
+**Depth: study Section 4 of the Catalyst paper** (Part 1) **and Section 3 of Leis et al.** (Part 2). Those two carry the week's two halves. `TreeNode.scala` is a read. DDIA Ch.3, the predicate-pushdown source, and the AQE page are skims.
 
 **Key question:** Catalyst's `transform` takes a `PartialFunction[LogicalPlan, LogicalPlan]`, a function that's only defined for some inputs. Why is a partial function the right abstraction here, instead of a total function that has to handle every possible plan shape explicitly?
 
@@ -78,7 +81,7 @@ Project: `code/query-planner/` (Scala 2.13, sbt)
 
 - [ ] A test (ScalaTest or MUnit, your choice) that builds `Filter(GreaterThan(Column("age"), Literal(18)), Project(List("age", "name"), Scan("users", List("age", "name", "email"))))`, runs it through `Optimizer`, and asserts the result has the `Filter` pushed below the `Project`.
 
-**Minimum bar (Part 1):** the two rules above compose correctly (running the optimizer on a plan that needs both constant folding and filter pushdown produces a fully rewritten plan in one call to `Optimizer.run`, not just when applied individually).
+**Minimum bar:** the two rules above compose correctly (running the optimizer on a plan that needs both constant folding and filter pushdown produces a fully rewritten plan in one call to `Optimizer.run`, not just when applied individually).
 
 **Break it, then decide:**
 - [ ] Temporarily make `transformDown` call a rule's `apply(node)` directly instead of checking `rule.isDefinedAt(node)` first (or using `applyOrElse`). Run `PushDownFilter` over a bare `Scan` with no `Filter`/`Project` wrapping it, a plan shape the rule was never written to handle. Watch it throw a `MatchError` at runtime instead of just leaving the node alone. Put the `isDefinedAt` check (or `applyOrElse`) back and confirm the same plan now passes through untouched. This is the concrete, operational answer to this week's own Key Question: a partial function lets `transformDown` ask "does this rule apply here?" before running it, so an optimizer with dozens of rules doesn't need one giant rule that explicitly handles every plan shape in existence, including ones it has nothing to say about.
@@ -86,7 +89,9 @@ Project: `code/query-planner/` (Scala 2.13, sbt)
 
 ---
 
-## Part 2: Cost-Based Planning (2 days)
+## Part 2 (optional, stretch): Cost-Based Planning
+
+> Part 1 is the unit. This half is the better half intellectually and it needs its own sitting, so treat it as a second visit rather than the same one. Nothing later in the curriculum depends on it.
 
 Part 1's rules can't answer the question that matters most for a real query: given three tables to join, which two should you join first?
 
@@ -122,13 +127,13 @@ Same project, `code/query-planner/`. Plain Scala throughout, case classes and re
 - [ ] Contrast this with Part 1 deliberately, because it's the distinction the whole week turns on. `PushDownFilter` cannot do this. It is either applicable or not, and when it applies, the result is correct and faster regardless of what's in the tables. Nothing about the data can make it a bad idea. Write two sentences on why that makes rules cheap to trust and cost models expensive to trust, and what that implies about which one you'd add to a system you couldn't easily observe in production.
 - [ ] **Your call (written, not implemented):** you're designing the policy for what happens when statistics are stale. One option is to refuse to reorder joins when a table's statistics are older than some threshold, falling back to the order the query was written in, which is safe and leaves real performance on the table every day. The other is to always trust the statistics, which is fast whenever they're fresh and catastrophic when they aren't. Say which failure you'd accept and why. Then note what a third option looks like, given that this is precisely the question Spark's Adaptive Query Execution answers by declining to commit to an estimate at all.
 
-### Optional stretch: the bridge back to W06 (observe, don't build)
+### Optional stretch: the bridge back to W05 (observe, don't build)
 
-> Skip this if the week is full. It closes a nice loop but it's observation rather than construction, and Part 2's own exercises already carry the lesson. You already have PySpark installed locally from W07, so it's short when you do get to it.
+> Skip this if the week is full. It closes a nice loop but it's observation rather than construction, and Part 2's own exercises already carry the lesson. You already have PySpark installed locally from W06, so it's short when you do get to it.
 
-- [ ] Write a small PySpark script that joins a skewed dataset against a small one, using the same Zipf-shaped key distribution you generated in W06. Run it twice, once with `spark.sql.adaptive.enabled=false` and once with `true` plus `spark.sql.adaptive.skewJoin.enabled=true`, calling `df.explain("formatted")` each time and timing both.
+- [ ] Write a small PySpark script that joins a skewed dataset against a small one, using the same Zipf-shaped key distribution you generated in W05. Run it twice, once with `spark.sql.adaptive.enabled=false` and once with `true` plus `spark.sql.adaptive.skewJoin.enabled=true`, calling `df.explain("formatted")` each time and timing both.
 - [ ] Read the two plans. With AQE off you get a plan fixed before execution, chosen from estimates. With AQE on the plan reports itself as adaptive and Spark has coalesced shuffle partitions and split the skewed ones, using row counts it measured at runtime rather than predicted in advance.
-- [ ] Connect it explicitly in your notes: splitting a skewed partition into several is the same fix you implemented by hand as salting in W06, with the same reason it's safe (the aggregation is associative) and the same cost (an extra pass). Spark is doing your W06 exercise automatically, and the only reason it can is that it waited until it had real numbers instead of estimated ones.
+- [ ] Connect it explicitly in your notes: splitting a skewed partition into several is the same fix you implemented by hand as salting in W05, with the same reason it's safe (the aggregation is associative) and the same cost (an extra pass). Spark is doing your W05 exercise automatically, and the only reason it can is that it waited until it had real numbers instead of estimated ones.
 
 ---
 
@@ -154,7 +159,7 @@ Same project, `code/query-planner/`. Plain Scala throughout, case classes and re
 
 **Stale-statistics policy: which failure did you choose to accept, and what would you tell the person hit by it?**
 
-**(Stretch only) What the two Spark plans looked like with AQE off versus on, and where you can point at your own W06 salting fix inside what AQE did automatically:**
+**(Stretch only) What the two Spark plans looked like with AQE off versus on, and where you can point at your own W05 salting fix inside what AQE did automatically:**
 
 **What real Catalyst still does that your toy optimizer doesn't, now that it has both halves:**
 

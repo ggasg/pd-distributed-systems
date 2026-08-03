@@ -1,11 +1,12 @@
 ---
-week_number: 17
+week_number: 14
 status: not-started
 ---
 
-# W17: Fault Tolerance and Snapshots
+# W14: Fault Tolerance and Snapshots
 
 > **Arc:** Distributed ML & Compute · **Language:** Java
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 Chandy-Lamport distributed snapshot in Java: 3 simulated nodes with FIFO channels, one node triggers a snapshot, all nodes record their local state and in-flight channel contents. Assert the recorded global state is consistent.
@@ -16,9 +17,11 @@ Chandy-Lamport distributed snapshot in Java: 3 simulated nodes with FIFO channel
 
 ## Read
 - [ ] [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456) (Chandy & Lamport, 1985): 10 pages. Read all of it. The algorithm is in Section 3. A "marker" is just a special message; that's the whole trick.
-- [ ] [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603) (Carbone et al., 2015): Flink's ABS algorithm. Read Sections 1–4. Understand how they extend Chandy-Lamport for cyclic dataflow graphs with barriers.
+- [ ] Optional: [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603) (Carbone et al., 2015): Flink's ABS algorithm. Read Sections 1–4. Understand how they extend Chandy-Lamport for cyclic dataflow graphs with barriers.
 - [ ] Optional, context: **DDIA Chapter 10** (2nd ed.), Consistency and Consensus, specifically the section on linearizability. Chandy-Lamport doesn't give you linearizability, it gives you a *consistent cut* (a recorded state that could have occurred at one instant, even if it never literally did); the chapter is useful precisely because it draws that distinction sharply, so you don't walk away from this week conflating "consistent snapshot" with the stronger guarantees Ch. 10 covers.
-- [ ] [In Search of an Understandable Consensus Algorithm](https://raft.github.io/raft.pdf) (Ongaro & Ousterhout, USENIX ATC 2014, **free PDF**): the Raft paper. Not implemented anywhere in this curriculum, a deliberate scope call (see W18's Option A note), but it's the algorithm underneath etcd, which is what actually holds the Kubernetes control plane consistent, including the cluster you'll deploy to in W19. Read Sections 1–5 (the formal proof in Section 9 is skippable). It answers a different question than Chandy-Lamport does: Chandy-Lamport gives you a consistent snapshot of state that already exists; Raft is how a cluster agrees on what that state *is* in the first place. You'll watch this algorithm run directly in W19.
+- [ ] [In Search of an Understandable Consensus Algorithm](https://raft.github.io/raft.pdf) (Ongaro & Ousterhout, USENIX ATC 2014, **free PDF**): the Raft paper. Not implemented anywhere in this curriculum, a deliberate scope call, but it's the algorithm underneath etcd, which is what actually holds the Kubernetes control plane consistent, including the cluster you'll deploy to in W15. Read Sections 1–5 (the formal proof in Section 9 is skippable). It answers a different question than Chandy-Lamport does: Chandy-Lamport gives you a consistent snapshot of state that already exists; Raft is how a cluster agrees on what that state *is* in the first place. You'll watch this algorithm run directly in W15.
+
+**Depth: study Chandy-Lamport.** Ten pages, you implement the algorithm, and the correctness argument is the point. The Raft paper is a read, Sections 1 to 5, and you will watch it run in W15 rather than build it. Flink's ABS paper and DDIA Ch.10 are skims.
 
 **Key question:** Chandy-Lamport requires FIFO channels. What breaks if channels can reorder messages? How does Flink's barrier approach handle this?
 
@@ -51,46 +54,6 @@ Project: `code/snapshot/` (Java 21, Maven)
 **Break it, then decide:**
 - [ ] Add a way to deliberately violate FIFO on one channel: buffer two consecutive `DataMessage`s and enqueue them in swapped order instead of send order. Trigger a snapshot spanning that reordering and check `SnapshotTest.java`'s consistency assertion (sum of recorded states plus in-flight channel states should equal total messages sent so far). Confirm it now fails, or worse, silently produces a "consistent" snapshot that doesn't actually match any state the system was ever really in. This is the concrete cost of the FIFO assumption the Key Question above asks about abstractly; here you're looking at the actual broken invariant.
 - [ ] `LinkedBlockingQueue` gives you FIFO for free as long as everything goes through one queue per channel, which is true in this simulation but not guaranteed on a real network (packets can take different routes, retries can reorder). Would you defend against that by having each message carry a per-channel sequence number and having the receiver detect and reject out-of-order delivery (extra bookkeeping, but catches the problem explicitly), or by relying on the transport layer to guarantee FIFO per connection the way TCP already does (no extra code, but now Chandy-Lamport's correctness is silently resting on a property of a layer underneath it that this exercise never touches)? Say which you'd pick for a real system and why.
-
----
-
-## 🐍 Python DSA Review (optional)
-
-**FIFO queue + BFS for snapshot reachability**: Chandy-Lamport requires FIFO channels; BFS verifies the snapshot is consistent (every in-flight message is accounted for).
-
-```python
-from collections import deque
-
-# fifo_channel.py: what Channel.java wraps a LinkedBlockingQueue around, a FIFO queue with O(1) ops
-channel: deque = deque()
-channel.append("msg1")   # enqueue, O(1)
-channel.append("msg2")
-assert channel.popleft() == "msg1"  # dequeue, O(1), unlike list.pop(0) which is O(n)
-
-# snapshot_verify.py: after snapshot, BFS from initiator to confirm all reachable
-# nodes have recorded state (consistency check)
-def all_nodes_recorded(graph: dict, initiator: str, recorded: set) -> bool:
-    """BFS from initiator; every reachable node must be in `recorded`."""
-    visited, q = {initiator}, deque([initiator])
-    while q:
-        node = q.popleft()
-        if node not in recorded:
-            return False
-        for neighbor in graph.get(node, []):
-            if neighbor not in visited:
-                visited.add(neighbor)
-                q.append(neighbor)
-    return True
-
-# 3-node ring: 0 to 1 to 2 to 0
-ring = {0: [1], 1: [2], 2: [0]}
-assert all_nodes_recorded(ring, 0, {0, 1, 2})
-assert not all_nodes_recorded(ring, 0, {0, 1})  # node 2 missed
-```
-
-**Connection:** Java's `LinkedBlockingQueue` already is this `deque`, with thread safety built in for free. The BFS is how you'd write `SnapshotTest.java`'s consistency assertion if you wanted to do it graph-theoretically rather than just summing integers.
-
----
 
 ## Reflect
 

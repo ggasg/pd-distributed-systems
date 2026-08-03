@@ -5,18 +5,22 @@ status: not-started
 
 # W00: Infrastructure Setup
 
+> **Budget:** about 5 hours, and it is fine if it takes two sittings. This is the only unit that is mostly installation rather than thinking.
+
 > **Pre-week:** Complete before W01 begins · **Language:** Go + shell
 
 ## What you'll build
-A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By end of week, you can deploy any of your weekly code artifacts to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W19 and W20.
+A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By end of week, you can deploy any of your weekly code artifacts to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W15 and W16.
 
 **Scenario:** you've just inherited `hello-metrics` from someone who left the team, and the only handoff note is "it's fine, I think." Nobody, including you, currently has evidence for that claim. Standing up the stack below is what turns "I think it's fine" into something you can actually check.
 
 ---
 
-## Read (before anything else)
+## Read
 
-- [ ] **DDIA Chapters 1-2** (2nd ed.): Trade-Offs in Data Systems Architecture, then Defining Nonfunctional Requirements. Not tied to this week's build; read them because they're the vocabulary the entire rest of the curriculum assumes. Chapter 2 is where "reliable," "scalable," and "maintainable" get defined precisely in about 20 pages (this is the direct continuation of the 1st edition's Chapter 1); every later week's design trade-offs (why W07 trims a corner ClickHouse also trims, why W17 cares about a *consistent* snapshot, why W19's reconcile loop is level-triggered) are instances of these three properties in tension. Chapter 1 is new in the 2nd edition and worth the extra 20 minutes: it frames cloud-vs-self-hosted and distributed-vs-single-node trade-offs explicitly, the same framing this whole curriculum is built around. Read both once here, then let them recede into the background.
+**Depth: skim everything here.** These are reference docs you will come back to, not material to absorb up front. Twenty minutes each, tops.
+
+> **DDIA Chapters 1 and 2 are no longer part of this week.** They used to be, and that was a mistake: they are the least mechanism-dense chapters in the book, nothing in W00 or W01 depends on them, and putting roughly 70 pages of careful reading in front of an infrastructure install guaranteed the first week overran before anything was built. Chapter 1 is now pre-curriculum orientation you read at your own pace, outside any week's budget (see [RESOURCES.md](../RESOURCES.md)). Chapter 2 moved to W16, where you will have a running system to measure and its definitions of reliability and tail latency will have something to attach to.
 
 ---
 
@@ -51,7 +55,7 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 Project: `code/hello-metrics/` (Go modules)
 
-A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every small service you build from here on can follow, this one and every secondary tool in later weeks (W03's job coordinator, W12's gradient server, W15's bench runner, W20's log-aggregator sidecar).
+A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every small service you build from here on can follow, this one and every secondary tool in later weeks (W02's job coordinator, W10's gradient server, W15's bench runner, W16's log-aggregator sidecar).
 
 - [ ] `go.mod`: `go mod init hello-metrics`, then `go get github.com/prometheus/client_golang/prometheus` and `go get github.com/prometheus/client_golang/prometheus/promhttp`, the standard Go Prometheus client. No web framework: `net/http`, the standard library's own HTTP server, is enough for two routes.
 - [ ] `main.go`: `http.HandleFunc` for two routes, plus two metric objects shared by both handlers.
@@ -127,4 +131,4 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
 
 **What Helm does that raw kubectl apply doesn't:**
 
-**What metrics you'd expose on a real distributed system component (you'll instrument one for real in W20):**
+**What metrics you'd expose on a real distributed system component (you'll instrument one for real in W16):**

@@ -1,24 +1,27 @@
 ---
-week_number: 7
+week_number: 6
 status: not-started
 ---
 
-# W07: Differential Dataflow and Incremental View Maintenance
+# W06: Differential Dataflow and Incremental View Maintenance
 
 > **Arc:** Streaming and Dataflow · **Language:** Java
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
-Two parts this week, and the weight sits firmly on the second. Part 1 (1 day): read and exercise a provided Differential Dataflow core in Java, `(key, value, time, diff)` updates and a `filter`/`consolidate` `Collection`, so you understand the diff-based data model well enough to use it. Part 2 (the rest of the week): the same "orders to revenue per region" incremental-view problem built three ways, your own Java benchmark, a real local ClickHouse materialized view, and a real local Spark Structured Streaming stateful aggregation, so the comparison is against systems you actually install and run yourself, not vendor documentation.
+Two parts this week, and the weight sits firmly on the second. Part 1: read and exercise a provided Differential Dataflow core in Java, `(key, value, time, diff)` updates and a `filter`/`consolidate` `Collection`, so you understand the diff-based data model well enough to use it. Part 2: the same "orders to revenue per region" incremental-view problem built three ways, your own Java benchmark, a real local ClickHouse materialized view, and a real local Spark Structured Streaming stateful aggregation, so the comparison is against systems you actually install and run yourself, not vendor documentation.
 
 The balance is deliberate. Incremental view maintenance is a technique you will meet again in ClickHouse, Flink, dbt, and every streaming feature store, and being able to tell which system genuinely recomputes deltas and which only appends forward is the durable skill here. Reimplementing Differential Dataflow's specific algebra from scratch is a narrower payoff, so Part 1 hands you the code and spends its day making sure you can read it.
 
 ---
 
-## Part 1: Differential Dataflow Core (1 day)
+## Part 1: Differential Dataflow Core
 
 ### Read
 - [ ] [Differential Dataflow](https://www.cidrdb.org/cidr2013/Papers/CIDR13_Paper111.pdf) (McSherry et al., CIDR 2013): read Sections 1–2 only this time. Section 2 defines the data model (collections as functions from time to multisets of changes); that's the part this week actually builds. Section 3 (operators) is optional if you want the full picture.
 - [ ] Optional: [Large-scale Incremental Processing Using Distributed Transactions and Notifications](https://research.google/pubs/large-scale-incremental-processing-using-distributed-transactions-and-notifications/) (Peng & Dabek, Google, OSDI 2010, the Percolator paper): a completely different mechanism for the same underlying problem, incremental computation instead of batch recompute. Where DD tracks deltas through an explicit `(key, value, time, diff)` model, Percolator gets there by layering distributed transactions and observer-style notifications on top of Bigtable, triggering downstream work when a row changes rather than recomputing anything. Google used it to replace a MapReduce-based web indexing pipeline; worth reading right after the DD paper to see a second, production-scale answer to the same question this week's `Collection` class answers in miniature.
+
+**Depth: read Sections 1 and 2 of the DD paper.** Not study, deliberately: `Collection` is given to you this week, so you are reading to understand a data model rather than to implement one. Everything else here is a skim, including the ClickHouse and Spark pages, which you will learn more from running than from reading.
 
 **Key question:** What is a "difference" in DD? How does `(key, value, time, diff)` encode both additions and retractions?
 
@@ -76,37 +79,6 @@ Data model: a toy `orders` table (`record Order(int orderId, int regionId, int a
 - [ ] `code/dd-scratch/comparisons/spark_stateful_agg.py`: a local Structured Streaming job (`master("local[*]")`) that reads order events as small JSON files dropped into a watched directory (`readStream.format("json")`), runs `groupBy("region_id").sum("amount")` with `outputMode("update")`, and writes to the console sink. Drop one new order file mid-run and confirm the console output shows only the affected region's updated row, not every group re-emitted.
 
 **Minimum bar:** for both ClickHouse and Spark, one piece of evidence you observed yourself (a query result, a log line, or the update-mode console output) showing the system updated only the affected slice of state rather than the whole dataset, the same property your Java `IncrementalAggregateView` has and `FullRecomputeView` doesn't.
-
----
-
-## 🐍 Python DSA Review (optional)
-
-**defaultdict as a multiset + sorted consolidation**: a DD `Collection` is a map from keys to signed integer multiplicities. Consolidation collapses duplicates and drops zeros; the same operation `IncrementalAggregateView` does per-region in Part 2.
-
-```python
-from collections import defaultdict
-
-# consolidate.py: core operation in every DD collection
-def consolidate(updates: list[tuple]) -> dict:
-    """
-    updates: list of (key, diff) where diff is +1 (add) or -1 (retract)
-    Returns: dict of key to net_diff, with zeros removed
-    """
-    counts: dict = defaultdict(int)
-    for key, diff in updates:
-        counts[key] += diff
-    return {k: v for k, v in counts.items() if v != 0}
-
-# Test: add 3 "apple", retract 2, net +1
-updates = [("apple", 1), ("apple", 1), ("apple", 1), ("apple", -1), ("apple", -1),
-           ("banana", 1), ("banana", -1)]  # banana nets to 0, dropped
-result = consolidate(updates)
-assert result == {"apple": 1}
-```
-
-**Connection:** `Collection.consolidate()` in Part 1 and `IncrementalAggregateView.apply()` in Part 2 are both instances of this same operation, just at different scales: one against a synthetic word stream, one against something shaped like a real materialized view.
-
----
 
 ## Reflect
 

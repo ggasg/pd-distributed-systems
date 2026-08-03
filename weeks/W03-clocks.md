@@ -1,11 +1,12 @@
 ---
-week_number: 4
+week_number: 3
 status: not-started
 ---
 
-# W04: Clocks, Causality, Time, and Unreliable Networks
+# W03: Clocks, Causality, Time, and Unreliable Networks
 
 > **Arc:** Data Systems Internals · **Language:** Go
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 Vector clocks + causal message delivery in Go, then a failure detector over the same three nodes. 3 simulated nodes, each its own goroutine, communicating over channels. Assert that no node delivers a message before the messages it causally depends on, then watch your detector confidently declare a perfectly healthy node dead.
@@ -19,10 +20,12 @@ This week is really about one thing with three faces. The network is unreliable,
 ## Read
 - [ ] DDIA Ch.9 (2nd ed.): unreliable clocks and causality. Focus on "Unreliable Clocks" and "Knowledge, Truth, and Lies"; the "Ordering Guarantees" material this used to point to actually lives in Ch.10 (Consistency and Consensus), not this chapter, so don't go looking for it here.
 - [ ] [Time, Clocks, and the Ordering of Events in a Distributed System](https://lamport.azurewebsites.net/pubs/time-clocks.pdf) (Lamport, 1978): 11 pages. Read all of it. This paper is the foundation.
-- [ ] [Spanner: Google's Globally Distributed Database](https://dl.acm.org/doi/10.1145/2491245) (Corbett et al., 2012): read only Section 3 (TrueTime API, ~3 pages). Understand how they use bounded clock uncertainty.
+- [ ] Optional: [Spanner: Google's Globally Distributed Database](https://dl.acm.org/doi/10.1145/2491245) (Corbett et al., 2012): read only Section 3 (TrueTime API, ~3 pages). Understand how they use bounded clock uncertainty.
 
 - [ ] DDIA Ch.9 again, this time the "Timeouts and Unbounded Delays" section specifically. It is short, and it contains the sentence this week's second half is built on: over an asynchronous network you cannot distinguish a node that has crashed from one that is merely slow, because the evidence is identical in both cases. Every timeout you will ever set is a guess about that ambiguity.
 - [ ] Optional: [Unreliable Failure Detectors for Reliable Distributed Systems](https://dl.acm.org/doi/10.1145/226643.226647) (Chandra & Toueg, JACM 1996; free copies are easy to find). Theory-heavy, and you do not need all of it. What is worth taking is the framing: a failure detector is allowed to be wrong, and the interesting question is not "is it correct" but "how wrong, how often, and how fast." That reframing is more useful in practice than any specific algorithm.
+
+**Depth: study Lamport 1978.** Eleven pages, you implement what it describes, and it rewards a slow pass more than almost anything else in this curriculum. DDIA Ch.9 is a read. Spanner's TrueTime section, Fidge, and Chandra & Toueg are skims; the last one especially, take the framing and leave the proofs.
 
 **Key question:** Lamport clocks establish a partial order. What does vector clocks give you that Lamport clocks don't?
 
@@ -51,13 +54,15 @@ Project: `code/clocks/` (Go modules)
 
 **Delivery semantics, and why they follow directly from the above.** Because you cannot tell dead from slow, you retry. Because you retry, messages arrive twice. This is not a flaw in anybody's implementation, it is arithmetic, and it is why the three delivery guarantees you will hear named are what they are. **At-most-once** means you never retry, so you lose messages. **At-least-once** means you retry, so you get duplicates. There is no third option on the wire. What people call **exactly-once** is always at-least-once delivery paired with a receiver that either deduplicates or is idempotent, so duplicates stop mattering. Worth being precise about, because "exactly-once" is one of the most oversold phrases in this field, and the next exercise is exactly that situation.
 
-**Break it, then decide (duplicates):**
+**Break it, then decide (duplicates, optional stretch):**
+
+> The vocabulary above is the part that matters and you now have it. Running the experiment is a second sitting.
 - [ ] Send the exact same `Message` value onto a node's inbound channel twice in a row (simulating a network-level retry that redelivers a message the sender thinks was lost). Nothing in `node.go`'s delivery logic checks whether a message with this sender and this exact `VectorClock` has already been delivered, so watch what happens: does the receiving node's own clock get merged and incremented twice for one logical message? If your causal-delivery test suite doesn't already cover this, it's because deduplication and causal ordering are two different problems that are easy to conflate; ordering says *when* a message may be delivered, not *whether* it already was.
 - [ ] Given that gap, would you fix it by having each node track the highest sequence number it's seen per sender (a small, bounded amount of extra state) and drop repeats, or by making `Merge` itself idempotent so a duplicate merge is harmless even if delivery isn't deduplicated? Pick one, and say concretely what each approach costs you that the other doesn't.
 
 ---
 
-## 🐍 Python DSA Review (optional)
+## Rehearse it in Python first (optional, 20 minutes)
 
 **Dicts as vector clocks**: a vector clock is just a dict. Implement the three core operations in Python before building the Go version.
 
@@ -114,6 +119,6 @@ assert merge(vc2, vc3) == {"A": 2, "B": 1}
 
 **Which of at-most-once, at-least-once, and effectively-once does your duplicate fix actually give you, stated precisely?**
 
-**Where else in this curriculum have you already seen a timeout standing in for knowledge nobody has? (You will hit this again in W12, W14, W19, and W21; note it here so it's familiar when you do.)**
+**Where else in this curriculum have you already seen a timeout standing in for knowledge nobody has? (You will hit this again in W10, W12, W15, and W17; note it here so it's familiar when you do.)**
 
 **What I'd do differently:**

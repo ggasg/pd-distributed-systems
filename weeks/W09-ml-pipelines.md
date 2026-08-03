@@ -1,11 +1,12 @@
 ---
-week_number: 11
+week_number: 9
 status: not-started
 ---
 
-# W11: ML Data Pipelines and Table Formats
+# W09: ML Data Pipelines and Table Formats
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
 A versioned feature pipeline in Python: raw events to features to versioned Parquet snapshot. Query historical feature snapshots with DuckDB. No ML model, just the data plumbing that makes models reliable. Then, in Part 2, you replace your hand-rolled versioning with a real open table format and open up its transaction log to see how the production answer differs from yours.
@@ -18,11 +19,13 @@ A versioned feature pipeline in Python: raw events to features to versioned Parq
 - [ ] [Hidden Technical Debt in Machine Learning Systems](https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf) (Sculley et al., NeurIPS 2015): 9 pages, read all of it. The CACE principle and "glue code" sections are most relevant.
 - [ ] [Delta Lake: High-Performance ACID Table Storage over Cloud Object Stores](https://www.vldb.org/pvldb/vol13/p3411-armbrust.pdf) (Armbrust et al., VLDB 2020): read Sections 1–4. Understand why versioning and ACID matter for ML pipelines, not just OLTP.
 
+**Depth: read Hidden Technical Debt and Sections 1 to 4 of the Delta Lake paper.** No study reading: this week's mechanism lives in the transaction log you open by hand, not in a paper. The Iceberg spec is a skim, and only the two sections named.
+
 **Key question:** The paper says "changing anything changes everything" (CACE). Give a concrete example from an ML pipeline where this would cause a silent, hard-to-debug failure.
 
 ---
 
-## Part 1: Versioning It Yourself (3 days)
+## Part 1: Versioning It Yourself
 
 ### Code
 
@@ -48,7 +51,7 @@ Scenario: raw user activity events to session features to versioned feature stor
 
 ---
 
-## Part 2: What a Table Format Actually Is (2 days)
+## Part 2: What a Table Format Actually Is
 
 You just built versioning by hand: a directory per version and a `latest.txt` pointer. That works, and it is worth having built, because it makes the next part legible. An open table format like Delta Lake or Apache Iceberg is the same idea done properly, and the difference is entirely in the metadata layer. Instead of a text file naming the current version, there is an ordered log of commits, each one listing exactly which data files were added and which were removed. Every guarantee people advertise about these formats, ACID commits, time travel, concurrent writers, schema evolution, falls out of that one design.
 
@@ -66,33 +69,12 @@ Same project. New dependency: `deltalake` (`pip install deltalake`). This is del
 
 - [ ] `delta_store.py`: rewrite `FeatureStore` against Delta. `write()` becomes `write_deltalake(path, df, mode="overwrite")`, `read(version)` becomes `DeltaTable(path, version=v).to_pandas()`. Confirm your existing `query.py` still works by pointing DuckDB at the table's data files. The point of the rewrite is how little application code it takes once the format handles versioning.
 - [ ] `inspect_log.py`: after writing three versions, open `_delta_log/` and read the JSON commit files directly with the standard library. Print, for each commit, which files were added and which were removed. Then call `DeltaTable(path).history()` and confirm it is telling you the same story the raw files told you. Do the raw read first. The API is easy to trust without understanding, and the files are the thing that is actually true.
-- [ ] `small_files.py`: append 200 tiny batches, one at a time, the way a streaming job writing every few seconds would. Count the files on disk and time a full table scan. Then run `DeltaTable(path).optimize.compact()`, count files and time the scan again. Report both numbers.
+- [ ] Optional: `small_files.py`: append 200 tiny batches, one at a time, the way a streaming job writing every few seconds would. Count the files on disk and time a full table scan. Then run `DeltaTable(path).optimize.compact()`, count files and time the scan again. Report both numbers.
 
 **Break it, then decide:**
-- [ ] The small-file problem you just created is one of the most common real complaints about lakehouse tables, and the cause is unglamorous: every commit writes at least one new file, and query planning cost scales with file count regardless of how little data each file holds. Confirm the scan time actually improved after compaction, and note how much of the original slowness was metadata rather than data.
+- [ ] Optional, and only if you built `small_files.py`: the small-file problem is one of the most common real complaints about lakehouse tables, and the cause is unglamorous: every commit writes at least one new file, and query planning cost scales with file count regardless of how little data each file holds. Confirm the scan time actually improved after compaction, and note how much of the original slowness was metadata rather than data.
 - [ ] Now run `DeltaTable(path).vacuum(retention_hours=0, dry_run=True)` and read what it proposes to delete. Those are the files compaction orphaned, still on disk, still referenced by older versions of the table. Deleting them reclaims storage and permanently breaks time travel to those versions.
 - [ ] **Your call:** you own a feature table that a model-retraining job reads and an auditor occasionally queries months later. Compaction is clearly worth running. Vacuum is the question: an aggressive retention window keeps storage costs flat but destroys your ability to reproduce a training run from six weeks ago, and a long one preserves reproducibility while accumulating files nobody reads. Pick a retention window, write it down as a number with a justification, and say which of the two people above you would have to go apologize to if you got it wrong in each direction.
-
----
-
-## Optional: Memory-Bound Processing (evidence-based)
-
-`events.parquet` at 10k rows fits in memory without thinking about it. Real event tables don't: mixed-type JSON fields (a `tags` column that's sometimes a list, sometimes a string, sometimes null, depending on which client emitted the event) and row counts in the millions are exactly the shape of data that makes naive pandas fall over. Worth seeing the failure and the fix firsthand instead of taking it on faith.
-
-No new dependencies: everything below uses `pandas`, `pyarrow`, and the standard library you already have for this week. No Dask, no Polars, no new file format; the point is that `pandas` + `pyarrow` + Parquet, used correctly, already get you most of the way there.
-
-- [ ] `generate_events_large.py`: same schema as `generate_events.py`, but 2M rows (bump higher if your machine has headroom and you want a starker gap) and one deliberately dirty column, `tags`: for each row, randomly emit a JSON-serializable list of strings, a single string, or `null` (roughly equal thirds). Write to `data/raw/events_large.parquet`.
-- [ ] `memory_naive.py`: load `events_large.parquet` in one call (`pd.read_parquet`), then normalize `tags` to a consistent string representation column-wide (`.astype(str)`). Wrap the load-and-normalize step in `tracemalloc.start()` / `tracemalloc.get_traced_memory()` and print peak memory in MB.
-- [ ] `memory_chunked.py`: process the same file in real chunks, using `pyarrow.parquet.ParquetFile(path).iter_batches(batch_size=100_000)` directly, converting each batch to a small pandas DataFrame only for that batch, normalizing `tags`, and writing each cleaned batch out incrementally with `pyarrow.parquet.ParquetWriter` (one `write_table` call per batch). At no point should the full 2M-row dataset exist as one in-memory object; that's the actual difference between this and a loop that slices an already-fully-loaded DataFrame, which isn't real chunking, just decorative iteration. Measure peak memory the same way as `memory_naive.py` and compare.
-- [ ] `memory_columnar.py`: read the same file two ways and compare `.memory_usage(deep=True).sum()` for the `tags` column: once as plain pandas (`pd.read_parquet(path)`, `object` dtype, one Python string object per cell) and once with `pd.read_parquet(path, dtype_backend="pyarrow")` (pandas 2.x's PyArrow-backed columnar dtypes, no per-cell Python object overhead; `pip install pandas` today gets you 2.x by default). This is W02's row-vs-column-store memory argument again, one level up: DataFrame columns instead of hand-rolled Go structs.
-
-**Minimum bar:** three real numbers you measured, not estimated: peak memory naive vs. chunked (MB), and `tags` column memory footprint object-dtype vs. `dtype_backend="pyarrow"` (MB). `memory_chunked.py`'s peak should be substantially lower than `memory_naive.py`'s; if it isn't, the first thing to check is whether the full DataFrame got materialized somewhere before chunking kicked in. That's the most common way this exercise goes wrong, and it's the same mistake the inspiration for this exercise (a published data engineering article) actually made in its own "chunked" solution.
-
-**Reflect (this section only):**
-- Peak memory, naive: __ MB. Chunked: __ MB.
-- `tags` column memory, object dtype: __ MB. PyArrow-backed dtype: __ MB.
-- What did W02's row-vs-column-store benchmark predict about this result, and did it hold?
-- Where would the naive-chunking mistake (iterating over an already-fully-loaded DataFrame instead of never materializing the whole thing) be easy to make by accident in `feature_engineering.py` above, at real scale?
 
 ---
 

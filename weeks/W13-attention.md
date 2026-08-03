@@ -1,14 +1,15 @@
 ---
-week_number: 16
+week_number: 13
 status: not-started
 ---
 
-# W16: Attention, KV Cache, and Cache-Aware Routing
+# W13: Attention, KV Cache, and Cache-Aware Routing
 
 > **Arc:** Distributed ML & Compute · **Language:** Python (NumPy only)
+> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
-A KV cache for autoregressive generation (Part 1, 4 days), then a router that has to decide which of two replicas a request should go to, given that each one holds a different cache (Part 2, 1 day).
+A KV cache for autoregressive generation (Part 1), then a router that has to decide which of two replicas a request should go to, given that each one holds a different cache (Part 2).
 
 Part 1 builds the cache against a given multi-head self-attention implementation rather than one you derive from scratch: the attention forward pass itself is standard transformer mechanics that belongs to a dedicated ML/AI track, not this one. Its actual subject is what happens to memory and latency once you start caching past keys and values across generation steps, and where a naive cache can leak state between requests it was never supposed to share. No PyTorch.
 
@@ -18,12 +19,14 @@ Part 2 is the same cache one level up. Once you have more than one replica of a 
 
 ---
 
-## Part 1: The Cache Itself (4 days)
+## Part 1: The Cache Itself
 
 ### Read
 - [ ] [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (Vaswani et al., 2017): read Sections 3.2–3.5 (the attention mechanism and multi-head attention) to understand the mechanism `attention.py` gives you below, not to derive it yourself. Skip the training details.
-- [ ] [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135) (Dao et al., 2022): read Sections 1–3. The key insight is tiling attention to avoid materializing the full N×N attention matrix. You won't implement this, but you need to understand *why* naive attention is memory-bound.
+- [ ] Optional: [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135) (Dao et al., 2022): read Sections 1–3. The key insight is tiling attention to avoid materializing the full N×N attention matrix. You won't implement this, but you need to understand *why* naive attention is memory-bound.
 - [ ] [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180) (Kwon et al., 2023): read Sections 1–4. Understand why KV cache fragmentation is a problem and how paging solves it.
+
+**Depth: read Sections 3.2 to 3.5 of Attention Is All You Need and Sections 1 to 4 of PagedAttention.** No study reading: multi-head attention is given to you, and the cache and router you build are not described in any of these papers. FlashAttention, Burns Ch.15, and the Gateway API posts are skims.
 
 **Key question:** Naive attention is O(N²) in memory. Where exactly does this quadratic memory come from? Draw the computation graph and label which tensors are the bottleneck.
 
@@ -45,7 +48,7 @@ Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=
   - Without cache: re-run full attention over the entire sequence each step (O(N²) per step)
   - With cache: run attention only for the new token against the cached K/V (O(N) per step)
   - Generate 20 tokens from a random start token; measure wall time and peak memory (`tracemalloc`) for both approaches
-- [ ] `benchmark.py`: print comparison table: tokens generated, time (ms), peak memory (MB), for cached vs uncached
+- [ ] Print the comparison from inside `generate.py` rather than a separate file: tokens generated, time in ms, and peak memory in MB, cached versus uncached. Two numbers side by side is the whole deliverable and it does not need its own module.
 
 **Break it, then decide:**
 - [ ] `KVCache` as specified stores past keys and values keyed only by `layer_id`. Simulate two concurrent "conversations" sharing one `KVCache` instance: generate a few tokens for prompt A, then interleave a few tokens for a completely unrelated prompt B, calling `update`/`get` on the same cache object for both. Because the cache has no notion of which request a K/V pair belongs to, B's tokens get concatenated onto A's cached keys and values at the same `layer_id`, so a later step generating for A ends up attending over tokens from B's prompt too. Confirm this by printing what `get(layer_id)` returns after the interleaving and checking whether it contains tokens from both prompts.
@@ -53,7 +56,7 @@ Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=
 
 ---
 
-## Part 2: Routing to a Cache (1 day)
+## Part 2: Routing to a Cache
 
 You just made the cache per-request. That change has a consequence that only shows up once there is more than one copy of your model running, and it is the thing this part is about.
 
@@ -82,14 +85,14 @@ Same project, `code/attention/`. Still NumPy and the standard library.
 **Minimum bar (Part 2):** a measured number, not an argument. Total prefill tokens under round-robin versus cache-aware, on the same workload, with the gap explained in one sentence.
 
 **Break it, then decide:**
-- [ ] Cache-aware routing sends every turn of a conversation to the same replica, which is the point. Now give one conversation a much longer history and many more turns than the others, and watch where it goes: that replica keeps getting picked, its queue grows, and the other one sits idle holding nothing useful. You have just recreated W06's skew problem one layer up. The cause is identical, a routing key whose distribution is uneven, and so is the symptom, one worker doing most of the work while the rest wait.
+- [ ] Cache-aware routing sends every turn of a conversation to the same replica, which is the point. Now give one conversation a much longer history and many more turns than the others, and watch where it goes: that replica keeps getting picked, its queue grows, and the other one sits idle holding nothing useful. You have just recreated W05's skew problem one layer up. The cause is identical, a routing key whose distribution is uneven, and so is the symptom, one worker doing most of the work while the rest wait.
 - [ ] **Your call:** these two goals genuinely conflict and no policy satisfies both. Pure cache affinity gives the best time-to-first-token and the worst load balance. Pure round-robin gives perfect balance and throws away cache constantly. Implement the middle option: prefer the replica holding the cache *unless* its queue depth exceeds some threshold, at which point you accept the prefill cost and send the request elsewhere. Pick the threshold, say what happens to your prefill-token number when you do, and name the metric you'd put on a dashboard to know whether the threshold was set wrong in either direction.
 
 ### Where this lives in the real world (read only)
 
 Worth knowing, because it connects two weeks that otherwise sit apart. The production version of `router.py` is not part of the model server at all. It's a component of the Kubernetes control plane: the Gateway API Inference Extension is a Go project, and llm-d's Endpoint Picker is the same idea running as a Kubernetes-native service. Routing has to live there because it needs facts about every replica's state, and the thing that already tracks every replica is the control plane.
 
-That is the same layer W19 is about, and it's the honest answer to why this curriculum has you write Go at all. The tensors are C++ and the model is Python, but deciding *which* replica gets a request, and which GPU that replica runs on, is Go, and it is where an inference platform is actually engineered.
+That is the same layer W15 is about, and it's the honest answer to why this curriculum has you write Go at all. The tensors are C++ and the model is Python, but deciding *which* replica gets a request, and which GPU that replica runs on, is Go, and it is where an inference platform is actually engineered.
 
 ---
 
@@ -113,6 +116,6 @@ That is the same layer W19 is about, and it's the honest answer to why this curr
 
 **Your queue-depth threshold: what number, what it cost you in recomputed prefill, and what you'd monitor to find out it was wrong.**
 
-**Where the skew you caused in Part 2 is the same problem as W06's, and where it genuinely differs:**
+**Where the skew you caused in Part 2 is the same problem as W05's, and where it genuinely differs:**
 
 **What I'd do differently:**
