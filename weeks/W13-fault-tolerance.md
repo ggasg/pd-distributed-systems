@@ -1,9 +1,9 @@
 ---
-week_number: 14
+week_number: 13
 status: not-started
 ---
 
-# W14: Fault Tolerance and Snapshots
+# W13: Fault Tolerance and Snapshots
 
 > **Arc:** Distributed ML & Compute · **Language:** Java
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
@@ -19,9 +19,9 @@ Chandy-Lamport distributed snapshot in Java: 3 simulated nodes with FIFO channel
 - [ ] [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456) (Chandy & Lamport, 1985): 10 pages. Read all of it. The algorithm is in Section 3. A "marker" is just a special message; that's the whole trick.
 - [ ] Optional: [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603) (Carbone et al., 2015): Flink's ABS algorithm. Read Sections 1–4. Understand how they extend Chandy-Lamport for cyclic dataflow graphs with barriers.
 - [ ] Optional, context: **DDIA Chapter 10** (2nd ed.), Consistency and Consensus, specifically the section on linearizability. Chandy-Lamport doesn't give you linearizability, it gives you a *consistent cut* (a recorded state that could have occurred at one instant, even if it never literally did); the chapter is useful precisely because it draws that distinction sharply, so you don't walk away from this week conflating "consistent snapshot" with the stronger guarantees Ch. 10 covers.
-- [ ] [In Search of an Understandable Consensus Algorithm](https://raft.github.io/raft.pdf) (Ongaro & Ousterhout, USENIX ATC 2014, **free PDF**): the Raft paper. Not implemented anywhere in this curriculum, a deliberate scope call, but it's the algorithm underneath etcd, which is what actually holds the Kubernetes control plane consistent, including the cluster you'll deploy to in W15. Read Sections 1–5 (the formal proof in Section 9 is skippable). It answers a different question than Chandy-Lamport does: Chandy-Lamport gives you a consistent snapshot of state that already exists; Raft is how a cluster agrees on what that state *is* in the first place. You'll watch this algorithm run directly in W15.
+- [ ] [In Search of an Understandable Consensus Algorithm](https://raft.github.io/raft.pdf) (Ongaro & Ousterhout, USENIX ATC 2014, **free PDF**): the Raft paper. Not implemented anywhere in this curriculum, a deliberate scope call, but it's the algorithm underneath etcd, which is what actually holds the Kubernetes control plane consistent, including the cluster you'll deploy to in W14. Read Sections 1–5 (the formal proof in Section 9 is skippable). It answers a different question than Chandy-Lamport does: Chandy-Lamport gives you a consistent snapshot of state that already exists; Raft is how a cluster agrees on what that state *is* in the first place. You'll watch this algorithm run directly in W14.
 
-**Depth: study Chandy-Lamport.** Ten pages, you implement the algorithm, and the correctness argument is the point. The Raft paper is a read, Sections 1 to 5, and you will watch it run in W15 rather than build it. Flink's ABS paper and DDIA Ch.10 are skims.
+**Depth: study Chandy-Lamport.** Ten pages, you implement the algorithm, and the correctness argument is the point. The Raft paper is a read, Sections 1 to 5, and you will watch it run in W14 rather than build it. Flink's ABS paper and DDIA Ch.10 are skims.
 
 **Key question:** Chandy-Lamport requires FIFO channels. What breaks if channels can reorder messages? How does Flink's barrier approach handle this?
 

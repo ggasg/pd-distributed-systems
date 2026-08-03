@@ -1,17 +1,17 @@
 ---
-week_number: 11
+week_number: 10
 status: not-started
 ---
 
-# W11: Beyond Data Parallelism
+# W10: Beyond Data Parallelism
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
-Three ways to split a model, rather than the data, across two processes: tensor parallelism (cut a single matrix multiply in half), pipeline parallelism (put different layers on different workers), and sharded optimizer state (each worker keeps only its slice of the optimizer's bookkeeping). You'll reuse the ring-allreduce you wrote in W10 as the communication layer for all three.
+Three ways to split a model, rather than the data, across two processes: tensor parallelism (cut a single matrix multiply in half), pipeline parallelism (put different layers on different workers), and sharded optimizer state (each worker keeps only its slice of the optimizer's bookkeeping). You'll reuse the ring-allreduce you wrote in W09 as the communication layer for all three.
 
-Here's the framing, plainly. W10 was **data parallelism**: every worker holds a complete copy of the model and they split the data between them. That works right up until the model itself no longer fits in one worker's memory, at which point it stops being an option at all and you have to cut the model up instead. Everything this week is about how you cut it, and what each cut costs you in communication.
+Here's the framing, plainly. W09 was **data parallelism**: every worker holds a complete copy of the model and they split the data between them. That works right up until the model itself no longer fits in one worker's memory, at which point it stops being an option at all and you have to cut the model up instead. Everything this week is about how you cut it, and what each cut costs you in communication.
 
 **Scenario:** you have a model that trains fine on one machine and a bigger one that does not fit at all. Somebody asks which parallelism strategy to use, and the honest answer depends on numbers you don't have yet: how much has to cross the network per step, and how much of the time each worker spends waiting. This week you measure both on something small enough to see clearly.
 
@@ -33,9 +33,9 @@ Here's the framing, plainly. W10 was **data parallelism**: every worker holds a 
 
 Project: `code/parallelism/` (Python 3.13+)
 
-Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `all_gather` directly from `code/distributed-training/` (W10), so this week builds on real code you already wrote rather than a fresh abstraction.
+Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `all_gather` directly from `code/distributed-training/` (W09), so this week builds on real code you already wrote rather than a fresh abstraction.
 
-**Given, not built:** `layers.py` is provided, a `Linear` class with `forward` and `backward` and a GeLU activation, all NumPy. Same principle as W10: the calculus is not what's being tested here.
+**Given, not built:** `layers.py` is provided, a `Linear` class with `forward` and `backward` and a GeLU activation, all NumPy. Same principle as W09: the calculus is not what's being tested here.
 
 **Part 1: Tensor parallelism**
 

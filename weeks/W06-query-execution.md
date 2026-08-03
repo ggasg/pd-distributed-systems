@@ -1,9 +1,9 @@
 ---
-week_number: 7
+week_number: 6
 status: not-started
 ---
 
-# W07: Query Execution
+# W06: Query Execution
 
 > **Arc:** Streaming and Dataflow · **Language:** Go
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
@@ -21,7 +21,7 @@ A vectorized query executor in Go: columnar filter + hash join + projection over
 - [ ] [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032) (Graefe, 1994): read Sections 1–3. This defines the iterator model (the `next()` interface) that every query engine for 20 years was built on.
 - [ ] [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf) (Boncz et al., CIDR 2005): read Sections 1–3. This is the argument for vectorized execution and why Volcano is CPU-cache unfriendly.
 - [ ] Optional: [Dremel: Interactive Analysis of Web-Scale Datasets](https://research.google/pubs/dremel-interactive-analysis-of-web-scale-datasets/) (Melnik et al., Google, VLDB 2010): read Sections 1–3. Same columnar-storage instinct as MonetDB/X100, but scaled a level up: Dremel shreds nested records into columns (the ancestor of Parquet's on-disk format) and spreads the aggregation itself across a multi-level serving tree of thousands of machines. Read it for what changes when "vectorize the scan" becomes "vectorize the scan, then fan the aggregation out across a cluster."
-- [ ] Optional: [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++ (a different language than this week's build, the lesson is the technique, not the syntax), and one you already depend on via W09's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this week.
+- [ ] Optional: [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++ (a different language than this week's build, the lesson is the technique, not the syntax), and one you already depend on via W08's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this week.
 - [ ] Optional, context only (a free public blog post, not something you install or test against): [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html). Photon is "written from the ground up in C++" specifically to replace the JVM-based Spark execution engine for exactly this reason: columnar batches, tight vectorized loops, SIMD, none of it playing well with a garbage collector or a heap of boxed objects. Your actual hands-on comparison this week is DuckDB (and optionally ClickHouse) below; this is just confirmation the same technique is load-bearing in production, regardless of which non-GC'd language a given engine picks.
 - [ ] Optional: [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional: ClickHouse is C++ end to end; skim `IProcessor` and how the pull-based pipeline batches rows into `Chunk`s. A second real reference point alongside DuckDB and Photon, from a different target company with a different pipeline design.
 
@@ -60,7 +60,7 @@ Data model: a table of 1M rows with columns `[]int32` for `id`, `dept`, `salary`
 
 ## Rehearse it in Python first (optional, 20 minutes)
 
-> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the hash join's build-and-probe and the sorted-column scan in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W07) and stop after W07, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
+> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the hash join's build-and-probe and the sorted-column scan in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W06) and stop after W06, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
 
 **Hash join + binary search on sorted arrays**: the two algorithms your Go `hash_join.go` and `column_filter.go` implement. Python makes the probe/build logic easy to inspect.
 

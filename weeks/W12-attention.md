@@ -1,9 +1,9 @@
 ---
-week_number: 13
+week_number: 12
 status: not-started
 ---
 
-# W13: Attention, KV Cache, and Cache-Aware Routing
+# W12: Attention, KV Cache, and Cache-Aware Routing
 
 > **Arc:** Distributed ML & Compute · **Language:** Python (NumPy only)
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
@@ -92,7 +92,7 @@ Same project, `code/attention/`. Still NumPy and the standard library.
 
 Worth knowing, because it connects two weeks that otherwise sit apart. The production version of `router.py` is not part of the model server at all. It's a component of the Kubernetes control plane: the Gateway API Inference Extension is a Go project, and llm-d's Endpoint Picker is the same idea running as a Kubernetes-native service. Routing has to live there because it needs facts about every replica's state, and the thing that already tracks every replica is the control plane.
 
-That is the same layer W15 is about, and it's the honest answer to why this curriculum has you write Go at all. The tensors are C++ and the model is Python, but deciding *which* replica gets a request, and which GPU that replica runs on, is Go, and it is where an inference platform is actually engineered.
+That is the same layer W14 is about, and it's the honest answer to why this curriculum has you write Go at all. The tensors are C++ and the model is Python, but deciding *which* replica gets a request, and which GPU that replica runs on, is Go, and it is where an inference platform is actually engineered.
 
 ---
 

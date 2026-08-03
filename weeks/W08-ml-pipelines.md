@@ -1,9 +1,9 @@
 ---
-week_number: 9
+week_number: 8
 status: not-started
 ---
 
-# W09: ML Data Pipelines and Table Formats
+# W08: ML Data Pipelines and Table Formats
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.

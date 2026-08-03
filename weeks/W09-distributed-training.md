@@ -1,9 +1,9 @@
 ---
-week_number: 10
+week_number: 9
 status: not-started
 ---
 
-# W10: Distributed Training
+# W09: Distributed Training
 
 > **Arc:** Distributed ML & Compute · **Language:** Python
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.

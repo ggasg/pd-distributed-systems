@@ -64,7 +64,7 @@ Project: `code/clocks/` (Go modules)
 
 ## Rehearse it in Python first (optional, 20 minutes)
 
-> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the vector clock itself in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W07) and stop after W07, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
+> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the vector clock itself in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W06) and stop after W06, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
 
 **Dicts as vector clocks**: a vector clock is just a dict. Implement the three core operations in Python before building the Go version.
 
@@ -121,6 +121,6 @@ assert merge(vc2, vc3) == {"A": 2, "B": 1}
 
 **Which of at-most-once, at-least-once, and effectively-once does your duplicate fix actually give you, stated precisely?**
 
-**Where else in this curriculum have you already seen a timeout standing in for knowledge nobody has? (You will hit this again in W10, W12, W15, and W17; note it here so it's familiar when you do.)**
+**Where else in this curriculum have you already seen a timeout standing in for knowledge nobody has? (You will hit this again in W09, W11, W14, and W16; note it here so it's familiar when you do.)**
 
 **What I'd do differently:**

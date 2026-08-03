@@ -20,7 +20,7 @@ DDIA Ch.4's central claim is that appending to a log is dramatically faster than
 ---
 
 ## Read
-- [ ] **DDIA Ch.4** (2nd ed.), Storage and Retrieval. Focus on the LSM-tree versus B-tree comparison and the section on SSTables. You do not need the full index taxonomy, and you can skip the vector-embeddings section unless it interests you; W13's attention work is the retrieval-side counterpart if it does.
+- [ ] **DDIA Ch.4** (2nd ed.), Storage and Retrieval. Focus on the LSM-tree versus B-tree comparison and the section on SSTables. You do not need the full index taxonomy, and you can skip the vector-embeddings section unless it interests you; W12's attention work is the retrieval-side counterpart if it does.
 - [ ] Optional: [LevelDB source](https://github.com/google/leveldb), 20 minutes, `db/memtable.h` and nothing else. Read it to see what a real MemTable looks like, not to understand it. C++, and the syntax is irrelevant here.
 
 **Depth: read DDIA Ch.4, do not study it.** This unit no longer implements the mechanism the chapter describes, so a careful read is the right level; the measurement below is what will make it stick, not a third pass through the prose. Everything else here is a skim.

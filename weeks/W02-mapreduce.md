@@ -86,13 +86,13 @@ A working *concrete* pipeline clears this week. You don't need a beautifully gen
 
 - [ ] `pagerank.go`: one MapReduce iteration of PageRank: `Map` returns `(destination, rank/out_degree)` for each outgoing edge; `Reduce` sums contributions + applies damping factor `0.85`
 - [ ] `pagerank_runner.go`: runs the PageRank job for 10 iterations over a hardcoded 1000-node graph (random edges, average degree 5). The part that isn't obvious: each iteration's `Run()` output (new ranks per node) becomes next iteration's input, but the edge list itself doesn't change round to round. Keep the graph structure separate from the ranks, and rebuild the per-iteration input by pairing current ranks with the fixed edge list. After each iteration, print: iteration number, sum of rank changes (convergence), **bytes written to disk for the shuffle file**
-- [ ] In a comment: calculate what the disk I/O would be at 1M nodes. This is the argument for keeping intermediate state in memory (Spark) or as a live dataflow with incrementally maintained state (W06).
+- [ ] In a comment: calculate what the disk I/O would be at 1M nodes. This is the argument for keeping intermediate state in memory rather than round-tripping it to disk between iterations, which is what Spark's RDDs are for.
 
 **Stretch goal (optional): coordinator service**
 
 - [ ] Optional: `tools/job_coordinator/main.go`: an HTTP server that accepts job submissions and tracks status, using `net/http` (standard library, no framework needed for two routes). Endpoints: `POST /job` (accepts `{"type": "wordcount"|"pagerank", "input": "path"}`, returns `{"job_id": "..."}`), `GET /job/{id}` (returns status + result when done). Your `runner.go` calls this server to report completion. Keep it under 100 lines; `encoding/json` handles the request/response bodies, small enough that hand-writing them would be more code, not less.
 
-If you have time left after the minimum bar: this is a small rep of the master/worker split from the MapReduce paper itself (a coordinator process tracking job state separate from the workers doing the compute), and a preview of the shape you'll build for real in W15, where a control-plane process reconciling state against reported worker status is most of what a Kubernetes operator's reconcile loop does. Skipping it costs you nothing required; it's here because the parallel to W15 is worth having if the week's going well.
+If you have time left after the minimum bar: this is a small rep of the master/worker split from the MapReduce paper itself (a coordinator process tracking job state separate from the workers doing the compute), and a preview of the shape you'll build for real in W14, where a control-plane process reconciling state against reported worker status is most of what a Kubernetes operator's reconcile loop does. Skipping it costs you nothing required; it's here because the parallel to W14 is worth having if the week's going well.
 
 **Break it, then decide:**
 - [ ] Pick one mapper goroutine (say, the one handling the last split) and make it `panic("simulated worker crash")` instead of returning normally. Run the word count job. In Go, an unrecovered panic in any goroutine crashes the entire process, not just that goroutine, so watch what actually happens to the other splits that were still running concurrently. This is the real reason the MapReduce paper's fault tolerance re-executes just the failed task on another worker instead of letting one failure take down the whole job; your framework currently has no such isolation.
@@ -102,7 +102,7 @@ If you have time left after the minimum bar: this is a small rep of the master/w
 
 ## Rehearse it in Python first (optional, 20 minutes)
 
-> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the shuffle's groupBy and PageRank's graph walk in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W07) and stop after W07, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
+> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the shuffle's groupBy and PageRank's graph walk in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W06) and stop after W06, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
 
 **Hash maps (groupBy) + adjacency list BFS**: the shuffle phase is a groupBy; PageRank needs a graph.
 
@@ -150,6 +150,6 @@ assert bfs(graph, "A") == {"A", "B", "C", "D"}
 
 **Extrapolated to 1M nodes:** __ GB per iteration × 10 iterations = __ GB total
 
-**Why this problem disappears in Differential Dataflow:**
+**What would have to change for this cost to disappear entirely:**
 
 **What I'd do differently:**
