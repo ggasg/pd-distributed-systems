@@ -28,7 +28,7 @@ Data-parallel training using Python multiprocessing and raw sockets, built entir
 
 ## Code
 
-Project: `code/distributed-training/` (Python 3.13+)
+Project: `code/distributed-training/` (Python 3.12+)
 
 Dependencies: `numpy`, `torch` (for data loading only, no `torch.distributed`), `socket`, `multiprocessing`.
 

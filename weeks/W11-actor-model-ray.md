@@ -29,7 +29,7 @@ A Ray-based actor system in Python that retrains the same data-parallel MNIST jo
 
 ## Code
 
-Project: `code/actor-training/` (Python 3.13+, `ray`, `torch`)
+Project: `code/actor-training/` (Python 3.12+, `ray`, `torch`)
 
 Scenario: reimplement W09's data-parallel training job, but with two changes: workers are Ray actors instead of raw processes talking over sockets, and the model is a real PyTorch `nn.Module` instead of a hand-rolled NumPy MLP.
 

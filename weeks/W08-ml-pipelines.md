@@ -29,7 +29,7 @@ A versioned feature pipeline in Python: raw events to features to versioned Parq
 
 ### Code
 
-Project: `code/feature-pipeline/` (Python 3.13+, `uv` or `pip`)
+Project: `code/feature-pipeline/` (Python 3.12+, `uv` or `pip`)
 
 Dependencies: `pandas`, `pyarrow`, `duckdb`. No ML libraries. Part 2 adds `deltalake`.
 
@@ -55,7 +55,7 @@ Scenario: raw user activity events to session features to versioned feature stor
 
 You just built versioning by hand: a directory per version and a `latest.txt` pointer. That works, and it is worth having built, because it makes the next part legible. An open table format like Delta Lake or Apache Iceberg is the same idea done properly, and the difference is entirely in the metadata layer. Instead of a text file naming the current version, there is an ordered log of commits, each one listing exactly which data files were added and which were removed. Every guarantee people advertise about these formats, ACID commits, time travel, concurrent writers, schema evolution, falls out of that one design.
 
-This matters commercially, not just intellectually: Delta Lake is the storage layer under Databricks, Iceberg is what Snowflake and nearly everyone else has standardized on, and "how does the transaction log work" is a question you should be able to answer from having looked at one.
+Both Delta Lake and Apache Iceberg are open, independently governed formats, and both are implemented against object storage by more than one engine. That independence is the interesting part: the format is a contract, and any engine that can read the log can read the table. "How does the transaction log work" is a question worth being able to answer from having opened one.
 
 ### Read
 - [ ] The Delta Lake paper is already required above. Reread Section 3 specifically, now that you've built versioning yourself, and note what your `latest.txt` cannot do that an ordered commit log can.
@@ -65,7 +65,7 @@ This matters commercially, not just intellectually: Delta Lake is the storage la
 
 ### Code
 
-Same project. New dependency: `deltalake` (`pip install deltalake`). This is delta-rs, a native Rust implementation with a Python binding, so there is no JVM and no Spark cluster involved. You will not write any Rust.
+Same project. New dependency: `deltalake` (`pip install deltalake`), which is delta-rs, an independent Rust implementation of the Delta format with a Python binding. No JVM, no Spark cluster, and you will not write any Rust. It is used here because it is the shortest path to a real transaction log on a laptop, not because the format matters more than Iceberg's; the Iceberg spec in the reading is there so you see the same idea structured differently.
 
 - [ ] `delta_store.py`: rewrite `FeatureStore` against Delta. `write()` becomes `write_deltalake(path, df, mode="overwrite")`, `read(version)` becomes `DeltaTable(path, version=v).to_pandas()`. Confirm your existing `query.py` still works by pointing DuckDB at the table's data files. The point of the rewrite is how little application code it takes once the format handles versioning.
 - [ ] `inspect_log.py`: after writing three versions, open `_delta_log/` and read the JSON commit files directly with the standard library. Print, for each commit, which files were added and which were removed. Then call `DeltaTable(path).history()` and confirm it is telling you the same story the raw files told you. Do the raw read first. The API is easy to trust without understanding, and the files are the thing that is actually true.

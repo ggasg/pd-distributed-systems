@@ -31,7 +31,7 @@ Here's the framing, plainly. W09 was **data parallelism**: every worker holds a 
 
 ## Code
 
-Project: `code/parallelism/` (Python 3.13+)
+Project: `code/parallelism/` (Python 3.12+)
 
 Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `all_gather` directly from `code/distributed-training/` (W09), so this week builds on real code you already wrote rather than a fresh abstraction.
 

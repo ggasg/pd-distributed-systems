@@ -20,9 +20,8 @@ If "shuffle" is a word you've heard without a firm picture behind it, here it is
 ## Read
 - [ ] DDIA Ch.7 (2nd ed.), "Sharding": the whole chapter. Key-range vs hash sharding, the hot-spot problem, and rebalancing. Note that Kleppmann is deliberately cool on consistent hashing for databases; read his reasoning rather than assuming consistent hashing is the default right answer.
 - [ ] [Spark RDD Programming Guide, "Shuffle operations"](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations): short, concrete, and describes exactly the map-side-write then reduce-side-fetch structure you're about to build. Read the "Performance Impact" subsection twice.
-- [ ] Optional: [The Snowflake Elastic Data Warehouse](https://dl.acm.org/doi/10.1145/2882903.2903741) (Dageville et al., SIGMOD 2016; also [free PDF](https://event.cwi.nl/lsde/papers/p215-dageville-snowflake.pdf)): Sections 3 and 4. Worth reading for how a system that separates storage from compute still has to solve the same data-exchange problem, just with object storage in the middle instead of local disk.
 
-**Depth: study DDIA Ch.7.** You build a partitioner and then reproduce the hot-spot problem the chapter describes, so the two reinforce each other directly. The Spark shuffle page is a short read. Snowflake and Dynamo are skims, and both are optional.
+**Depth: study DDIA Ch.7.** You build a partitioner and then reproduce the hot-spot problem the chapter describes, so the two reinforce each other directly. The Spark shuffle page is a short read. Dynamo is an optional skim.
 
 **Key question:** Why does a shuffle write to disk at all, instead of streaming records straight from map tasks to reduce tasks over the network? What breaks if you don't?
 

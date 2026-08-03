@@ -16,6 +16,14 @@ Everything you need installed before starting W00. Set this up once; it covers t
 
 ---
 
+## Why these versions
+
+Where this curriculum touches the JVM data stack, the versions are pinned to match **Databricks Runtime 18.0**: Apache Spark 4.1.0, Scala 2.13.16, Python 3.12.3, and Java 21. That is not vendor allegiance, it is a free calibration point. DBR is a widely deployed, publicly documented assembly of otherwise independent open-source versions, so aligning to it means what you build locally is version-compatible with a real production runtime rather than with nothing in particular. Everything you install is upstream Apache Spark, upstream Scala, upstream Python; the runtime is only the reference that says which combination people actually run together.
+
+Go and the Kubernetes tooling have no such reference and are pinned to current upstream releases instead.
+
+---
+
 ## Go 1.26+ (modules)
 
 ```bash
@@ -79,7 +87,7 @@ brew install coursier/formulas/coursier && cs setup
 sbt --version    # sbt 1.9.x or later
 ```
 
-Each Scala project (`code/query-planner/`, `code/spark-k8s-job/`) is its own sbt project: `build.sbt` pins `scalaVersion := "2.13.14"` (or the latest 2.13.x patch), so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, a zero-config experience.
+Each Scala project (`code/query-planner/`, `code/spark-k8s-job/`) is its own sbt project: `build.sbt` pins `scalaVersion := "2.13.16"`, the patch DBR 18 ships, so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, a zero-config experience.
 
 **W07 and W14's Spark job target Scala 2.13, not 3.** This is a deliberate match, not an oversight, and as of Spark 4 it isn't even a choice: Spark 4 is built exclusively against 2.13 and dropped 2.12 support entirely, and there is no Spark-on-Scala-3 build. 2.13 is the only version that works. Writing these weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Spark `Aggregator` source, not a newer dialect Spark has not adopted. For W14's `spark-k8s-job` the constraint is harder than stylistic: the JAR has to load inside a Spark image, so the Scala version and the Spark version both have to match what that image ships.
 
@@ -91,16 +99,16 @@ Recommended IDE: IntelliJ IDEA with the Scala plugin, the standard choice for Sp
 
 ---
 
-## Python 3.13+
+## Python 3.12 (matching DBR 18)
 
 Use [pyenv](https://github.com/pyenv/pyenv) to manage Python versions.
 
 ```bash
 # macOS
 brew install pyenv
-pyenv install 3.13
-pyenv global 3.13
-python --version   # 3.13.x
+pyenv install 3.12.3
+pyenv global 3.12.3
+python --version   # 3.12.3, matching DBR 18
 ```
 
 Install dependencies per arc:
@@ -149,10 +157,10 @@ pip install numpy                 # NumPy only, no PyTorch for this week
 W07's optional stretch runs a real Spark planner locally to watch it choose a join strategy. Single machine, no cluster, no account.
 
 ```bash
-pip install "pyspark==4.2.0"     # check for a newer 4.x; Spark 4 requires Python 3.10+
+pip install "pyspark==4.1.0"     # the Spark version DBR 18 runs
 ```
 
-Spark runs on the JVM regardless of the Python surface, and the Java 21 you installed above already satisfies it: Spark 4 supports Java 17, 21, and 25.
+Spark runs on the JVM regardless of the Python surface, and the Java 21 you installed above already satisfies it. Java 21 is also what DBR 18 ships, so this is the same combination a production cluster runs.
 
 ---
 
@@ -177,10 +185,10 @@ kind delete cluster --name pd-systems
 
 ```bash
 go version           # go1.26.x or later
-java --version       # openjdk 21.x (21 is a current LTS; Spark 4 supports 17, 21, and 25)
+java --version       # openjdk 21.x, which is what DBR 18 runs (Zulu 21)
 mvn --version        # Apache Maven 3.9.x
 sbt --version        # 1.9.x or later, builds Scala 2.13 per-project via build.sbt
-python --version     # 3.13.x
+python --version     # 3.12.3
 docker --version     # any current release
 kind --version       # any release new enough to create a Kubernetes 1.36 cluster
 kubectl version      # 1.36.x (1.33 and earlier are end-of-life)

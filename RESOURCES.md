@@ -81,7 +81,6 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 
 - **DDIA Ch.7 (2nd ed.), "Sharding"**: required, the whole chapter. Key-range vs hash sharding, hot spots, rebalancing, and Kleppmann's deliberately skeptical treatment of consistent hashing for databases
 - [Spark RDD Programming Guide: Shuffle operations](https://spark.apache.org/docs/latest/rdd-programming-guide.html#shuffle-operations): required, short. The map-side-write then reduce-side-fetch structure this week builds, described by the system that made it famous
-- [The Snowflake Elastic Data Warehouse](https://dl.acm.org/doi/10.1145/2882903.2903741): Dageville et al., SIGMOD 2016 (also [free PDF](https://event.cwi.nl/lsde/papers/p215-dageville-snowflake.pdf)), optional, Sections 3-4. The same data-exchange problem solved with object storage in the middle instead of local disk
 - [Dynamo: Amazon's Highly Available Key-value Store](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf): DeCandia et al., SOSP 2007 (**free PDF**), optional. Section 4.2 is the canonical description of consistent hashing with virtual nodes, the technique the Python DSA Review implements
 
 ---
@@ -93,8 +92,6 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 - [Dremel: Interactive Analysis of Web-Scale Datasets](https://research.google/pubs/dremel-interactive-analysis-of-web-scale-datasets/): Melnik et al., Google, VLDB 2010 (**free PDF**), optional. Columnar storage (the ancestor of Parquet) plus a multi-level serving tree that fans aggregation out across thousands of machines, the distributed-scale continuation of the single-node vectorized-execution argument above. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.
 - [An Overview of Query Optimization in Relational Systems](https://dl.acm.org/doi/10.1145/275487.275492): Chaudhuri (1998), optional background
 - [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended. A real, actively maintained vectorized query engine in C++, already in your stack via W08's feature store.
-- [Announcing Photon](https://www.databricks.com/blog/2021/06/17/announcing-photon-public-preview-the-next-generation-query-engine-on-the-databricks-lakehouse-platform.html): optional, context only (a free public blog post, not something you install or test against). Databricks' vectorized engine, written from the ground up in C++, built to replace JVM-based Spark execution for the exact row-vs-vectorized reasons this week benchmarks.
-- [ClickHouse execution pipeline source](https://github.com/ClickHouse/ClickHouse/tree/master/src/Processors): optional. `IProcessor` and `Chunk`-based batching, a second C++ production reference with a different pipeline design than DuckDB or Photon.
 
 ---
 
@@ -114,7 +111,7 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 - [DuckDB docs](https://duckdb.org/docs/): for the SQL-on-Parquet layer in the feature store
 - [Apache Parquet spec](https://parquet.apache.org/docs/file-format/): understand the columnar format your feature store writes
 - [Apache Iceberg Table Spec](https://iceberg.apache.org/spec/): Part 2 required reading, "Overview" and "Table Metadata" sections only. The three-level metadata file to manifest list to manifest structure, worth seeing next to Delta's flat commit log so you don't mistake one implementation for the concept
-- [delta-rs (`deltalake` Python package)](https://delta-io.github.io/delta-rs/): Part 2's dependency. A native implementation with a Python binding, so no JVM and no Spark cluster are involved
+- [delta-rs (`deltalake` Python package)](https://delta-io.github.io/delta-rs/): Part 2's dependency. An independent Rust implementation of the Delta format with a Python binding, so no JVM and no Spark cluster are involved. Chosen for being the shortest path to a real transaction log locally, not because the format matters more than Iceberg's
 - Optional, for the memory exercise: [pandas PyArrow-backed dtypes (`dtype_backend`)](https://pandas.pydata.org/docs/user_guide/pyarrow.html) and [`pyarrow.parquet.ParquetFile.iter_batches`](https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetFile.html) docs
 
 ---

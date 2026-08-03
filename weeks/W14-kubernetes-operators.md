@@ -10,7 +10,7 @@ status: not-started
 
 ## What you'll build
 
-Not build, operate. Deploy two real, production-grade Kubernetes operators to your kind cluster: Kubeflow Trainer (the vendor-neutral way to run distributed training jobs on Kubernetes, and a PyTorch Ecosystem project) and Kubeflow's Spark Operator (what Databricks- and Cloudera-adjacent Spark-on-Kubernetes deployments run on). Create a `TrainJob` and a `SparkApplication`, watch each one reconcile, break each on purpose, and debug it the way you'd debug someone else's operator in production. Then read, don't write, each operator's real reconcile loop: the production version of the level-triggered control loop this week is actually about.
+Not build, operate. Deploy two real, production-grade Kubernetes operators to your kind cluster: Kubeflow Trainer (the vendor-neutral way to run distributed training jobs on Kubernetes, and a PyTorch Ecosystem project) and Kubeflow's Spark Operator (the standard way to run Apache Spark on Kubernetes). Create a `TrainJob` and a `SparkApplication`, watch each one reconcile, break each on purpose, and debug it the way you'd debug someone else's operator in production. Then read, don't write, each operator's real reconcile loop: the production version of the level-triggered control loop this week is actually about.
 
 Part 4 goes one layer up, to the question of who gets scheduled when there isn't enough hardware for everybody. Part 3 is an optional stretch that goes one layer down instead, to the etcd cluster running Raft underneath the control plane both operators depend on; skip it on a normal week.
 
