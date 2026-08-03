@@ -26,7 +26,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 | Arc | Weeks | Focus | Language |
 |-----|-------|-------|----------|
 | Setup | W00 | Local k8s, Prometheus, Grafana | Go |
-| Data Systems Internals | W01–W03 | Storage engines, MapReduce, clocks and failure detection | Go |
+| Data Systems Internals | W01–W03 | The write path and its cost, MapReduce, clocks and failure detection | Go |
 | Streaming, Dataflow, and Query Planning | W04–W08 | Stream processing and backpressure, partitioning and the shuffle, incremental view maintenance, query execution, rule- and cost-based query planning | Java (W04–W06) / Go (W07) / Scala (W08) |
 | Distributed ML & Compute | W09–W14 | ML pipelines and table formats, distributed training, tensor/pipeline parallelism, actor model (Ray), attention and cache-aware routing, fault tolerance | Python (W09–W13) / Java (W14) |
 | Infrastructure | W15–W16 | Kubernetes Operators (Kubeflow Trainer, Spark Operator), gang scheduling, observability (Prometheus, OTel, Grafana) | Go/Scala/YAML (W15) / Java + Go (W16) |
@@ -37,7 +37,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 ## What You'll Be Able to Do After Each Arc
 
 **After Arc 1 (W01–W03):**
-- Explain why LSM-trees beat B-trees for write-heavy workloads and when they don't
+- Measure, rather than assert, how much faster appending to a log is than updating in place, then measure what that speed costs you on reads and explain why compaction has to exist
 - Write a MapReduce framework with goroutines and channels; explain why iterative algorithms are slow on it
 - Implement vector clocks; reason about causal consistency and concurrent events
 - Build a heartbeat failure detector, then make it declare a healthy node dead on purpose, and defend a timeout knowing it can only trade false suspicions against slow detection
@@ -76,7 +76,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 Every week has:
 - **Read**: one or two named papers or chapters, with specific sections called out
 - **Code**: a concrete implementation task with named files and a clear deliverable
-- **Rehearse it in Python first**: optional, 20 minutes, and only in the four Go units (W01, W02, W03, W07). Writing the algorithm in Python before writing it in Go tells you whether a failure is the algorithm or the syntax. These stop after W07, by which point Go should no longer be the obstacle
+- **Rehearse it in Python first**: optional, 20 minutes, and only in the three Go units (W02, W03, W07). Writing the algorithm in Python before writing it in Go tells you whether a failure is the algorithm or the syntax. These stop after W07, by which point Go should no longer be the obstacle
 - **Reflect**: what you built, what surprised you, what you'd do differently
 
 ---
@@ -86,7 +86,7 @@ Every week has:
 | Weeks | Language | Why |
 |-------|----------|-----|
 | W00 | Go | Service + k8s deployment; Prometheus metrics. `net/http` (standard library) keeps this framework-free, and this small a service is the gentlest possible first exposure to Go before W01 leans on it for real |
-| W01–W03 | Go | Storage engines and coordination logic. MIT's 6.824/6.5840 distributed systems course builds this exact material (MapReduce, then Raft) in Go, the field's own canonical choice, not an arbitrary one. Goroutines and channels are Go's signature idiom for W03's message-passing simulation; BadgerDB (a real, pure-Go LSM store) gives W01 a genuine same-language reference implementation to read |
+| W01–W03 | Go | Storage engines and coordination logic. MIT's 6.824/6.5840 distributed systems course builds this exact material (MapReduce, then Raft) in Go, the field's own canonical choice, not an arbitrary one. Goroutines and channels are Go's signature idiom for W03's message-passing simulation; W01 is deliberately the gentlest Go exercise in the plan: file I/O, a loop, and a stopwatch |
 | W04–W06 | Java | Prior production Java background keeps ramp cost near zero, and modern Java's sealed interfaces plus record patterns carry real weight here: W04's `StreamItem` and W05's `Partitioner` both get compiler-enforced exhaustiveness from the same idiom W14 uses, one pattern reused three times rather than three languages introduced. These weeks are measured against production systems you install and run locally (Spark's shuffle, ClickHouse materialized views, Spark Structured Streaming) rather than against a reference implementation you'd read, so the build language is free to be whichever one expresses the exercise most clearly |
 | W07 | Go | The one week in this arc where memory layout is the actual subject, not incidental. Go compiles ahead of time, no JIT to warm up before a benchmark means something, and Go structs are real value types in slices, genuinely contiguous memory, the same property a columnar query engine depends on. Java's lack of true value types would work against the week's own point here |
 | W08, W15 | Scala | Spark itself is Scala, and both weeks are measured against it directly: W08 builds a toy Catalyst from case classes and pattern-matching rewrite rules, and W15 has you compile and submit a real Scala Spark job to the Spark Operator. W08's cost model is deliberately plain Scala, recursion over case classes and a list of permutations, no new language machinery beyond what Part 1 already introduced. Low ramp cost given prior production Spark/Scala experience; kept deliberately gentle, deeper FP mastery is a separate, dedicated Scala-and-Haskell plan, not this curriculum's job |
@@ -119,7 +119,7 @@ Every week has:
 ## Weeks
 
 - [W00: Infrastructure Setup](weeks/W00-setup.md)
-- [W01: LSM-Trees and Storage Engines](weeks/W01-lsm-storage.md)
+- [W01: Storage Engines and the Cost of a Write](weeks/W01-storage-engines.md)
 - [W02: MapReduce and Its Limits](weeks/W02-mapreduce.md)
 - [W03: Clocks, Causality, Time, and Unreliable Networks](weeks/W03-clocks.md)
 - [W04: Stream Processing Primitives](weeks/W04-streaming.md)

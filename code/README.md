@@ -12,13 +12,11 @@ code/
 │       ├── deployment.yaml
 │       └── service-monitor.yaml
 │
-├── lsm/                    # W01: Go (modules)
-│   ├── memtable.go
-│   ├── sstable.go
-│   ├── lsm_tree.go
-│   ├── lsm_tree_test.go
+├── storage-bench/          # W01: Go (modules)
+│   ├── inplace.go           # fixed-slot file, seek + write per record
+│   ├── appendlog.go         # append-only file, never seeks
+│   ├── bench.go             # 100k records in random order, both paths, timed
 │   └── go.mod
-│
 ├── mapreduce/              # W02: Go (modules)
 │   ├── mapreduce.go        # Mapper/Reducer function types
 │   ├── runner.go

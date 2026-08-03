@@ -24,7 +24,7 @@ All papers, books, and docs referenced in this curriculum. Organized by week. Fr
 
 ## Before You Start (outside any week's budget)
 
-- **DDIA Chapter 1** (2nd ed.), Trade-Offs in Data Systems Architecture. **Depth: skim.** Read this once, whenever you like, before or during W00. It is orientation rather than prerequisite: nothing in any week depends on having read it, and it contains no mechanism you will implement. What it gives you is the operational-versus-analytical and distributed-versus-single-node framing that the whole curriculum is arranged around, which makes the difference between W01's LSM-tree and W07's columnar executor legible as a deliberate contrast rather than two unrelated builds. Forty-five minutes at skim depth. Do not study it.
+- **DDIA Chapter 1** (2nd ed.), Trade-Offs in Data Systems Architecture. **Depth: skim.** Read this once, whenever you like, before or during W00. It is orientation rather than prerequisite: nothing in any week depends on having read it, and it contains no mechanism you will implement. What it gives you is the operational-versus-analytical and distributed-versus-single-node framing that the whole curriculum is arranged around, which makes the difference between W01's write path and W07's columnar executor legible as a deliberate contrast rather than two unrelated builds. Forty-five minutes at skim depth. Do not study it.
 
 DDIA Chapter 2 used to sit alongside it here. It now lives in W16, where reliability, scalability, and tail latency have a running system to attach to.
 
@@ -38,12 +38,11 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W16, where reliabi
 
 ---
 
-## W01: LSM-Trees and Storage Engines
+## W01: Storage Engines and the Cost of a Write
 
-- **DDIA Chapter 4**: Storage and Retrieval (SSTables, LSM-Trees, B-Trees)
-- [LevelDB source code](https://github.com/google/leveldb): the canonical LSM implementation; read `db/memtable.h`, `table/table.cc`
-- [BadgerDB source](https://github.com/dgraph-io/badger): a real, actively maintained, pure-Go LSM-tree key-value store, the same language `lsm/` is written in
-- [The Log-Structured Merge-Tree (LSM-tree)](https://www.cs.umb.edu/~poneil/lsmtree.pdf): O'Neil et al. (1996), the original paper
+- **DDIA Chapter 4**: Storage and Retrieval. Required, read depth rather than study: the unit measures the chapter's central claim instead of implementing the mechanism. Focus on LSM-trees versus B-trees and the SSTable section
+- [LevelDB source code](https://github.com/google/leveldb): optional, 20 minutes, `db/memtable.h` only. What a real MemTable looks like; C++, and the syntax doesn't matter
+- [The Log-Structured Merge-Tree (LSM-tree)](https://www.cs.umb.edu/~poneil/lsmtree.pdf): O'Neil et al. (1996), optional history
 
 ---
 

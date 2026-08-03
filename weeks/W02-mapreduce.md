@@ -102,7 +102,7 @@ If you have time left after the minimum bar: this is a small rep of the master/w
 
 ## Rehearse it in Python first (optional, 20 minutes)
 
-> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the shuffle's groupBy and PageRank's graph walk in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W01, W02, W03, W07) and stop after W07, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
+> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the shuffle's groupBy and PageRank's graph walk in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W07) and stop after W07, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
 
 **Hash maps (groupBy) + adjacency list BFS**: the shuffle phase is a groupBy; PageRank needs a graph.
 
