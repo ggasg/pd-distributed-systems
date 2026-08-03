@@ -76,7 +76,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 Every week has:
 - **Read**: one or two named papers or chapters, with specific sections called out
 - **Code**: a concrete implementation task with named files and a clear deliverable
-- **Rehearse it in Python first**: optional, 20 minutes, and present only where it earns its place. Either the unit is built in Go and writing the algorithm in Python first separates the algorithm from the syntax (W01, W02, W03, W07), or it teaches something the build doesn't (W05's consistent hashing, W11's stage balancing, W12's actor mailbox)
+- **Rehearse it in Python first**: optional, 20 minutes, and only in the four Go units (W01, W02, W03, W07). Writing the algorithm in Python before writing it in Go tells you whether a failure is the algorithm or the syntax. These stop after W07, by which point Go should no longer be the obstacle
 - **Reflect**: what you built, what surprised you, what you'd do differently
 
 ---

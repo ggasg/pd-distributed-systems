@@ -48,6 +48,7 @@ Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `al
 
 - [ ] `pipeline_parallel.py`: split a 4-layer MLP into two stages, layers 1 and 2 on worker 0, layers 3 and 4 on worker 1. Forward activations cross the stage boundary over a socket; gradients cross back the other way. Start with one batch at a time.
 - [ ] `microbatch.py`: split each batch into `M` microbatches and feed them into the pipeline back to back, so worker 1 can start on microbatch 1 while worker 0 is already working on microbatch 2.
+- [ ] `balance.py`: your pipeline splits four equal layers across two stages, which needs no thought. Real stacks are not equal, so write the general version: given a list of per-layer costs and a stage count `k`, split the list into `k` contiguous chunks minimising the largest chunk sum. Binary search on the answer, about fifteen lines. Test it on `[10, 10, 10, 10]` with `k=2`, which splits evenly, and then on `[1, 1, 100, 1]` with `k=2`, which cannot: the answer is 102 no matter where you cut. That second case is the one to sit with, because it means no contiguous split balances the pipeline and adding microbatches will not save you. It is the point at which a real system reaches for tensor parallelism *inside* the heavy layer, which is Part 1, and combining the two is what large training runs actually do.
 - [ ] `bubble.py`: instrument both workers with timers that record idle time, then sweep `M` from 1 to 16 and print measured bubble fraction alongside the theoretical `(S-1)/(M+S-1)`. With two stages and `M=1` you should measure close to 50 percent idle, which is a genuinely shocking number the first time you see it, and it should fall off quickly as `M` rises.
 
 **Part 3: Sharded optimizer state**
@@ -60,49 +61,6 @@ Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `al
 - [ ] In `RowParallelLinear`, comment out the all-reduce. The program does not crash, does not warn, and produces output of exactly the right shape. It is simply wrong, because every worker is holding a partial sum. Compare against the single-process reference and look at how wrong it actually is, then let training run a few steps and watch the loss go somewhere strange rather than error. Silent numerical corruption in a distributed layer is one of the genuinely hard bug classes in this field, and the lesson worth taking is that the shape check you'd normally trust tells you nothing here.
 - [ ] Set `M=1` in the pipeline and confirm you measure roughly the theoretical bubble. Then reason about what would happen with 8 stages and `M=1`: the formula says 87.5 percent idle, and that is why nobody runs pipeline parallelism without microbatching.
 - [ ] **Your call:** you're given a model where a single layer's weight matrix is too large to fit on one device. Tensor parallelism solves this directly but has to communicate inside every layer, so it needs fast interconnect. Pipeline parallelism communicates only at stage boundaries, which is far less traffic, but it cannot split an individual layer at all and it wastes time in the bubble. Pick one for this specific constraint, implement it as your `mlp_block.py`'s default path, and write down the interconnect assumption your choice depends on. Then say what you'd change if you were told the workers were in different data centers.
-
----
-
-## Rehearse it in Python first (optional, 20 minutes)
-
-**Balanced array partitioning (binary search on the answer)**: deciding which layers go on which pipeline stage is exactly the problem of splitting a list into `k` contiguous chunks while minimizing the largest chunk. Get this wrong and one stage becomes the bottleneck for the entire pipeline.
-
-```python
-# balance_stages.py
-def min_max_chunk(costs: list[int], k: int) -> int:
-    """Split `costs` into k contiguous chunks, minimizing the largest chunk sum."""
-    def chunks_needed(limit: int) -> int:
-        count, running = 1, 0
-        for c in costs:
-            if running + c > limit:
-                count += 1
-                running = c
-            else:
-                running += c
-        return count
-
-    lo, hi = max(costs), sum(costs)   # answer is somewhere in this range
-    while lo < hi:
-        mid = (lo + hi) // 2
-        if chunks_needed(mid) <= k:
-            hi = mid                   # mid is achievable, try smaller
-        else:
-            lo = mid + 1               # mid is too tight
-    return lo
-
-# Test: 4 layers of equal cost across 2 stages splits evenly
-assert min_max_chunk([10, 10, 10, 10], 2) == 20
-
-# Test: one heavy layer dominates no matter how you cut
-assert min_max_chunk([1, 1, 100, 1], 2) == 102
-
-# Test: more stages than layers is still well defined
-assert min_max_chunk([5, 5, 5], 3) == 5
-```
-
-**Connection:** your `pipeline_parallel.py` splits 4 layers into 2 stages by hand, which is fine at that size. The second test above is the case worth sitting with: when one layer costs vastly more than the others, no contiguous split balances the pipeline, and the bubble stops being fixable by adding microbatches. That is the point at which a real system reaches for tensor parallelism *inside* that one heavy layer, combining both strategies, which is what large training runs actually do.
-
----
 
 ## Reflect
 

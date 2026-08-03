@@ -47,47 +47,6 @@ Scenario: reimplement W10's data-parallel training job, but with two changes: wo
 - [ ] With 3+ `TrainerWorker` actors running, kill one mid-round: `ray.kill(worker_handles[i], no_restart=True)`. Watch `ParameterServer.push_gradients()`, which waits until all N workers for the round have pushed before averaging. With one worker gone for good, that condition can never become true, so the round (and the whole training loop) hangs forever, waiting on an actor that no longer exists. The actor model made concurrent writes safe; it did nothing to make "everyone eventually shows up" a guarantee.
 - [ ] This is the same class of problem as W10's dead worker, and underneath it the same ambiguity you built a detector for in W03: a worker that has not pushed gradients is indistinguishable from one that is about to. You now have a real design choice available that raw sockets didn't make convenient: would you have `ParameterServer` proceed once it's heard from a quorum (say, N-1 of N) within a timeout, averaging only the gradients that arrived and accepting the result is now slightly stale, or keep waiting for all N and treat a permanently missing worker as a fatal error requiring the whole job to restart? The first is closer to real asynchronous/stale-SGD parameter servers; the second is simpler and matches what synchronous SGD actually requires for its convergence guarantees to hold. Pick one, implement a timeout-based quorum in `push_gradients`, and say what accuracy or convergence cost you'd expect to pay for the choice you didn't make.
 
----
-
-## Rehearse it in Python first (optional, 20 minutes)
-
-**Toy actor mailbox (single-threaded message loop)**: before Ray hides the mechanics from you, build the simplest possible version by hand. This is exactly what makes actor state safe to mutate without locks: mutation only ever happens from inside a loop that processes one message at a time.
-
-```python
-# toy_actor.py
-from collections import deque
-
-class ToyActor:
-    def __init__(self):
-        self.mailbox = deque()
-        self.state = 0  # mutable actor state, only ever touched inside process_one()
-
-    def send(self, op: str, value=None) -> None:
-        self.mailbox.append((op, value))
-
-    def process_one(self):
-        if not self.mailbox:
-            return None
-        op, value = self.mailbox.popleft()
-        if op == "add":
-            self.state += value
-            return None
-        if op == "get":
-            return self.state
-
-a = ToyActor()
-a.send("add", 5)
-a.send("add", 3)
-a.send("get")
-a.process_one()          # state = 5
-a.process_one()          # state = 8
-assert a.process_one() == 8   # processed strictly in order, no locks needed
-```
-
-**Connection:** `ParameterServer.push_gradients()` is this same pattern at scale. Ray gives every actor its own mailbox and guarantees method calls to one actor process sequentially, so averaging gradients from concurrent workers is exactly as safe as `process_one()` mutating `self.state` above. Compare this to W10's `ring_allreduce.py`, where you had to reason about socket message ordering by hand; the actor model buys you that ordering guarantee for free, at the cost of the parameter server becoming a potential bottleneck (more on that in Reflect).
-
----
-
 ## Reflect
 
 **What clicked:**

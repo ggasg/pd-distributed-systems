@@ -60,6 +60,8 @@ Data model: a table of 1M rows with columns `[]int32` for `id`, `dept`, `salary`
 
 ## Rehearse it in Python first (optional, 20 minutes)
 
+> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the hash join's build-and-probe and the sorted-column scan in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W01, W02, W03, W07) and stop after W07, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
+
 **Hash join + binary search on sorted arrays**: the two algorithms your Go `hash_join.go` and `column_filter.go` implement. Python makes the probe/build logic easy to inspect.
 
 ```python

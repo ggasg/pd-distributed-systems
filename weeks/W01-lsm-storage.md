@@ -47,6 +47,8 @@ Project: `code/lsm/` (Go modules)
 
 ## Rehearse it in Python first (optional, 20 minutes)
 
+> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the SSTable read and the compaction merge in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W01, W02, W03, W07) and stop after W07, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
+
 **Binary search + sorted k-way merge**: the two algorithms inside every SSTable read and compaction.
 
 ```python
