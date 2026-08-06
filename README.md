@@ -114,7 +114,6 @@ Every unit has:
 ├── README.md             # This file
 ├── SETUP.md              # Environment setup (Java, Go, Python, Docker, Obsidian)
 ├── RESOURCES.md          # All papers and books, by unit, with free links
-├── CONTEXT.md            # Session context for AI-assisted study sessions
 ├── weeks/                # One .md file per unit (W00–W16, where W16 is the optional capstone project)
 ├── code/                 # Your implementations, see code/README.md
 ├── tools/                # Automation tools: plan-dates.go (unrelated to the curriculum's language choices); grad_server, bench_runner, log-aggregator (Go)
@@ -151,7 +150,7 @@ Every unit has:
 
 **Add your own unit?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically. The `week` naming in filenames and frontmatter is legacy and kept only because Home.md's queries depend on it.
 
-**Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers. See the Branch Workflow section in [CONTEXT.md](CONTEXT.md) for how to merge updates between them.
+**Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers, merging `main` into `progress` but never the reverse. That works cleanly as long as answers go on the blank line *below* each Reflect question rather than on the question line, so curriculum edits and progress edits never touch the same line.
 
 **Different languages?** The algorithms are language-agnostic. This curriculum is built around three languages you write, weighted toward depth in what you already know plus exactly one deliberately introduced new component, rather than breadth for its own sake. **Go** carries W00, W01, W03, and the secondary automation tools: net new, scoped as a gentle introduction, and with a footprint real enough to make W14's operator reading legible rather than token. **Java** carries all of Arc 2 plus W13 and W15: near-zero ramp cost against a production Java background, and it is the single driver language for every engine this curriculum operates (Spark, Flink, DuckDB over JDBC), which is what keeps four consecutive units on one stack. **Python** covers the ML-native arc.
 

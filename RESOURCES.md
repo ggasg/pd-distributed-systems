@@ -18,7 +18,7 @@ All papers, books, and docs referenced in this curriculum. Organized by unit. Fr
 
 ## External Reading Lists
 
-- [A Distributed Systems Reading List](https://dancres.github.io/Pages/) (Dan Creswell): a broad, long-running collection of foundational distributed-systems papers and essays, organized by theme (Google, Amazon, Consensus, Paxos, Gossip Protocols, P2P, and more). Some of it predates this curriculum's focus on ML/AI workloads and isn't a required source anywhere here, but it's a good browsing list once you're past a given unit and want more of that theme. Percolator (W06), Dremel (W06), and Chubby (extra-time list below) were added to this curriculum directly from its "Google" section; see the 2026-07-26 CONTEXT.md note for the full audit of that section against what's already covered.
+- [A Distributed Systems Reading List](https://dancres.github.io/Pages/) (Dan Creswell): a broad, long-running collection of foundational distributed-systems papers and essays, organized by theme (Google, Amazon, Consensus, Paxos, Gossip Protocols, P2P, and more). Some of it predates this curriculum's focus on ML/AI workloads and isn't a required source anywhere here, but it's a good browsing list once you're past a given unit and want more of that theme. Percolator (W06), Dremel (W06), and Chubby (extra-time list below) were added to this curriculum directly from its "Google" section, which was audited in full against what this curriculum already covers.
 
 ---
 

@@ -1,3 +1,8 @@
+# Session context for AI-assisted authoring. Deliberately untracked: it is a
+# working file about the author rather than about the curriculum, and it does
+# not belong in a public repo. Keep it locally; back it up outside git.
+CONTEXT.md
+
 # Obsidian workspace state (machine-specific)
 .obsidian/workspace.json
 .obsidian/workspace-mobile.json
