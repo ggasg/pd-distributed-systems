@@ -5,151 +5,80 @@ status: not-started
 
 # W02: MapReduce and Its Limits
 
-> **Arc:** Storage, Batch, and Failure · **Language:** Go
+> **Arc:** Storage, Batch, and Failure · **Language:** Java (Spark)
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
-A minimal MapReduce framework in Go using goroutines and channels. Run two jobs through it: word count and iterative PageRank. Measure the disk I/O cost per PageRank iteration; that number is the concrete motivation for everything in Arc 2.
+Not a MapReduce framework. An iterative job on real Spark, run twice, and the arithmetic that explains the gap between the two runs.
 
-**Scenario:** the original MapReduce paper spends a full section on what happens when a worker dies mid-job, because at Google's scale a job with a thousand mappers will lose one eventually. Your framework runs in one process on one machine, so "a worker dies" doesn't mean the same thing here, which is exactly what the exercise below makes you reckon with.
+MapReduce's defining cost is that intermediate state has to hit disk between stages, which means an iterative algorithm pays that cost once per iteration. The RDD paper's entire argument is that this is the thing worth fixing. This unit has you measure the size of that argument on your own machine, in the engine that was built to win it.
 
-**Note on why Go, specifically:** this isn't an arbitrary choice. MIT's 6.824/6.5840 (Distributed Systems), the field's most widely used academic treatment of exactly this material, has students build MapReduce in Go as its first lab, then Raft and a sharded key-value store on top of it in later labs. Goroutines also preserve the actual lesson this unit is built around better than most alternatives would: Go's scheduler multiplexes many cheap, garbage-collected goroutines onto a small number of OS threads, the same "spawn thousands of tasks without exhausting the OS" idea, just Go's own long-standing contribution to the field rather than a recent JVM addition.
+**Why not write the framework?** An earlier version of this unit had you build a `Mapper`/`Reducer` abstraction, a hand-rolled shuffle, and a temp-file round trip in Go. That is real work, and at the end of it you own a MapReduce framework, which is a thing you will never write again and never operate. Hadoop is legacy and Spark superseded it. What you actually need is the cost model, precise enough to predict which jobs will be slow before you run them, plus the ability to look at a stage DAG and see where the money goes. Spark gives you both, and it gives you the second one for free because it draws you the picture.
+
+**Scenario:** a colleague's nightly model-refresh job runs fifty iterations of an algorithm over the same dataset and takes six hours. They ask whether more executors will fix it. The answer depends entirely on whether the job is re-reading its input every iteration, and you can tell from the stage DAG in about thirty seconds once you know what to look at.
 
 ---
 
 ## Read
-- [ ] **DDIA Chapter 11** (2nd ed.): Batch Processing. Read this first, before either paper: it's the same MapReduce material and the Spark/RDD argument, told as one continuous narrative instead of two papers written four years apart, and it explicitly frames MapReduce as one point on a spectrum (Unix pipes → MapReduce → dataflow engines like Spark and Flink) rather than a standalone system. That framing is the throughline for the rest of Arc 1 and all of Arc 2.
-- [ ] [MapReduce: Simplified Data Processing on Large Clusters](https://research.google/pubs/mapreduce-simplified-data-processing-on-large-clusters/) (Dean & Ghemawat, OSDI 2004): read Sections 1–4. The programming model is simple; pay attention to the fault tolerance mechanism and why it requires materializing intermediate state. Note what makes re-executing a failed task safe at all: the map and reduce functions are deterministic and the output commit is an atomic rename, so running a task twice produces the same result as running it once. That is at-least-once execution plus an idempotent commit, which W03 names properly, and it is the whole reason MapReduce can recover by simply retrying.
-- [ ] Optional: [Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing](https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf) (Zaharia et al., NSDI 2012): read Sections 1–3. This is the Spark paper. The key argument is in Section 1: why MapReduce forces iterative algorithms to write to disk between every iteration.
-- [ ] Optional: [MIT 6.5840 Lab 1: MapReduce](https://pdos.csail.mit.edu/6.824/labs/lab-mr.html): the assignment this unit's exercise is directly inspired by. Worth skimming the spec even though this unit's build is smaller in scope (single-process, not a real distributed worker pool), it's the canonical version of the same problem.
+- [ ] **DDIA Chapter 11** (2nd ed.): Batch Processing. Read this first, before the papers: it is the same MapReduce material and the Spark/RDD argument told as one continuous narrative instead of two papers written eight years apart, and it explicitly frames MapReduce as one point on a spectrum (Unix pipes, then MapReduce, then dataflow engines like Spark and Flink) rather than a standalone system. That framing is the throughline for the rest of Arc 1 and all of Arc 2.
+- [ ] [MapReduce: Simplified Data Processing on Large Clusters](https://research.google/pubs/mapreduce-simplified-data-processing-on-large-clusters/) (Dean & Ghemawat, OSDI 2004): read Sections 1 to 4. The programming model is simple; pay attention to the fault-tolerance mechanism and why it requires materializing intermediate state. Note what makes re-executing a failed task safe at all: the map and reduce functions are deterministic and the output commit is an atomic rename, so running a task twice produces the same result as running it once. That is at-least-once execution plus an idempotent commit, which W03 names properly, and it is the whole reason MapReduce can recover by simply retrying.
+- [ ] [Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing](https://www.usenix.org/system/files/conference/nsdi12/nsdi12-final138.pdf) (Zaharia et al., NSDI 2012): read Sections 1 to 3. This is the Spark paper, and it is now required rather than optional, because its Section 1 argument is precisely the thing you are about to measure. It also introduces lineage, which is what makes the `checkpoint` decision at the bottom of this unit a real decision rather than a formality.
+- [ ] Optional: **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 13** (Coordinated Batch Processing). Short, and it gives you the vocabulary the papers assume: join as barrier synchronization, and reduce as a pattern rather than a function name. Useful mainly because "the barrier is the expensive part" is the same observation you are about to make from a stage DAG.
 
-**Depth: study Section 3 of the MapReduce paper** (the fault-tolerance mechanism), since it carries this unit's actual argument about why intermediate state gets materialized. DDIA Ch.11 is a read. The RDD paper, the 2010 Spark paper, and the MIT lab are skims.
+**Depth: study Section 3 of the MapReduce paper** (the fault-tolerance mechanism) and **Section 1 of the RDD paper** (why iterative algorithms suffer). Those two carry the unit. DDIA Ch.11 is a read.
 
-**Key question:** PageRank converges after ~50 iterations on typical graphs. In MapReduce, what happens between each iteration, and why does that make it slow? Write down the concrete I/O cost in terms of graph size G.
+**Key question, and do this before you run anything:** PageRank converges after roughly 50 iterations on typical graphs. In MapReduce, what happens to the intermediate state between each iteration, and why does that make it slow? Write down the concrete I/O cost in terms of graph size G and iteration count N. Keep the number. You will check it against a real DAG in a moment.
 
 ---
 
 ## Code
 
-Project: `code/mapreduce/` (Go modules)
+Project: `code/batch-spark/` (Java 21, Maven, Spark 4.1.0)
 
-**Minimum bar:** the framework (`mapreduce.go` + `runner.go`) and word count running end to end, plus the written I/O calculation for PageRank at 1M nodes. Actually building and running PageRank is stretch, and so is the coordinator service.
+Spark's Java API rather than Scala or Python. It is the same engine and the same physical plan underneath, and it keeps this arc on one language.
 
-A working *concrete* pipeline clears this unit. You don't need a beautifully generic, reusable `Mapper`/`Reducer` abstraction; that's a nice-to-have, not the point. The point is making the disk I/O cost visible.
+**Minimum bar:** the written I/O calculation from the Key question, plus two wall-clock numbers for the same 10-iteration job, cached and uncached, plus one sentence naming what the Spark UI showed you was different between them. That is the unit.
 
-**The framework:**
+**Setup:**
 
-- [ ] `mapreduce.go`: two function types, so job definitions can be plain functions instead of interfaces implemented by a struct:
-  - `type Mapper func(key, value string) []Pair` where `type Pair struct { Key, Value string }`
-  - `type Reducer func(key string, values []string) string`
-  - `Mapper` returns its output pairs directly rather than writing into a channel passed in as an argument. A function that returns its results is easier to test in isolation than one that writes into something it was handed.
-- [ ] `runner.go`: `func Run(mapper Mapper, reducer Reducer, splits []string) map[string]string`. This is the fiddly part of the unit, and the specific way it's fiddly is worth naming directly:
-  ```go
-  results := make(chan []Pair, len(splits))
-  var wg sync.WaitGroup
-  for _, split := range splits {
-      wg.Add(1)
-      go func(s string) {
-          defer wg.Done()
-          results <- mapper(s, "")
-      }(split)
-  }
-  go func() {
-      wg.Wait()
-      close(results)
-  }()
+- [ ] `pom.xml`: depend on `org.apache.spark:spark-core_2.13` and `org.apache.spark:spark-sql_2.13` at 4.1.0, scope `provided` is wrong here since you are running locally, so leave them at default `compile`. Spark 4 is built against Scala 2.13, which is why the artifact names carry that suffix; you are not writing Scala, the JAR is just named after the language Spark itself is written in.
+- [ ] Spark on Java 21 needs `--add-opens` flags for its use of internal JDK APIs. Add them to your Maven `exec` or run configuration rather than discovering them one stack trace at a time. If you see `InaccessibleObjectException` on the first run, this is why.
 
-  var allPairs []Pair
-  for pairs := range results {
-      allPairs = append(allPairs, pairs...)
-  }
-  // shuffle phase below
-  ```
-  One goroutine per split (cheap enough to spawn thousands without a thread pool), a `sync.WaitGroup` to know when every mapper has finished, and a separate goroutine that closes the `results` channel only after `wg.Wait()` returns. That last part is the one genuinely easy way to get this wrong: closing `results` too early, before every goroutine has sent its output, panics on the next send; closing it too late, or not at all, means the `for pairs := range results` loop below never terminates because the channel is never marked done. The `WaitGroup` plus a dedicated closer goroutine is the idiomatic Go fix, worth understanding by writing it once rather than copying it. The reduce phase follows the same shape: one goroutine per key instead of per split.
-  - Shuffle phase: group pairs by key. There's no `groupBy` builtin in Go's standard library, this is a plain loop building a `map[string][]string` by hand, one of the few places Go asks you to write out what other languages give you as a one-liner:
-    ```go
-    shuffled := make(map[string][]string)
-    for _, p := range allPairs {
-        shuffled[p.Key] = append(shuffled[p.Key], p.Value)
-    }
-    ```
-  - Write intermediate shuffle data to a temp file between map and reduce (this is the point: make the I/O cost visible). Go's `encoding/gob` (`gob.NewEncoder`/`gob.NewDecoder`) is the quickest path for structured data; if you'd rather write human-readable output while you're debugging, a hand-rolled line-based text format works too and makes `cat`-ing the temp file genuinely useful.
+**The job:**
 
-**Job 1: Word Count**
+- [ ] `GraphGen.java`: generate a random directed graph, 100,000 nodes, average out-degree 5, written once to Parquet as `(src, dst)` pairs. Fixed seed, so both runs below see identical input.
+- [ ] `PageRank.java`: ten iterations of PageRank using the DataFrame API. Each iteration joins ranks to edges, divides each rank by its out-degree, aggregates contributions per destination, and applies damping at 0.85. The shape that matters: the edge list never changes across iterations, and the ranks do. Keep them as separate DataFrames.
+- [ ] Run it once with no caching at all. Then run it again with the edge DataFrame cached (`edges.cache()` before the loop, and force materialization with a `count()` so the caching actually happens before the first iteration rather than during it).
+- [ ] Record wall-clock time for both.
 
-- [ ] `wordcount.go`: `Map` returns one `Pair{word, "1"}` per word; `Reduce` sums the "1"s
-- [ ] Run on a large text file (download [Wikipedia dump excerpt](https://dumps.wikimedia.org/enwiki/latest/) or use any large `.txt`; aim for >10MB). Print top 20 words by frequency.
+**Read the DAG. This is the actual unit:**
 
-**Job 2: Iterative PageRank**
-
-**Optional, stretch: iterative PageRank.** This is where the unit's argument lands, that MapReduce forces a disk round-trip between every iteration, but you can reach that conclusion from the word-count run plus the arithmetic below if time is short. Do the calculation either way; build it only if you have a second sitting.
-
-- [ ] `pagerank.go`: one MapReduce iteration of PageRank: `Map` returns `(destination, rank/out_degree)` for each outgoing edge; `Reduce` sums contributions + applies damping factor `0.85`
-- [ ] `pagerank_runner.go`: runs the PageRank job for 10 iterations over a hardcoded 1000-node graph (random edges, average degree 5). The part that isn't obvious: each iteration's `Run()` output (new ranks per node) becomes next iteration's input, but the edge list itself doesn't change round to round. Keep the graph structure separate from the ranks, and rebuild the per-iteration input by pairing current ranks with the fixed edge list. After each iteration, print: iteration number, sum of rank changes (convergence), **bytes written to disk for the shuffle file**
-- [ ] In a comment: calculate what the disk I/O would be at 1M nodes. This is the argument for keeping intermediate state in memory rather than round-tripping it to disk between iterations, which is what Spark's RDDs are for.
-
-**Stretch goal (optional): coordinator service**
-
-- [ ] Optional: `tools/job_coordinator/main.go`: an HTTP server that accepts job submissions and tracks status, using `net/http` (standard library, no framework needed for two routes). Endpoints: `POST /job` (accepts `{"type": "wordcount"|"pagerank", "input": "path"}`, returns `{"job_id": "..."}`), `GET /job/{id}` (returns status + result when done). Your `runner.go` calls this server to report completion. Keep it under 100 lines; `encoding/json` handles the request/response bodies, small enough that hand-writing them would be more code, not less.
-
-If you have time left after the minimum bar: this is a small rep of the master/worker split from the MapReduce paper itself (a coordinator process tracking job state separate from the workers doing the compute), and a preview of the shape you'll build for real in W14, where a control-plane process reconciling state against reported worker status is most of what a Kubernetes operator's reconcile loop does. Skipping it costs you nothing required; it's here because the parallel to W14 is worth having if the unit's going well.
+- [ ] While the job runs, open the Spark UI at `localhost:4040`. Keep it open after the job finishes; Spark serves it until the driver exits, so put a `Thread.sleep` or a `System.in.read()` at the end of `main` if you need time to look.
+- [ ] In the **Stages** tab, count the stages for the uncached run. Then count them for the cached run. The difference is the shape of the argument you read in the RDD paper, drawn for you.
+- [ ] Open one iteration's stage and find **Shuffle Write** and **Shuffle Read** in the summary metrics. Multiply by iterations. Compare that number to the I/O cost you predicted in the Key question above. If you were wrong, work out which term you got wrong before reading on; being wrong here is more instructive than being right, because the usual error is forgetting that the edge list gets re-read too.
+- [ ] In the **SQL / DataFrame** tab, open the query plan for one iteration and find the `Exchange` nodes. Every one of them is an all-to-all data movement. W05 builds one of those by hand and W07 is about choosing how many you get.
 
 **Break it, then decide:**
-- [ ] Pick one mapper goroutine (say, the one handling the last split) and make it `panic("simulated worker crash")` instead of returning normally. Run the word count job. In Go, an unrecovered panic in any goroutine crashes the entire process, not just that goroutine, so watch what actually happens to the other splits that were still running concurrently. This is the real reason the MapReduce paper's fault tolerance re-executes just the failed task on another worker instead of letting one failure take down the whole job; your framework currently has no such isolation.
-- [ ] Given that your framework runs single-process rather than across real distributed workers, is it worth adding a `recover()` around each mapper goroutine that logs the failure and re-runs just that split, or would that just be theater, since it wouldn't demonstrate the actual hard part (detecting a worker is gone over the network, deciding it's really dead and not just slow, reassigning its work) that a real distributed MapReduce has to solve? W03 builds a failure detector against exactly that ambiguity, so this is a question you'll get to answer with code rather than prose in W03. Make a call, and if you decide it's worth adding, implement it; if not, write down specifically what a real fix would need that a single-process `recover()` can't give you.
 
----
-
-## Rehearse it in Python first (optional, 20 minutes)
-
-> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the shuffle's groupBy and PageRank's graph walk in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W06) and stop after W06, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
-
-**Hash maps (groupBy) + adjacency list BFS**: the shuffle phase is a groupBy; PageRank needs a graph.
-
-```python
-from collections import defaultdict, deque
-
-# map_reduce.py: the shuffle phase in pure Python
-def group_by(pairs: list[tuple]) -> dict:
-    groups = defaultdict(list)
-    for k, v in pairs:
-        groups[k].append(v)
-    return dict(groups)
-
-# graph.py: adjacency list + BFS (PageRank iteration needs this)
-def bfs(graph: dict, start) -> set:
-    visited, q = {start}, deque([start])
-    while q:
-        node = q.popleft()
-        for neighbor in graph.get(node, []):
-            if neighbor not in visited:
-                visited.add(neighbor)
-                q.append(neighbor)
-    return visited
-
-# Test groupBy (the "shuffle" step)
-pairs = [("a", 1), ("b", 2), ("a", 3), ("b", 4)]
-assert group_by(pairs) == {"a": [1, 3], "b": [2, 4]}
-
-# Test BFS on a 4-node graph
-graph = {"A": ["B", "C"], "B": ["D"], "C": [], "D": []}
-assert bfs(graph, "A") == {"A", "B", "C", "D"}
-```
-
-**Connection:** `runner.go` groups intermediate key-value pairs by hand; that's `group_by`. `pagerank.go` iterates over a graph; that's the adjacency list pattern. Getting these right in Python first clarifies the algorithm before adding goroutines and disk I/O.
+- [ ] Push the loop from 10 iterations to 100 on the uncached version and watch what happens to the *planning* time, separately from the execution time. Spark tracks lineage, the full recipe for recomputing any DataFrame from its inputs, and that lineage grows with every iteration. Long enough chains stop being merely slow and start failing outright with a `StackOverflowError` in the driver during plan construction, before a single row is processed. This is a real production failure mode in iterative Spark jobs and it surprises people, because the job worked fine at 20 iterations.
+- [ ] **Your call:** there are two fixes and they are not the same. `cache()` keeps the *data* around but preserves the lineage, so recovery after an executor loss is still possible by recomputation, and the driver's plan keeps growing. `checkpoint()` writes the data to reliable storage and *truncates* the lineage, so the plan stays small and recovery is a read rather than a recomputation, but you have paid a full write to disk and you cannot recover if that storage is lost. Given that you are running 100 iterations and the input is cheap to regenerate, say which you would use and at what iteration interval. Then say what would change your answer if the input were an expensive upstream join rather than a generated graph.
+- [ ] The MapReduce paper recovers from a dead worker by re-running its task, which is safe because the function is deterministic and the commit is an atomic rename. Spark's lineage recovery is the same idea generalized. Write down what breaks in both schemes if the map function is *not* deterministic, for example if it reads the current time or samples a random number without a fixed seed. This is the assumption underneath every retry in this curriculum, and W03 is where you meet it again from the delivery-semantics side.
 
 ---
 
 ## Reflect
+<!-- Fill in at the end of the unit -->
 
 **What clicked:**
 
 **What surprised me:**
 
-**Disk I/O per PageRank iteration on your 1000-node graph:** __ KB
+**Predicted disk I/O per iteration, from the Key question:** __
 
-**Extrapolated to 1M nodes:** __ GB per iteration × 10 iterations = __ GB total
+**Actual Shuffle Write per iteration, from the Spark UI:** __ , and where my prediction was wrong:
 
-**What would have to change for this cost to disappear entirely:**
+**Wall clock, 10 iterations, uncached versus cached:** __ s versus __ s
 
-**What I'd do differently:**
+**What the stage count showed that the wall-clock number did not:**
+
+**`cache()` or `checkpoint()` at 100 iterations, and what would change my mind:**

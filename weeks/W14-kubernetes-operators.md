@@ -14,7 +14,7 @@ Not build, operate. Deploy two real, production-grade Kubernetes operators to yo
 
 Part 4 goes one layer up, to the question of who gets scheduled when there isn't enough hardware for everybody. Part 3 is an optional stretch that goes one layer down instead, to the etcd cluster running Raft underneath the control plane both operators depend on; skip it on a normal pass.
 
-**Why not hand-write a custom operator from scratch, the way this unit used to?** Writing your own CRD types and a `controller-runtime` reconciler is the skill set of someone *building* a new operator, which is a narrow platform-infrastructure specialization. It's not what a Staff Data Platform Engineer, a Field/Customer/Professional Services Engineer, or a Developer Advocate does day to day; those roles *operate* operators someone else wrote: install via Helm, configure a CR, read logs, debug a stuck reconcile loop. This unit teaches that instead. You've already written Go by now, W00 to W03 and W06 all use it, so the reconciler source below reads as familiar syntax applied to a much bigger, real codebase, not a cold start; what this unit specifically avoids isn't Go itself, it's the much larger, narrower skill of authoring a `controller-runtime` operator from scratch.
+**Why not hand-write a custom operator from scratch, the way this unit used to?** Writing your own CRD types and a `controller-runtime` reconciler is the skill set of someone *building* a new operator, which is a narrow platform-infrastructure specialization. It's not what a Staff Data Platform Engineer, a Field/Customer/Professional Services Engineer, or a Developer Advocate does day to day; those roles *operate* operators someone else wrote: install via Helm, configure a CR, read logs, debug a stuck reconcile loop. This unit teaches that instead. You've already written Go by now, W00 through W03 all use it, so the reconciler source below reads as familiar syntax applied to a much bigger, real codebase, not a cold start; what this unit specifically avoids isn't Go itself, it's the much larger, narrower skill of authoring a `controller-runtime` operator from scratch.
 
 **Why Kubeflow Trainer rather than a framework-specific operator?** Because `TrainJob` is the most portable distributed-training abstraction available. Trainer v2 collapsed the old framework-specific CRDs (`PyTorchJob`, `MPIJob`, `JAXJob`, `XGBoostJob`) into one `TrainJob` plus a pluggable runtime, it's governed by Kubeflow rather than by any single vendor, and it runs the same way on a managed cloud offering as it does on the kind cluster on your laptop. Anything you learn here transfers regardless of which company you end up at, which is exactly what a vendor-specific operator cannot promise.
 
@@ -28,6 +28,7 @@ Part 4 goes one layer up, to the question of who gets scheduled when there isn't
 
 ## Read
 - [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2** (Important Distributed System Concepts): read the "Idempotency" and "Orchestration and Kubernetes" sections. Idempotency is the property this unit's Reflect section asks you to observe directly: both operators re-run their reconcile logic constantly, and neither breaks anything by doing so.
+- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 10** (Ownership Election): read "Determining If You Even Need Leader Election" and "The Basics of Leader Election." Both operators you are about to install run leader election so that only one replica reconciles at a time, and Part 3's etcd work is the same chapter's hands-on. The first section is the useful one: most people reach for leader election before establishing that they need it.
 - [ ] [Kubernetes Operators](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): k8s docs. Read "Motivation" and "Deploying operators". (~10 min)
 - [ ] [Kubeflow Trainer overview](https://www.kubeflow.org/docs/components/trainer/overview/): read the architecture section and the description of `TrainJob`, `TrainingRuntime`, and `ClusterTrainingRuntime`. The split is worth understanding before you deploy anything: a runtime is a reusable template describing *how* a kind of training job runs, and a `TrainJob` is a specific request that points at one. (~20 min)
 - [ ] [Kubeflow Spark Operator: quick start guide](https://kubeflow.github.io/spark-operator/docs/quick-start-guide.html): read through the `SparkApplication` example. Note the driver/executor split, one long-lived driver Pod coordinating a set of executors, because that internal shape is what you'll be comparing against `TrainJob` later. (~15 min)
@@ -69,7 +70,7 @@ Part 4 goes one layer up, to the question of who gets scheduled when there isn't
   helm install spark-operator spark-operator/spark-operator --namespace spark-operator --create-namespace
   kubectl get pods -n spark-operator   # controller and webhook pods should be Running
   ```
-- [ ] `code/operator/config/spark-pi.yaml`: a `SparkApplication` CR running the operator's built-in SparkPi example (`apiVersion: sparkoperator.k8s.io/v1beta2`; copy the example from the quick-start guide you read above rather than hand-writing the full spec, it's long and none of it is new to you after W06's Spark work).
+- [ ] `code/operator/config/spark-pi.yaml`: a `SparkApplication` CR running the operator's built-in SparkPi example (`apiVersion: sparkoperator.k8s.io/v1beta2`; copy the example from the quick-start guide you read above rather than hand-writing the full spec, it's long and none of it is new to you after the Spark work in W02, W05, and W07).
 - [ ] Apply it, watch it run to completion:
   ```bash
   kubectl apply -f code/operator/config/spark-pi.yaml -n spark-operator
@@ -78,22 +79,22 @@ Part 4 goes one layer up, to the question of who gets scheduled when there isn't
   ```
   Treat SparkPi as a smoke test rather than an exercise. Getting it green first means that when your own job fails in a minute, you already know the operator, the cluster, and the RBAC are fine, so the problem is yours. That sequencing is a habit worth having, not a formality.
 
-**Part 2b (optional, stretch): Submit your own Scala job**
+**Part 2b (optional, stretch): Submit your own job**
 
-> Worth doing, and not on a 5-hour budget alongside Parts 1 and 2. Come back to it; the sbt-to-image-to-`SparkApplication` path is the piece a Databricks-adjacent role actually exercises.
+> Worth doing, and not on a 5-hour budget alongside Parts 1 and 2. Come back to it; the build-to-image-to-`SparkApplication` path is the piece a data platform role actually exercises.
 
 SparkPi ships inside the Spark image, which is exactly why it always works and teaches you nothing about deployment. Everything that actually goes wrong when a team moves a Spark job onto Kubernetes happens in the gap between "my JAR compiles" and "the driver Pod can find my main class." That gap is this exercise.
 
 Keep the job itself boring on purpose. Twenty lines of aggregation is plenty, because none of the difficulty is in the logic.
 
-- [ ] `code/spark-k8s-job/`: a minimal sbt project. `build.sbt` targets Scala 2.13 (matching what Spark itself is built against, same reasoning as W07) and declares `libraryDependencies += "org.apache.spark" %% "spark-sql" % "<version>" % "provided"`. The `provided` matters: Spark is already inside the image, and bundling a second copy is the most common way a first submission fails with a confusing class-loading error. `Main.scala` creates a `SparkSession`, builds a small DataFrame inline (no external data, nothing to mount), does a `groupBy().agg()`, and prints the result.
-- [ ] Build a thin JAR with `sbt package`. You do not need `sbt-assembly` here, and reaching for it is the usual overcorrection: an assembly JAR exists to bundle dependencies, and with `provided` you have none to bundle.
+- [ ] `code/spark-k8s-job/`: a minimal Maven project, the same Spark Java setup you already used in W02, W05, and W07. `pom.xml` declares `org.apache.spark:spark-sql_2.13` with `<scope>provided</scope>`. The `provided` matters: Spark is already inside the image, and bundling a second copy is the most common way a first submission fails with a confusing class-loading error. The `_2.13` suffix is Spark's own Scala build, not a language you are writing. `Main.java` creates a `SparkSession`, builds a small DataFrame inline (no external data, nothing to mount), does a `groupBy().agg()`, and prints the result.
+- [ ] Build a thin JAR with `mvn package`. You do not need the shade plugin here, and reaching for it is the usual overcorrection: a shaded JAR exists to bundle dependencies, and with `provided` you have none to bundle.
 - [ ] `code/spark-k8s-job/Dockerfile`: `FROM apache/spark:<matching-version>` and `COPY` your JAR to `/opt/spark/examples/jars/`. Then the same two commands you already know from W00 and W15:
   ```bash
   docker build -t pd-spark-job:latest code/spark-k8s-job
   kind load docker-image pd-spark-job:latest --name pd-systems
   ```
-  Matching the image's Spark version to the one your `build.sbt` compiled against is not optional, and a mismatch here produces a runtime error that reads like a code bug.
+  Matching the image's Spark version to the one your `pom.xml` compiled against is not optional, and a mismatch here produces a runtime error that reads like a code bug.
 - [ ] `code/operator/config/spark-job.yaml`: a `SparkApplication` pointing at your image, with `spec.mainClass` set to your fully qualified class name and `spec.mainApplicationFile` set to `local:///opt/spark/examples/jars/<your-jar>.jar`. The `local://` scheme means "already inside the image," as opposed to a path the driver would have to download at submit time.
 - [ ] Apply it and confirm it reaches `COMPLETED`, with your aggregation in the driver logs.
 - [ ] **Break it, on purpose:** change `mainClass` to something that doesn't exist and reapply. The job fails, and the interesting part is where the explanation lives. `kubectl get sparkapplication` shows you a terminal state and nothing useful about why; `kubectl describe` gets you closer; the actual `ClassNotFoundException` is only in the driver Pod's logs. Walk all three and note the order you'd check them next time. This is the single most common Spark-on-Kubernetes failure and the debugging path is not obvious the first time.

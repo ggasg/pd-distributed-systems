@@ -18,8 +18,9 @@ A versioned feature pipeline in Python: raw events to features to versioned Parq
 ## Read
 - [ ] [Hidden Technical Debt in Machine Learning Systems](https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf) (Sculley et al., NeurIPS 2015): 9 pages, read all of it. The CACE principle and "glue code" sections are most relevant.
 - [ ] [Delta Lake: High-Performance ACID Table Storage over Cloud Object Stores](https://www.vldb.org/pvldb/vol13/p3411-armbrust.pdf) (Armbrust et al., VLDB 2020): read Sections 1–4. Understand why versioning and ACID matter for ML pipelines, not just OLTP.
+- [ ] **DDIA Chapter 5** (2nd ed.), Encoding and Evolution. This is the unit it belongs to and it was not cited anywhere before. Your feature pipeline writes Parquet, a schema-carrying binary format, and then somebody adds a column. The chapter's backward-versus-forward compatibility distinction is precisely the question "can a model trained on v1 features still read v2, and can a v2 reader still read v1," which is the thing `FeatureStore.diff()` exists to make answerable. Read it before Part 2, where Delta's schema evolution turns it from a property you hope for into a setting somebody chose.
 
-**Depth: read Hidden Technical Debt and Sections 1 to 4 of the Delta Lake paper.** No study reading: this unit's mechanism lives in the transaction log you open by hand, not in a paper. The Iceberg spec is a skim, and only the two sections named.
+**Depth: read Hidden Technical Debt, Sections 1 to 4 of the Delta Lake paper, and DDIA Ch.5.** No study reading: this unit's mechanism lives in the transaction log you open by hand, not in a paper. The Iceberg spec is a skim.
 
 **Key question:** The paper says "changing anything changes everything" (CACE). Give a concrete example from an ML pipeline where this would cause a silent, hard-to-debug failure.
 

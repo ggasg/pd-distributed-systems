@@ -30,6 +30,8 @@ Part 2 is the same cache one level up. Once you have more than one replica of a 
 
 **Key question:** Naive attention is O(N²) in memory. Where exactly does this quadratic memory come from? Draw the computation graph and label which tensors are the bottleneck.
 
+**Burns, *Designing Distributed Systems*, 2nd ed., Chapter 6** (Replicated Load-Balanced Services), for Part 2. Read "Stateless Services," "Session Tracked Services," and "Introducing a Caching Layer." This is the pattern your router is a special case of, written down twenty years before anyone had a KV cache: a session-tracked service routes a request to the replica that already holds state for it, and accepts worse load balance to get it. Part 2 asks you to set exactly that trade-off and defend where you put it, so read this before you pick a number.
+
 **Optional: Burns, *Designing Distributed Systems*, 2nd ed., Chapter 15** (AI Inference and Serving). The three papers above are about the compute and memory mechanics inside one forward pass; Burns' chapter is the layer above that, hosting and distributing a model as a service. "Hosting a Model" and "Distributing a Model" are the production framing for what your `KVCache` and its memory/latency tradeoff exist to support, and it's a good warm-up for Part 2.
 
 ### Code

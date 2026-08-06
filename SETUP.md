@@ -18,9 +18,9 @@ Everything you need installed before starting W00. Set this up once; it covers t
 
 ## Why these versions
 
-Where this curriculum touches the JVM data stack, the versions are pinned to match **Databricks Runtime 18.0**: Apache Spark 4.1.0, Scala 2.13.16, Python 3.12.3, and Java 21. That is not vendor allegiance, it is a free calibration point. DBR is a widely deployed, publicly documented assembly of otherwise independent open-source versions, so aligning to it means what you build locally is version-compatible with a real production runtime rather than with nothing in particular. Everything you install is upstream Apache Spark, upstream Scala, upstream Python; the runtime is only the reference that says which combination people actually run together.
+Where this curriculum touches the JVM data stack, the versions are pinned to match **Databricks Runtime 18.0**: Apache Spark 4.1.0, Python 3.12.3, and Java 21. That is not vendor allegiance, it is a free calibration point. DBR is a widely deployed, publicly documented assembly of otherwise independent open-source versions, so aligning to it means what you build locally is version-compatible with a real production runtime rather than with nothing in particular. Everything you depend on is upstream Apache Spark and upstream Python; the runtime is only the reference that says which combination people actually run together.
 
-Go and the Kubernetes tooling have no such reference and are pinned to current upstream releases instead.
+Go, Flink, and the Kubernetes tooling have no such reference and are pinned to current upstream releases instead.
 
 ---
 
@@ -33,11 +33,13 @@ brew install go
 go version    # go1.26.x or later
 ```
 
-**W00–W03, W06, and secondary tooling in W02/W09/W15** use Go, this curriculum's one deliberately introduced new language. Each project is its own module (`go.mod` per directory, no shared workspace file, same isolation principle as the Java/Scala projects); `go build`/`go test`/`go run` fetch whatever the project's `go.mod` declares. There's no separate package manager or lockfile format to learn beyond `go.mod`/`go.sum`, both maintained automatically by `go get` and `go mod tidy`.
+**W00, W01, W03, and secondary tooling in W09/W15** use Go, this curriculum's one deliberately introduced new language. Each project is its own module (`go.mod` per directory, no shared workspace file, same isolation principle as the Java projects); `go build`/`go test`/`go run` fetch whatever the project's `go.mod` declares. There's no separate package manager or lockfile format to learn beyond `go.mod`/`go.sum`, both maintained automatically by `go get` and `go mod tidy`.
 
-**New to Go?** Budget real time before W00, this is the curriculum's genuinely new component, kept deliberately gentle in scope. [A Tour of Go](https://go.dev/tour/) (~1 hour): work through "Basics" (variables, functions, structs, slices, maps) and "Methods and interfaces" (through the goroutines/channels section at the end); that covers everything W00–W03 and W06 need. The two idioms this curriculum leans on hardest: goroutines plus channels for concurrency (`go func() { ... }()`, `make(chan T)`, `sync.WaitGroup`), and the standard library's own `net/http` for every small HTTP service, no framework, ever, in this curriculum. `testing.B` (`go test -bench=.`) is the other one worth knowing before W02 and W06, Go's built-in microbenchmark harness.
+**New to Go?** Budget real time before W00, this is the curriculum's genuinely new component, kept deliberately gentle in scope. [A Tour of Go](https://go.dev/tour/) (~1 hour): work through "Basics" (variables, functions, structs, slices, maps) and "Methods and interfaces" (through the goroutines/channels section at the end); that covers everything W00 through W03 need. The two idioms this curriculum leans on hardest: goroutines plus channels for concurrency (`go func() { ... }()`, `make(chan T)`, `sync.WaitGroup`), and the standard library's own `net/http` for every small HTTP service, no framework, ever, in this curriculum.
 
-**One thing with no compiler safety net:** Go's garbage collector means you don't have C++'s memory-safety failure modes, but nothing stops you from mutating a `map` or slice that another goroutine also holds a reference to. The weeks' "Constraints" sections call out, explicitly, where a function is expected to return a fresh copy rather than mutate in place, a discipline you're responsible for keeping, not one the compiler enforces. Read those callouts; they're not boilerplate. Go's own race detector (`go test -race`, `go run -race`) catches unsynchronized concurrent access at runtime, worth running against W02's and W03's tests specifically.
+**Why Go's footprint is three units rather than five.** W02 and W06 used to be Go builds. Both now measure a real engine (Spark and DuckDB respectively) instead of reimplementing one, which took their builds with them. Go still carries W00's service, W01's write-path benchmark, and W03's concurrency work, which is enough that W14's reconciler reading is not a cold start.
+
+**One thing with no compiler safety net:** Go's garbage collector means you don't have manual-memory failure modes, but nothing stops you from mutating a `map` or slice that another goroutine also holds a reference to. The weeks' "Constraints" sections call out, explicitly, where a function is expected to return a fresh copy rather than mutate in place, a discipline you're responsible for keeping, not one the compiler enforces. Read those callouts; they're not boilerplate. Go's own race detector (`go test -race`, `go run -race`) catches unsynchronized concurrent access at runtime, worth running against W03's tests specifically.
 
 ---
 
@@ -55,7 +57,13 @@ java --version    # openjdk 21.x
 mvn --version     # Apache Maven 3.9.x, and confirms it's picking up JDK 21
 ```
 
-**W04, W05, W13** use Java: two units in the streaming and dataflow arc plus fault tolerance, chosen specifically where Java's sealed interfaces and record patterns give a real, compiler-enforced advantage (W04's `StreamItem`, W13's `Message`) rather than by default. Each project is its own Maven project (`pom.xml` per directory, no shared parent build file, same isolation principle as the Go/Scala projects); `mvn compile`/`mvn test`/`mvn package` fetch whatever the project's `pom.xml` declares.
+**W02 and W04 through W07, plus W13 and W15** use Java. That is the whole of Arc 2 plus fault tolerance and instrumentation, and it splits into two kinds of work. Where you build something, Java is chosen because its sealed interfaces and record patterns give a real, compiler-enforced advantage (W04's `Policy`, W05's `Partitioner`, W13's `Message`) rather than by default. Where you drive an engine (Spark in W02, W05 Part 2, and W07; Flink in W04 Part 1; DuckDB over JDBC in W06), Java is simply the one driver language for all of them, which keeps the arc on a single stack.
+
+Each project is its own Maven project (`pom.xml` per directory, no shared parent build file, same isolation principle as the Go projects); `mvn compile`/`mvn test`/`mvn package` fetch whatever the project's `pom.xml` declares.
+
+**A note on the `_2.13` suffix you will see in Spark artifact names.** Spark is written in Scala and publishes per-Scala-version artifacts, so its Java-facing JARs are still named `spark-sql_2.13`. You are not writing Scala anywhere in this curriculum, and you do not need Scala or sbt installed. The suffix names the language Spark itself was built in, nothing more.
+
+**Spark on Java 21 needs `--add-opens`.** Spark reaches into internal JDK APIs that the module system closed off. Add the flags to your Maven `exec` configuration or run configuration up front; the alternative is discovering them one `InaccessibleObjectException` at a time.
 
 **Already know Java?** If your Java is production-grade (per Gaston's own background, "advanced" and already used for Map/Reduce-style big-data work), this is close to a zero-ramp module: the only genuinely new surface is Java 21 itself, not the language you already know. Skim before W04: `record` types for immutable data (they auto-generate `equals`/`hashCode`/`toString`, but field-by-field, which matters for array-typed fields), and `sealed` interfaces with exhaustive pattern-matching `switch` plus record patterns (JEP 440), both used directly in W04 and W13. [What's New in Java 21](https://openjdk.org/projects/jdk/21/) (official release notes) covers both in about 15 minutes. No Spring, no Kafka anywhere in this curriculum, by design.
 
@@ -73,29 +81,43 @@ helm repo update
 
 Kubeflow Trainer installs from versioned manifests rather than a stable chart repo, and the manifest paths move between releases. Don't pre-install it from a version pinned here; when you reach W14, check the releases page for the current version and follow the project's own installation guide. The unit says so too, and this is the most common way that part goes wrong.
 
-By the time you reach W14 you'll have written Go in five other weeks (W00–W03, W06), so reading `kubeflow/trainer`'s and `kubeflow/spark-operator`'s real reconciler source here is no longer a cold start, it's the payoff for the Go you've already been writing, applied to two real, production codebases instead of a toy exercise.
+By the time you reach W14 you'll have written Go in three other weeks (W00 through W03), so reading `kubeflow/trainer`'s and `kubeflow/spark-operator`'s real reconciler source here is no longer a cold start, it's the payoff for the Go you've already been writing, applied to two real, production codebases instead of a toy exercise.
 
 ---
 
-## Scala 2.13 (sbt)
+## Apache Spark 4.1.0 (via Maven, W02, W05, W07, W14)
 
-```bash
-# macOS
-brew install coursier/formulas/coursier && cs setup
-# cs setup installs a JDK if needed, plus sbt and scalac
+Nothing to install. Spark is a Maven dependency in the projects that use it, and it runs in local mode inside your own JVM.
 
-sbt --version    # sbt 1.9.x or later
+```xml
+<!-- in each Spark unit's pom.xml -->
+<dependency>
+  <groupId>org.apache.spark</groupId>
+  <artifactId>spark-sql_2.13</artifactId>
+  <version>4.1.0</version>
+</dependency>
 ```
 
-Each Scala project (`code/query-planner/`, `code/spark-k8s-job/`) is its own sbt project: `build.sbt` pins `scalaVersion := "2.13.16"`, the patch DBR 18 ships, so the project's Scala version is fixed regardless of whatever `cs setup` installed as your global default. `sbt compile`/`sbt test`/`sbt run` fetch whatever `build.sbt` declares, a zero-config experience.
+Four units drive Spark, each asking it a different question: W02 reads a stage DAG to see materialization cost, W05 Part 2 reads the task duration distribution to find a straggler, W07 reads `EXPLAIN` output to catch a join strategy changing, and W14 packages a job into an image and submits it to the Spark Operator. Local mode throughout, no cluster, no account.
 
-**W07 and W14's Spark job target Scala 2.13, not 3.** This is a deliberate match, not an oversight, and as of Spark 4 it isn't even a choice: Spark 4 is built exclusively against 2.13 and dropped 2.12 support entirely, and there is no Spark-on-Scala-3 build. 2.13 is the only version that works. Writing these weeks in 2.13 means the case classes, pattern matching, and `implicit`-based typeclasses you're using are exactly what you'd see reading real Catalyst or Spark `Aggregator` source, not a newer dialect Spark has not adopted. For W14's `spark-k8s-job` the constraint is harder than stylistic: the JAR has to load inside a Spark image, so the Scala version and the Spark version both have to match what that image ships.
+**The Spark UI is the actual tool** in three of those four. It serves at `localhost:4040` while a driver is alive, so put a `System.in.read()` at the end of `main` when you want to look around after a job finishes.
 
-**Already know Scala from Spark?** This is the lowest-ramp module in the curriculum, and now a near-zero one: 2.13 is almost certainly the exact Scala version you already write in production Spark jobs, so there's no syntax delta to review at all. Case classes, pattern matching, and `implicit` typeclass instances are patterns you already use, just without naming the underlying algebra ("this is a semigroup," "this rewrite rule is a partial function over the plan tree") explicitly. Budget closer to zero prep; go straight to W07. Scala's depth in this curriculum is deliberately capped, just enough to reach the distributed-systems concept each week is about, not a vehicle for deep FP mastery; that's intentionally a separate plan. If your Scala is genuinely rusty or this is a first real exposure, [Scala Book](https://docs.scala-lang.org/overviews/scala-book/introduction.html) (scala-lang.org's official 2.13-era guide) chapters on classes, traits, and implicits cover what these two weeks need; budget 2–3 hours instead.
+---
 
-Recommended IDE: IntelliJ IDEA with the Scala plugin, the standard choice for Spark/Scala work and likely already familiar if you've done production Scala.
+## Apache Flink 2.3.0 (via Maven, W04 Part 1)
 
-**New to Scala, or want a warm-up before W07 specifically?** See the drill in [W07](weeks/W07-query-planning.md)'s "Before you start" section: a 15–20 minute case-class-and-pattern-matching exercise scoped to exactly what that week needs, meant to be done the day you start W07, not months ahead of it. 
+Also nothing to install. Flink's `MiniCluster` runs inside your JVM when you execute a `StreamExecutionEnvironment` job from an IDE or `mvn exec`, which is all W04 needs.
+
+```xml
+<dependency>
+  <groupId>org.apache.flink</groupId>
+  <artifactId>flink-streaming-java</artifactId>
+  <version>2.3.0</version>
+</dependency>
+```
+
+**Two version notes worth knowing before you start.** Flink 2.x recommends Java 17 and classifies Java 21 support as beta. Stay on 21: the rest of this curriculum's JVM stack is pinned there to match DBR 18, and a single local job will not go near the edges that beta status refers to. Separately, Flink 2.0 removed the old `org.apache.flink.streaming.api.windowing.time.Time` class in favour of `java.time.Duration`, so any tutorial showing `Time.seconds(10)` was written for 1.x and will not compile.
+
 
 ---
 
@@ -152,15 +174,9 @@ pip install numpy                 # NumPy only, no PyTorch for this week
 
 ---
 
-## PySpark (W07 optional stretch)
+## No PySpark
 
-W07's optional stretch runs a real Spark planner locally to watch it choose a join strategy. Single machine, no cluster, no account.
-
-```bash
-pip install "pyspark==4.1.0"     # the Spark version DBR 18 runs
-```
-
-Spark runs on the JVM regardless of the Python surface, and the Java 21 you installed above already satisfies it. Java 21 is also what DBR 18 ships, so this is the same combination a production cluster runs.
+Spark appears in four units and all of them drive it through the Java API and Maven, so there is nothing to `pip install`. If you already have PySpark on your machine from other work it will not conflict; the units simply do not use it.
 
 ---
 
@@ -187,7 +203,6 @@ kind delete cluster --name pd-systems
 go version           # go1.26.x or later
 java --version       # openjdk 21.x, which is what DBR 18 runs (Zulu 21)
 mvn --version        # Apache Maven 3.9.x
-sbt --version        # 1.9.x or later, builds Scala 2.13 per-project via build.sbt
 python --version     # 3.12.3
 docker --version     # any current release
 kind --version       # any release new enough to create a Kubernetes 1.36 cluster
@@ -205,6 +220,5 @@ helm version         # 4.x, or 3.21.x if you prefer the 3 line, which is still m
 |----------|-----|
 | Go | VS Code + the official Go extension, or GoLand |
 | Java | IntelliJ IDEA (Community is fine), or VS Code + Extension Pack for Java |
-| Scala | IntelliJ IDEA + Scala plugin |
 | Python | VS Code + Pylance, or PyCharm Community |
 | All | Neovim with LSP (if you're into that) |

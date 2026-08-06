@@ -5,114 +5,80 @@ status: not-started
 
 # W06: Query Execution
 
-> **Arc:** Data Movement and Execution · **Language:** Go
+> **Arc:** Data Movement and Execution · **Language:** Java (DuckDB JDBC)
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
-A vectorized query executor in Go: columnar filter + hash join + projection over in-memory data. Benchmark it against a row-at-a-time version of the same pipeline and measure the speedup.
+Not a query engine. One naive row-at-a-time pipeline you write, the same query run by a real vectorized engine, and an honest measurement of the gap between them.
 
-**Scenario:** the 3-8x speedup below is measured against one workload shape. Ship this benchmark's conclusion to production unexamined and the first coworker who runs a highly selective filter, or a join where one side doesn't fit in memory, will find the exact place it stops holding.
+**Why not build the vectorized executor?** An earlier version of this unit had you write a columnar filter, a hash join, and a projection in Go and benchmark them against a row-at-a-time version of the same thing. The problem is that both sides of that benchmark were yours, which means the result was a measurement of two programs you wrote in an afternoon, not of the technique. You will never ship a query executor. What you will do, repeatedly, is reason about why an engine is fast, predict where it stops being fast, and read an operator-level profile to find out. DuckDB gives you all three, and its execution engine is the production version of the thing the earlier build approximated.
 
-**Note on why Go, specifically, for this one unit:** the rest of this arc is Java, but this unit's benchmark is memory-layout-sensitive in a way the others aren't, and Go gives you two concrete things Java can't here. First, Go compiles ahead of time to native code; there's no JIT to warm up, so a naive, hand-timed benchmark (which is this unit's style, no microbenchmark harness) measures real steady-state performance from the first call, instead of risking measuring JIT compilation overhead the way an unwarmed Java benchmark would. Second, and more important for a columnar engine specifically: Go structs are real value types in slices, `[]Row` is genuinely contiguous memory. Java has no true value types (records are still heap-allocated objects), so an array of row structs in Java is an array of pointers to scattered allocations, exactly the pointer-chasing a columnar query engine exists to avoid. The whole point of this unit is that vectorized, columnar execution beats naive row-at-a-time processing because of memory layout; Go gets you closer to that lesson honestly than Java would.
+**Scenario:** the 3 to 8x figure quoted for vectorized execution is measured against one workload shape. Take it to production unexamined and the first colleague who runs a highly selective filter, or a join where one side does not fit in memory, will find the exact place it stops holding. The point of this unit is to find those places yourself, on purpose, before they find you.
 
 ---
 
 ## Read
-- [ ] [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032) (Graefe, 1994): read Sections 1–3. This defines the iterator model (the `next()` interface) that every query engine for 20 years was built on.
-- [ ] [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf) (Boncz et al., CIDR 2005): read Sections 1–3. This is the argument for vectorized execution and why Volcano is CPU-cache unfriendly.
-- [ ] Optional: [Dremel: Interactive Analysis of Web-Scale Datasets](https://research.google/pubs/dremel-interactive-analysis-of-web-scale-datasets/) (Melnik et al., Google, VLDB 2010): read Sections 1–3. Same columnar-storage instinct as MonetDB/X100, but scaled a level up: Dremel shreds nested records into columns (the ancestor of Parquet's on-disk format) and spreads the aggregation itself across a multi-level serving tree of thousands of machines. Read it for what changes when "vectorize the scan" becomes "vectorize the scan, then fan the aggregation out across a cluster."
-- [ ] Optional: [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but worth it: a real, actively maintained vectorized query engine in C++ (a different language than this unit's build, the lesson is the technique, not the syntax), and one you already depend on via W08's feature store. Skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s; that's the production version of what you're building this unit.
+- [ ] **DDIA Chapter 3** (2nd ed.), Data Models and Query Languages. Specifically the declarative-versus-imperative argument. This is the chapter that explains why you are able to hand DuckDB a `SELECT` and let it decide how to execute, and why that separation is what makes vectorization possible at all: a declarative query does not specify a row-at-a-time loop, so the engine is free not to run one. It is also the precondition for W07, where the same freedom becomes a decision about network traffic. Previously uncited anywhere in this curriculum, which was a real gap given that Arc 2 now runs on SQL end to end.
+- [ ] [Volcano, An Extensible and Parallel Query Evaluation System](https://dl.acm.org/doi/10.1109/69.273032) (Graefe, 1994): read Sections 1 to 3. This defines the iterator model (the `next()` interface) that every query engine for twenty years was built on, and it is the model your row-at-a-time baseline below is an instance of.
+- [ ] [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf) (Boncz et al., CIDR 2005): read Sections 1 to 3. This is the argument for vectorized execution and why Volcano is CPU-cache unfriendly. It is also the argument your measurement is about to either confirm or fail to reproduce.
+- [ ] Optional: [Dremel: Interactive Analysis of Web-Scale Datasets](https://research.google/pubs/dremel-interactive-analysis-of-web-scale-datasets/) (Melnik et al., VLDB 2010): read Sections 1 to 3. Same columnar instinct, one level up: Dremel shreds nested records into columns, the ancestor of Parquet's on-disk format, and spreads the aggregation across a serving tree. Read it for what changes when "vectorize the scan" becomes "vectorize the scan, then fan the aggregation across a cluster."
+- [ ] Optional: **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 8** (Scatter/Gather). Pairs directly with the Dremel paper above: Dremel describes a multi-level serving tree, Burns gives the same shape as a reusable pattern and asks the question Dremel does not, which is "Choosing the Right Number of Leaves." That is the same question as choosing a partition count, which W05 and W07 both make you answer with a number.
+- [ ] Optional: [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): skim `PhysicalFilter` and how DuckDB batches rows into `DataChunk`s. This is no longer a foreign artifact you are told to admire; it is the implementation of the thing you are measuring.
 
-**Depth: study Sections 1 to 3 of MonetDB/X100.** It contains the argument your benchmark is about to either confirm or fail to reproduce, which makes it worth real attention. Volcano is a read. Dremel and DuckDB are skims and both optional.
+**Depth: study Sections 1 to 3 of MonetDB/X100.** Volcano is a read. Dremel and the DuckDB source are skims and both optional.
 
-**Key question:** Why does calling `next()` once per row hurt CPU performance even when the logic is simple? What does processing a batch of 1024 rows at a time fix?
+**Key question:** Why does calling `next()` once per row hurt CPU performance even when the logic inside is trivial? Name at least two distinct costs, and predict which one dominates. You are about to see a per-operator profile that will tell you whether you were right.
 
 ---
 
 ## Code
 
-Project: `code/query-exec/` (Go modules)
+Project: `code/query-exec/` (Java 21, Maven, DuckDB JDBC)
 
-Data model: a table of 1M rows with columns `[]int32` for `id`, `dept`, `salary`, stored separately (columnar).
+DuckDB rather than Spark for this one unit, deliberately. Spark's per-query overhead is large enough to swamp the effect being measured at this data size, and DuckDB is a single-node vectorized engine, which is exactly and only the thing this unit is about. You already depend on it in W08.
 
-**Row-at-a-time executor (baseline):**
+**Data:** 10,000,000 rows with columns `id`, `dept`, `salary`, written once to Parquet. Same file feeds both sides of the comparison, so neither side gets to blame the input.
 
-- [ ] `row_executor.go`: `type Row struct { ID, Dept, Salary int32 }`; build rows by iterating the three slices in lockstep (a plain indexed `for` loop is clearest here); apply a filter predicate (`salary > threshold`), then project `(id, salary)`; collect results into a `[]Row` or a `[]struct{ ID, Salary int32 }`, either way a slice of actual structs, not pointers to them
+**Baseline, which you write:**
 
-**Vectorized executor:**
+- [ ] `RowAtATime.java`: read the Parquet file, materialise rows as objects, and run filter (`salary > threshold`), then projection, then a hash join against a second table, one row at a time through a `next()`-style iterator. Write it the obvious way. This is the Volcano model and it is not a straw man; it is how most query engines worked for two decades and how most hand-written data processing code still works.
 
-- [ ] `column_filter.go`: `func Filter(col []int32, threshold int32) []bool`, branchless: build the mask with a tight `for` loop, `mask[i] = col[i] > threshold`
-- [ ] `column_project.go`: `func Project(col []int32, mask []bool) []int32`, collect values where the mask is true
-- [ ] `hash_join.go`: `func Join(leftKey, leftVal, rightKey, rightVal []int32) []struct{ Left, Right int32 }`, build a `map[int32]int32` from the left side, probe with the right side, emit matching pairs
-- [ ] `benchmark_test.go`: use Go's `testing.B` (`go test -bench=. -benchmem`) to time the filter + project pipeline for both executors over 1M random rows; `testing.B` runs enough iterations to get a stable number and reports allocations per operation, worth checking that neither executor is allocating inside its hot loop.
+**The real engine, which you drive:**
 
-**Expected outcome:** vectorized should be 3–8x faster. If the gap is smaller, check `-benchmem`'s allocation count first, an unexpected allocation inside the loop (for example, `append` triggering a slice reallocation because the destination wasn't pre-sized with `make([]int32, 0, n)`) is the most common reason a Go benchmark like this looks flatter than expected.
+- [ ] `DuckDbRun.java`: the same query as SQL over the same Parquet file, via the DuckDB JDBC driver.
+- [ ] **Set `SET threads=1` before measuring.** This matters more than anything else in the unit. DuckDB parallelises by default, so without this you are measuring core count and calling it vectorization. You want the execution model isolated, and you can turn threads back on afterwards to see what parallelism adds on top, which is a separate and also interesting number.
+- [ ] `EXPLAIN ANALYZE` the query and read the per-operator timing. This is the artifact the unit is really after: you can see which operator ate the time, and the answer is frequently not the one you would have guessed from reading the SQL.
 
-**Minimum bar:** the vectorized pipeline beats the row-at-a-time one on the same data, you have the measured speedup, and you can explain the gap in terms of memory layout rather than instruction count. The optional source reading is genuinely optional.
+**Minimum bar:** both pipelines produce the same result on the same data, you have the single-threaded ratio between them, and you can explain the gap in terms of memory layout and batch size rather than instruction count. Plus one `EXPLAIN ANALYZE` output you can read out loud, operator by operator.
 
 **Break it, then decide:**
-- [ ] Re-run the filter+project benchmark twice more: once with a threshold so selective that under 1% of rows pass, once with a threshold near the middle so roughly 50% pass. Compare `-benchmem`'s bytes-per-op and allocs-per-op across all three selectivities, not just the wall-clock number. If `Project` always allocates its output slice sized to the full input length regardless of how many rows actually pass the mask, that's real wasted memory at high selectivity, invisible if you only ever benchmarked one selectivity and called it done.
-- [ ] `hash_join.go` builds its hash table from the entire left side before probing. That's fine at 1M rows in memory; it stops being fine the moment the left side is bigger than RAM. Would you keep hash join and accept that limit, or switch to a sort-merge join (sort both sides, then merge in one linear pass, no full in-memory table required, but now you're paying for two sorts)? There's a real, workload-dependent answer; give yours and say what property of your data would have to change to flip it.
 
----
-
-## Rehearse it in Python first (optional, 20 minutes)
-
-> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the hash join's build-and-probe and the sorted-column scan in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W06) and stop after W06, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
-
-**Hash join + binary search on sorted arrays**: the two algorithms your Go `hash_join.go` and `column_filter.go` implement. Python makes the probe/build logic easy to inspect.
-
-```python
-from collections import defaultdict
-from bisect import bisect_left
-
-# hash_join.py: classic hash join, build phase + probe phase
-def hash_join(left: list[dict], right: list[dict], key: str) -> list[dict]:
-    # Build: index left side by join key
-    ht: dict = defaultdict(list)
-    for row in left:
-        ht[row[key]].append(row)
-    # Probe: for each right row, look up in hash table
-    result = []
-    for row in right:
-        for match in ht.get(row[key], []):
-            result.append(match | row)  # merge dicts (Python 3.9+)
-    return result
-
-left  = [{"id": 1, "name": "alice"}, {"id": 2, "name": "bob"}]
-right = [{"id": 1, "score": 95},     {"id": 1, "score": 88}]
-joined = hash_join(left, right, "id")
-assert len(joined) == 2 and all(r["name"] == "alice" for r in joined)
-
-# binary_filter.py: binary search on a sorted column (like column_filter.go)
-def filter_sorted_col(col: list[int], predicate_min: int, predicate_max: int) -> list[int]:
-    lo = bisect_left(col, predicate_min)
-    hi = bisect_left(col, predicate_max + 1)
-    return col[lo:hi]  # slice is O(k) not O(n)
-
-col = sorted([5, 2, 8, 1, 9, 3, 7, 4, 6])
-assert filter_sorted_col(col, 3, 7) == [3, 4, 5, 6, 7]
-```
-
-**Connection:** `hash_join.go` is the build+probe pattern in Go over `[]int32` columns. `column_filter.go` can use `sort.Search` (Go's `bisect_left` equivalent) for range filters over a sorted column, 3–8x faster than scanning.
+- [ ] **Selectivity sweep.** Run three thresholds: one where under 1 percent of rows pass, one near 50 percent, one where nearly everything passes. Plot or tabulate the ratio at each. The gap is not constant, and the shape of how it changes tells you what the engine is actually spending its time on. Predict the shape before you run it.
+- [ ] **Make the join side exceed memory.** Grow the build side of the join until it does not fit. Your `RowAtATime.java` will die with an `OutOfMemoryError`, because a naive hash join builds the whole table before probing. DuckDB will not: it spills to disk and finishes slower. Measure how much slower. This is the single most important difference between a toy engine and a real one, and it is worth having felt rather than read about.
+- [ ] **Your call:** given the number you just measured for the spill, would you rather an engine that fails fast when a join will not fit, so you find out immediately and go fix the query, or one that silently degrades to disk and finishes eventually? Both are defensible and real engines differ on this. Say which you would want as a platform operator, then say whether your answer changes if the person running the query is an analyst rather than you.
+- [ ] Turn threads back on and re-measure. Report vectorization and parallelism as two separate numbers rather than one combined one. Being able to say which of the two bought you what is the difference between understanding a benchmark and quoting it.
 
 ---
 
 ## Reflect
+<!-- Fill in at the end of the unit -->
 
 **What clicked:**
 
 **What surprised me:**
 
-**Benchmark results:**
+**Single-threaded results:**
 - Row-at-a-time: __ M rows/sec
-- Vectorized: __ M rows/sec
-- Speedup: __x
+- DuckDB, `threads=1`: __ M rows/sec
+- Ratio: __x
+- DuckDB, threads on: __ M rows/sec, so parallelism added __x on top
 
-**What does this tell you about how query execution works in a system you know?**
+**Which operator dominated `EXPLAIN ANALYZE`, and whether it was the one you predicted in the Key question:**
 
-**Allocation behavior across selectivities, and hash join vs. sort-merge for a left side bigger than memory (from Break it, then decide above):**
+**How the ratio changed across the three selectivities, and what that says about where the time goes:**
 
-**Where did a value-type slice buy you speed?** Your vectorized executor builds and fills `[]int32` slices directly, real contiguous memory, not a slice of pointers to scattered structs. Notice that Go never forces immutability on you the way W04 and W06's Java code does by construction (`filter`/`consolidate` returning new values), so this trade-off was always available and always invisible until you looked for it. Point to one specific place in `column_filter.go` or `hash_join.go` where you wrote into a pre-sized slice by index instead of building a fresh one and estimate what it would've cost you in speed to instead allocate a new slice per step and chain functional-style transforms, the way `filter`/`consolidate` in W06 do by construction.
+**What happened when the build side exceeded memory, and what the spill cost:**
+
+**Fail fast or degrade to disk, and whether your answer changes for an analyst rather than an operator:**
 
 **What I'd do differently:**

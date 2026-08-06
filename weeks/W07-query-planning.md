@@ -5,11 +5,11 @@ status: not-started
 
 # W07: Query Planning: Choosing Where Data Moves
 
-> **Arc:** Data Movement and Execution · **Language:** Scala
+> **Arc:** Data Movement and Execution · **Language:** Java (Spark)
 > **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
 
 ## What you'll build
-A physical planner: the component that takes a logical query and decides, for every join in it, **how much data crosses the network and in which direction**.
+Not a planner. You are going to make Spark's own planner change its mind, on purpose, four times, and read the evidence each time.
 
 Here is the framing, because it would be easy to mistake this unit for compiler work. A logical `Join(customers, orders)` says nothing about data movement. It is a statement about the answer, not about the machines. Turning it into something executable means choosing a *strategy*, and the strategies differ almost entirely in what they move:
 
@@ -19,46 +19,48 @@ Here is the framing, because it would be easy to mistake this unit for compiler 
 
 Choosing between these is the highest-leverage decision a distributed query engine makes, and it is made from an *estimate* of how big each side is. Get it right and a job runs in two minutes. Get it wrong and you either move terabytes you did not need to, or you try to broadcast something that does not fit and the executors die.
 
-**Scenario:** a report that ran in ninety seconds for a year now takes four hours, and nobody deployed anything. A dimension table crossed a size threshold, the planner quietly stopped choosing a broadcast, and every run since has been shuffling both sides of a join across the cluster. Nothing errored. Nothing was logged. This is the most common performance regression in a data platform, and by the end of this unit you will have caused it on purpose.
+**Why not build a toy planner?** An earlier version of this unit had you write a cost model, a strategy enum, and a tree walk in Scala. The trouble is that a planner you wrote agrees with you by construction: your cost model produces the decision your cost model predicts, and you learn nothing about the failure modes, because you built the thing that fails. Spark's planner does not agree with you, has a cost model you did not write, and will make decisions you did not expect. Reading a real `EXPLAIN` is also the version of this skill you use at work, roughly weekly, forever.
 
-**Note on why Scala:** Spark is written in Scala and Catalyst genuinely works this way, case classes for plan nodes and pattern matching to rewrite them. Reading real Catalyst source while writing a small version in the same language is something no other unit here offers. The Scala stays gentle: case classes, pattern matching, and one recursive function.
+**Scenario:** a report that ran in ninety seconds for a year now takes four hours, and nobody deployed anything. A dimension table crossed a size threshold, the planner quietly stopped choosing a broadcast, and every run since has been shuffling both sides of a join across the cluster. Nothing errored. Nothing was logged. This is the most common performance regression in a data platform, and by the end of this unit you will have caused it on purpose and then found it from the plan alone.
 
 ---
 
 ## Read
-- [ ] [Spark SQL: Relational Data Processing in Spark](https://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf) (Armbrust et al., SIGMOD 2015): **the physical planning section** is the part that matters here. Catalyst applies rule-based rewrites first, then uses cost to select physical operators, and the join strategy is what it spends that cost model on.
+- [ ] **DDIA Chapter 3** (2nd ed.) if you skipped it in W06. The declarative-versus-imperative distinction is the entire precondition for this unit: a planner only gets to choose a join strategy because you did not tell it which one to use. Everything below is that freedom being exercised, and occasionally misused.
+- [ ] [Spark SQL: Relational Data Processing in Spark](https://people.csail.mit.edu/matei/papers/2015/sigmod_spark_sql.pdf) (Armbrust et al., SIGMOD 2015): **the physical planning section** is the part that matters here. Catalyst applies rule-based rewrites first, then uses cost to select physical operators, and the join strategy is what it spends that cost model on. You are about to watch this exact process run.
 - [ ] [Spark: Adaptive Query Execution](https://spark.apache.org/docs/latest/sql-performance-tuning.html#adaptive-query-execution): short docs page. Read the three features it lists, particularly dynamically switching join strategies. That feature exists because the estimate this unit is built on turns out to be unreliable at scale, and Spark eventually stopped trusting it before execution.
 
-**Depth: study the Catalyst paper's physical-planning section.** It is a few pages and it is exactly what you are about to build. The AQE page is a short read. Skim anything else you open.
+**Depth: study the Catalyst paper's physical-planning section.** It is a few pages and it names every component you are about to see in a plan printout. The AQE page is a short read.
 
-**Key question:** A broadcast join moves the small table to every worker. A shuffle join moves both tables across the network once. For a 10 GB fact table and a 100 MB dimension table across 20 workers, roughly how many bytes does each strategy move? Work it out before you code; the gap is larger than most people expect, and it does not go the way you might guess.
+**Key question, on paper, before you run anything:** A broadcast join moves the small table to every worker. A shuffle join moves both tables across the network once. For a 10 GB fact table and a 100 MB dimension table across 20 workers, roughly how many bytes does each strategy move? Work it out first; the gap is larger than most people expect, and it does not go the way you might guess. Keep the number, because Spark is about to show you its own estimate and you want to have committed to yours first.
 
 ---
 
 ## Code
 
-Project: `code/query-planner/` (Scala 2.13, sbt)
+Project: `code/query-plans/` (Java 21, Maven, Spark 4.1.0, local mode)
 
-**Given, not built:** `LogicalPlan.scala` is provided: `sealed trait LogicalPlan` with `Scan(table, columns)`, `Filter(predicate, child)`, `Project(columns, child)`, and `Join(left, right, key)`. Plain case classes, no methods. Defining the tree type is not the lesson and you would spend an hour on it.
+Spark's Java API, same as W02. Most of this unit is `spark.sql(...)` plus reading output, so the driver language barely shows; the point is the plans, not the code.
 
-- [ ] `Statistics.scala`: `case class TableStats(rowCount: Long, avgRowBytes: Int)` plus a `Catalog = Map[String, TableStats]`. Write one for three tables with deliberately lopsided sizes: `orders` at 10,000,000 rows, `customers` at 200,000, `regions` at 50. `estimatedBytes` is `rowCount * avgRowBytes`, which is crude, and is exactly what a real planner does before it has anything better.
-- [ ] `Strategy.scala`: `sealed trait JoinStrategy` permitting `BroadcastHash`, `ShuffleHash`, and `SortMerge`. Give each a `bytesMoved(left: Long, right: Long, workers: Int): Long`. Broadcast moves `smallSide * workers`. Shuffle moves `left + right`. Sort-merge moves the same as shuffle, with a comment noting it also pays a sort. Those three formulas are the entire cost model and they are enough to make every decision in this unit.
-- [ ] `Planner.scala`: `def plan(logical: LogicalPlan, catalog: Catalog, broadcastThresholdBytes: Long, workers: Int): PhysicalPlan`. Walk the tree; for each `Join`, estimate both sides and choose `BroadcastHash` if the smaller side is under the threshold, `ShuffleHash` otherwise. Push each `Filter` below its `Join` *before* estimating, because a filter that removes 90 percent of a table changes which strategy wins. That ordering is the one genuine correctness constraint in this unit, and it is also why real optimizers run rules before costing.
-- [ ] `Explain.scala`: print the physical plan the way `df.explain()` does, with an `Exchange` node wherever data moves and the estimated bytes on it. That printout is the deliverable. You should be able to read it and say, without running anything, where the network is about to be used and how hard.
+**Setup:**
 
-**Minimum bar:** for a three-table join with one 50-row dimension table, your planner broadcasts the tiny one, shuffles the two large ones, and `Explain` prints a plan with `Exchange` nodes carrying byte estimates. You can point at the plan and say where the network gets used.
+- [ ] `Fixtures.java`: generate three Parquet tables with deliberately lopsided sizes, then register them as tables so the catalog can hold statistics for them: `orders` at 10,000,000 rows, `customers` at 200,000, `regions` at 50. Give `orders` a `customer_id` and `customers` a `region_id` so a three-table join is natural.
+- [ ] Run `ANALYZE TABLE <t> COMPUTE STATISTICS FOR ALL COLUMNS` on all three. Without this, Spark falls back to file-size estimates, and half this unit's behaviour becomes noise rather than signal. This step is also the answer to a question you will meet again below.
+
+**The four experiments. Each one is: change one thing, re-explain, diff the plan.**
+
+- [ ] **1. Read a plan at all.** Join all three tables and print `EXPLAIN FORMATTED`. Find the join nodes and name each one's strategy. Find every `Exchange` and say what it is moving and why. Then print `EXPLAIN COST` and compare Spark's `sizeInBytes` and `rowCount` estimates against what you know the real tables to be. Write down where its estimate is wrong; it will be wrong somewhere, usually after a filter.
+- [ ] **2. The silent regression.** Grow `customers` past `spark.sql.autoBroadcastJoinThreshold` (10 MB by default). Change nothing else. Re-explain and diff: a `BroadcastHashJoin` became a `SortMergeJoin`, and two `Exchange` nodes appeared that were not there before. Now notice what did *not* happen. No error, no warning, no log line, no config change, no deploy. The only signal in production is that the job got slower. Write down the metric you would put on a dashboard to catch this, and be specific about where it would come from.
+- [ ] **3. The expensive lie.** Force the broadcast that Spark just declined, with a `/*+ BROADCAST(customers) */` hint. The hint overrides the cost model, because hints always do. Watch what happens to driver memory as it collects the whole side to broadcast it. Locally you will see it get slow or die; on a twenty-worker cluster every executor materialises that table simultaneously and they die together, with an out-of-memory error that names the join but not the reason. This is one of the most common ways a Spark job fails in production, and the cause is almost always upstream: statistics that are stale, absent, or overridden by a hint somebody added during an incident two years ago and never removed.
+- [ ] **4. Spark's third answer.** Turn AQE off (`spark.sql.adaptive.enabled=false`), run the query, and look at the plan. Turn it back on, run again, and look at the plan *after* completion: it reports `AdaptiveSparkPlan isFinalPlan=true` and the strategy may differ from the one chosen up front, because Spark re-decided using row counts it *observed* rather than ones it estimated. Note also `spark.sql.adaptive.autoBroadcastJoinThreshold`, a separate knob, which exists precisely because a post-shuffle decision can afford to be braver than a pre-execution one.
+
+**Minimum bar:** for the three-table join, you can point at a plan printout and say which strategy each join uses, where every `Exchange` is, and what it is moving. Plus experiment 2 done and diffed, with your dashboard metric written down. Experiments 3 and 4 are worth doing and are not the bar.
 
 **Break it, then decide:**
-- [ ] **The silent regression.** Change `customers` from 200,000 rows to 2,000,000. One number, nothing else. Re-plan and diff the two printouts: a broadcast became a shuffle, and estimated bytes moved jumped by whatever your model says. Now notice what did *not* happen. No error, no warning, no log line. In production this is a deploy-free, config-free change in behaviour caused only by data growth, and the sole signal is that the job got slower. Write down the metric you would put on a dashboard to catch it.
-- [ ] **The expensive lie.** Tell the catalog `customers` is 50 MB when it is really 5 GB. The planner cheerfully chooses a broadcast. On a real cluster all 20 workers then try to materialise 5 GB each, and the executors die with out-of-memory errors that name the join but not the reason. This is one of the most common ways a Spark job fails in production, and the cause is always upstream: statistics that are stale, or absent.
-- [ ] **Your call:** you cannot make the estimate reliable, so you choose how to be wrong. Lower the broadcast threshold and you rarely broadcast, giving up a large speedup on every query that would have qualified, in exchange for never running out of memory. Keep it high and you keep the speedup and accept occasional job failures. Implement one, then say what Spark's third answer is, given what you read about AQE, and why declining to commit before execution is different in kind from either of your two options rather than just a better tuning of them.
 
-### Optional stretch: watch a real planner change its mind
-
-Fifteen minutes, observation only, using the PySpark you already have.
-
-- [ ] Write a small PySpark join between a large DataFrame and a small one and call `df.explain("formatted")`. Find the `BroadcastHashJoin` in the plan. Now set `spark.sql.autoBroadcastJoinThreshold` to `-1`, disabling broadcasts entirely, and explain again: the same query is a `SortMergeJoin` with `Exchange` nodes in it. You have just watched your own planner's decision made by a production one.
-- [ ] With AQE enabled, run the query and explain again *after* it finishes. The plan reports itself as adaptive, and the strategy shown may differ from the one chosen up front, because Spark re-decided using row counts it observed rather than ones it estimated.
+- [ ] **Your call, and it is a real one:** you cannot make the estimate reliable, so you are choosing how to be wrong. Lower `autoBroadcastJoinThreshold` and you rarely broadcast, giving up a large speedup on every query that would have qualified, in exchange for never blowing up an executor. Raise it and you keep the speedup and accept occasional job failures. Pick a value, defend it, and name the workload that would make you change it.
+- [ ] Now the harder half. AQE does not tune that trade-off, it declines to make the decision until it has real numbers. Say precisely what AQE cannot fix, given that it only re-decides at shuffle boundaries: which of the four experiments above would AQE have saved you from, and which would it not? Experiment 3 is the interesting case.
+- [ ] Go back to the `ANALYZE TABLE` step in setup. You ran it manually. In a production warehouse, who runs it, how often, and what happens to every plan in the system on the day that job silently stops working? This is the actual mechanism behind experiment 3, and it is an operational question rather than a query-engine one.
 
 ---
 
@@ -69,11 +71,13 @@ Fifteen minutes, observation only, using the PySpark you already have.
 
 **What surprised me:**
 
-**Your bytes-moved answer for the 10 GB, 100 MB, 20-worker case before coding, and what your planner actually computed:**
+**Your bytes-moved answer for the 10 GB, 100 MB, 20-worker case, and what `EXPLAIN COST` estimated:**
 
 **The two plans either side of the silent regression, and the metric you would monitor to catch it:**
 
-**Where you would set the broadcast threshold, which failure that accepts, and how AQE avoids the choice rather than tuning it:**
+**Where you would set the broadcast threshold, and which failure that accepts:**
+
+**Which of the four experiments AQE would have saved you from, and which it would not:**
 
 **A logical `Join` says nothing about data movement. Name every decision a planner has to make before that join can run on a cluster.**
 
