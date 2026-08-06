@@ -10,11 +10,26 @@ authors:
   - family-names: Guitart
     given-names: Gaston
 type: dataset
+version: 0.4.0
 url: "https://github.com/ggasg/pd-distributed-systems"
+repository-code: "https://github.com/ggasg/pd-distributed-systems"
 license: CC-BY-4.0
-date-released: 2026-07-14
+date-released: 2026-08-06
+keywords:
+  - distributed-systems
+  - data-intensive-systems
+  - curriculum
+  - apache-spark
+  - apache-flink
+  - kubernetes
+  - distributed-training
 abstract: >-
-  A self-directed, 20-week curriculum for pragmatic mastery of
-  distributed and data-intensive systems, covering storage engines,
-  streaming and dataflow, query planning, distributed model training,
-  GPU compute, and production observability.
+  A self-directed curriculum of 16 units plus an optional capstone, for
+  pragmatic mastery of distributed and data-intensive systems. Covers
+  storage engines and the cost of a write, batch and stream processing,
+  partitioning and the shuffle, vectorized query execution and physical
+  planning, distributed model training and parallelism strategies,
+  attention and cache-aware inference routing, distributed snapshots,
+  and Kubernetes operators with production observability. Roughly half
+  the units build a mechanism from primitives; the rest drive a real
+  engine (Spark, Flink, DuckDB, Kubeflow) until it fails instructively.

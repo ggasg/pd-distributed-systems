@@ -1,6 +1,8 @@
 # Distributed, Data-Intensive Systems: Engineering Curriculum
 
-A self-directed curriculum for software engineers who want pragmatic mastery of distributed and data-intensive systems, with a focus on storage and query internals, partitioning and incremental computation, distributed model training, GPU-bound compute, and running all of it on Kubernetes with real observability. Every unit has a specific paper to read, a concrete coding task, and a deliverable.
+A self-directed curriculum for software engineers who want pragmatic mastery of distributed and data-intensive systems, with a focus on storage and query internals, partitioning and the shuffle, distributed model training and inference, and running all of it on Kubernetes with real observability. Every unit has a specific paper or chapter to read, a concrete task, and a deliverable.
+
+Roughly half the units build a mechanism from primitives; the other half drive a real production engine (Spark, Flink, DuckDB, Kubeflow) until it fails in an instructive way. The rule is measure or operate a real system where one exists, and reimplement only where the mechanism itself is the lesson.
 
 This isn't for people who want to pass system design interviews. It's for engineers who want to build real distributed systems and understand them from the inside out.
 
