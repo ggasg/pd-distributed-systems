@@ -6,7 +6,7 @@ status: not-started
 # W04: Stream Processing Primitives
 
 > **Arc:** Data Movement and Execution · **Language:** Java (Flink, then Spark)
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 Part 1: event-time windowing on Flink, driven until it drops data on purpose, then compared against how Spark Structured Streaming answers the same question. Part 2: the one thing no framework will show you, which is what happens when events arrive faster than you can process them, built by hand because comparing the three responses side by side is the entire exercise.
@@ -73,6 +73,7 @@ So when the producer outruns you, you have exactly three options and no others: 
 
 ### Read
 - [ ] [Flink: Network Stack and Backpressure](https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/monitoring/back_pressure/): short and concrete. Read how Flink detects backpressure and how it propagates upstream through the job graph rather than being handled locally. That propagation is the important part: a slow operator eventually slows the source, which is a feature, not a failure. Note which of the three policies below that is, since Flink made the choice for you.
+- [ ] Optional: **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 12** (Event-Driven Batch Processing). Two sections earn their keep here. "Work Stealing" is a fifth response to overload that Part 2 does not give you: rather than block, drop, spill, or add workers, let idle workers take work from busy ones, which fixes imbalance but not insufficiency. And "Errors, Priority, and Retry" is the question of what happens to the events you did not drop but could not process, which is the case Part 2 quietly assumes away.
 - [ ] Optional: **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 11** (Work Queue Systems). Read "Dynamic Scaling of the Workers" and "The Multiworker Pattern." Part 2 gives you three ways to respond to overload with a fixed number of workers; this chapter is the fourth option you did not have, which is to add workers, and it is worth knowing what that fixes and what it does not. It does nothing about a source that is faster than any number of workers.
 
 **Key question:** Given Little's Law, if your arrival rate exceeds your service rate, what buffer size makes the system stable? Answer honestly, then say what a buffer is actually for, since it clearly is not that.
@@ -89,6 +90,7 @@ Use `ArrayBlockingQueue` from the JDK as the queue between producer and consumer
   - `Drop`: `queue.offer(event)`, which returns false instead of blocking. Count what you discarded, and separately compute how wrong the final window sums are compared to a run where nothing was dropped. That second number is the one that matters and the one nobody measures.
   - `Spill` (optional): write overflow events to a file and drain them back when the queue has room, measuring peak file size and the added latency for a spilled event. `Block` and `Drop` already give you the trade-off; spilling is the one whose behaviour you can predict without running it.
 - [ ] `BackpressureBench.java`: run all three policies against the same overload, and print for each: events processed, events lost, peak memory or file size, source lag, and the error in the final aggregate.
+  - Two of those numbers, events lost and the error in the final aggregate, are different reductions over the same sequence. Compute them in a single pass with `Collectors.teeing(downstream1, downstream2, merger)`, which runs two collectors over one stream and combines the results. It is one of the least-known combinators in the JDK and one of the more useful, and it is the right shape here precisely because making a second pass over a stream you have already consumed is not an option.
 
 **Minimum bar (Part 2):** `Block` and `Drop` run against the same overload, and you have three numbers for each: events lost, source lag, and the error each introduces in the final aggregate. That last number is the point of the exercise.
 
@@ -100,6 +102,15 @@ Use `ArrayBlockingQueue` from the JDK as the queue between producer and consumer
 **Where you have already met this.** Once you have the three policies in hand, the rest of the curriculum stops looking like unrelated design decisions: W05's shuffle writes partitioned spill files to disk between map and reduce, which is `Spill`; W15's log-aggregator ring buffer silently evicts the oldest line under load, which is `Drop`; and W12's queue-depth threshold, where you stop sending to a cache-holding replica once its queue is too deep, is `Block` expressed as routing. Same three answers, four different units.
 
 ## Reflect
+
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
 
 **What clicked:**
 
@@ -120,3 +131,12 @@ Use `ArrayBlockingQueue` from the JDK as the queue between producer and consumer
 **Which policy did you ship for the revenue dashboard, and what number would you alert on to learn you were wrong?**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

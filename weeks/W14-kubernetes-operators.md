@@ -6,7 +6,7 @@ status: not-started
 # W14: Operating Kubernetes Operators: Kubeflow Trainer and Spark Operator
 
 > **Arc:** Infrastructure · **Language:** Helm/YAML; you'll read Go, not write it
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 
@@ -154,6 +154,15 @@ You can see the failure without installing anything, which is the point of doing
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What "level-triggered" means for a Kubernetes controller, demonstrated concretely by the Pod-delete test in Part 1, not just defined:**
 
 **Where you saw idempotency in practice this unit (a reconcile pass that ran and changed nothing, because nothing needed to change):**
@@ -171,3 +180,12 @@ You can see the failure without installing anything, which is the point of doing
 **What the un-queued jobs actually looked like when they deadlocked, and how long it took you to be sure nothing was going to resolve it:**
 
 **(Part 4 only) What a queueing layer needs to know that the default scheduler does not, and why that information cannot live in the Pod spec:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

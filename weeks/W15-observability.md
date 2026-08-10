@@ -6,7 +6,7 @@ status: not-started
 # W15: Observability: Metrics, Tracing, Logging
 
 > **Arc:** Infrastructure · **Language:** Java + Go
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 Instrument your W05 shuffle (Java) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
@@ -21,12 +21,13 @@ Instrument your W05 shuffle (Java) with Prometheus metrics, OpenTelemetry traces
 - [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3** (The Sidecar Pattern): read before Part 3 below. You're about to build a log-aggregator sidecar and wire it into a node Pod of the `TrainJob` from W14 without ever naming what you're doing; this chapter names it, and walks through the same "modular container with its own small API, composed alongside a main container it knows nothing about" design your log aggregator follows.
 - [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 14** (Monitoring and Observability Patterns): the chapter this unit is named after, and it was not cited here until now. Logging, metrics, basic versus advanced request monitoring, alerting, tracing, and aggregation, in the same order you are about to build them. Read it before Part 1 rather than after, because it is the only reading here that treats all three signals as one system instead of three tools.
 - [ ] Optional: **Burns Ch.5** (Adapters). Its two hands-on sections are Prometheus monitoring and normalizing mismatched log formats with fluentd, which is precisely what your log-aggregator sidecar does by hand in Part 3. Worth it if you want to see the pattern named before you implement it.
+- [ ] [The Tail at Scale](https://research.google/pubs/the-tail-at-scale/) (Dean & Barroso, CACM 2013): six pages, read all of them, and this is the unit's second study reading. It is the paper that explains why a service made of a hundred healthy components can still be slow for most users, why the 99th percentile of a component becomes the median of a request that fans out, and what the available mitigations are (hedged requests, tied requests, micro-partitioning). Of everything in this curriculum this is the paper most likely to let you answer a hard performance question correctly and immediately, because it gives you the arithmetic of fan-out rather than an intuition about it.
 - [ ] [Prometheus data model + metric types](https://prometheus.io/docs/concepts/data_model/): Counter vs Gauge vs Histogram vs Summary. Know when to use each. When to NOT use a Summary. (~20 min)
 - [ ] Optional: [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/): read "Signals > Traces" and "Signals > Metrics". Understand what a Span is, what attributes are for, how traces differ from metrics. (~25 min)
 - [ ] **DDIA Chapter 2** (2nd ed.), Defining Nonfunctional Requirements. This is where reliability, scalability, and maintainability get defined precisely rather than used as adjectives, and where response-time percentiles and tail latency are treated properly. It is deliberately read here rather than in W00: there it is vocabulary with nothing to attach to, and here you have a running system, a histogram you are about to configure wrong on purpose, and a p99 that is about to lie to you. Read it as the chapter that tells you what the numbers on your dashboard are supposed to mean.
 - [ ] Optional: [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): free online, the four golden signals. Substantially overlaps DDIA Ch.2 above, so read it only if you want the same material from an operations angle rather than a design one. (~25 min)
 
-**Depth: study DDIA Ch.2.** This is the unit's one deep reading and it is placed here on purpose, because percentiles and tail latency need a running system to mean anything. Burns Ch.14 and the Prometheus data model page are short reads. OpenTelemetry concepts, Burns Ch.3, Burns Ch.5, and the SRE chapter are skims.
+**Depth: study DDIA Ch.2 and The Tail at Scale.** This is the unit's one deep reading and it is placed here on purpose, because percentiles and tail latency need a running system to mean anything. Burns Ch.14 and the Prometheus data model page are short reads. OpenTelemetry concepts, Burns Ch.3, Burns Ch.5, and the SRE chapter are skims.
 
 **Key question:** Why are histograms better than averages for latency? What does p99 tell you that avg hides?
 
@@ -121,6 +122,15 @@ Add observability to `code/shuffle/` (your W05 shuffle). This is a better instru
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What the four golden signals are and which ones your DD engine was "blind" to before this unit:**
 
 **What your p99 looked like with mismatched histogram buckets, and coarse-buckets vs. too-many-buckets, which would you default to and why (from Break it, then decide above)?**
@@ -138,3 +148,12 @@ Add observability to `code/shuffle/` (your W05 shuffle). This is a better instru
 **Why `RWMutex` instead of a plain `Mutex` for the ring buffer, concretely, in terms of `POST /log` vs `GET /logs` traffic, and what would you actually observe under load if you swapped it for a plain `Mutex` (a correctness bug, or something else)?**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

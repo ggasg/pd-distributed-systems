@@ -12,7 +12,7 @@ All papers, books, and docs referenced in this curriculum. Organized by unit. Fr
 | [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W03, W13 | For concurrency primitives and correctness |
 | [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W15 | O'Reilly; pairs well with the Google SRE chapter |
 | [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W15 (optional) | **Free online.** Ch. 6, optional; overlaps DDIA Ch.2 |
-| [Designing Distributed Systems, 2nd ed.](https://www.oreilly.com/library/view/designing-distributed-systems/9781098156343/) | Burns (O'Reilly, Dec 2024) | W02, W04, W05, W06, W12, W13, W14, W15. 10 of 16 chapters cited | The pattern catalogue this curriculum is organised around, and short: 220 pages of mostly self-contained chapters. **Check your edition before using the chapter numbers below.** Every reference here is to the 2nd edition. Microsoft's free sponsored PDF has historically been the 2018 1st edition, whose numbering is different (its Ch.2 is The Sidecar Pattern, and it has no AI Inference chapter at all), so a free copy will send you to the wrong chapter every time |
+| [Designing Distributed Systems, 2nd ed.](https://www.oreilly.com/library/view/designing-distributed-systems/9781098156343/) | Burns (O'Reilly, Dec 2024) | Ch.1 pre-curriculum, then W02, W04, W05, W06, W12, W13, W14, W15. 15 of 16 chapters cited | The pattern catalogue this curriculum is organised around, and short: 220 pages of largely self-contained chapters. All references are to the **2nd edition**, which is the printed one; the free PDF circulating from Microsoft is the 2018 1st edition and its chapter numbers do not line up. Ch.9 (Functions and Event-Driven Processing) is the one chapter deliberately uncited: nothing here is serverless, and a forced fit would be worse than an honest gap |
 
 ---
 
@@ -25,6 +25,8 @@ All papers, books, and docs referenced in this curriculum. Organized by unit. Fr
 ## Before You Start (outside any unit's budget)
 
 - **DDIA Chapter 1** (2nd ed.), Trade-Offs in Data Systems Architecture. **Depth: skim.** Read this once, whenever you like, before or during W00. It is orientation rather than prerequisite: nothing in any unit depends on having read it, and it contains no mechanism you will implement. What it gives you is the operational-versus-analytical and distributed-versus-single-node framing that the whole curriculum is arranged around, which makes the difference between W01's write path and W06's columnar executor legible as a deliberate contrast rather than two unrelated builds. Forty-five minutes at skim depth. Do not study it.
+
+- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 1** (Introduction). **Depth: skim, twenty minutes.** Same job as DDIA Ch.1 and worth reading in the same sitting: it argues that distributed systems are assembled from a small number of recurring patterns, which is the premise the other fourteen chapters spend their time cashing out. Nothing depends on having read it, but it makes the later chapters land as a catalogue rather than as fifteen unrelated essays.
 
 DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliability, scalability, and tail latency have a running system to attach to.
 
@@ -77,6 +79,7 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 - [Spark Structured Streaming programming guide](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html): Part 1 reference, the "Handling Late Data and Watermarking" and "Output Modes" sections only. Spark's answer to the same question, and the differences from Flink are the point of the comparison
 - [Flink: Network Stack and Backpressure](https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/monitoring/back_pressure/): Part 2 required reading, short. How backpressure is detected and why it propagates upstream through the job graph rather than being absorbed locally. Note which of Part 2's three policies that is: Flink made the choice for you
 - **Little's Law** (`L = λW`): no link needed, it is one line, but Part 2 is built on it. Average items in the system equals arrival rate times average time in the system. It is what turns "the queue is filling up" into arithmetic you can do before running anything
+- **Burns, *Designing Distributed Systems*, 2nd ed., Ch.12**: Event-Driven Batch Processing, optional, Part 2. "Work Stealing" is a fifth overload response the unit does not give you; "Errors, Priority, and Retry" is the case it assumes away
 - **Burns, *Designing Distributed Systems*, 2nd ed., Ch.11**: Work Queue Systems, optional, Part 2. "Dynamic Scaling of the Workers" is the fourth response to overload that Part 2 does not give you
 
 ---
@@ -114,6 +117,8 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 ---
 
 ## W08: ML Data Pipelines
+
+- **DDIA Chapter 8**: Transactions, required. Read the atomicity and isolation sections before Part 2; this is what makes the four letters in Delta's "ACID" claim mean something checkable
 
 - **DDIA Chapter 5**: Encoding and Evolution, required. Backward versus forward compatibility is exactly the question "can a model trained on v1 features read v2, and can a v2 reader still read v1"
 
@@ -163,6 +168,7 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 - [KV cache aware routing with llm-d](https://developers.redhat.com/articles/2025/10/07/master-kv-cache-aware-routing-llm-d-efficient-ai-inference): Red Hat, Part 2 optional. The same idea against real vLLM replicas, reporting up to 3x on time-to-first-token
 - [kubernetes-sigs/gateway-api-inference-extension](https://github.com/kubernetes-sigs/gateway-api-inference-extension): the production version of Part 2's `router.py`, written in Go and running as part of the control plane rather than the model server. Reading only, no build target; it's here to connect this unit to W14
 - [The Illustrated Transformer](https://jalammar.github.io/illustrated-transformer/): Jay Alammar (free blog), visual intro before the paper
+- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 4**: Ambassadors, required for Part 2. Your router is an ambassador; Burns names the pattern and shows the sharded-Redis version of the same structure
 - **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 6**: Replicated Load-Balanced Services, required for Part 2. "Session Tracked Services" is cache-aware routing written down twenty years early: route to the replica holding the state, and accept worse load balance to get it
 
 ---
@@ -209,6 +215,7 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 - [Prometheus Java client](https://github.com/prometheus/client_java): used to instrument the W06 DD engine (same library W00 already uses)
 - [OpenTelemetry Java SDK](https://opentelemetry.io/docs/languages/java/): official docs, used for the `ScopedSpan` tracing setup
 - [Go `net/http` docs](https://pkg.go.dev/net/http): the standard library package the Part 3 log-aggregator sidecar is built on
+- [The Tail at Scale](https://research.google/pubs/the-tail-at-scale/): Dean & Barroso, CACM 2013 (**free PDF**), required, study depth. Six pages on why a service of a hundred healthy components is still slow, and the arithmetic of fan-out that makes a component's p99 into a request's median
 - **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 14**: Monitoring and Observability Patterns. Required, and the chapter this unit is named after. Treats logging, metrics, and tracing as one system rather than three tools
 
 ---
@@ -225,7 +232,6 @@ No required reading tied to this project's build. It synthesizes W08, W09, W12, 
 
 These aren't required but give you broader context:
 
-- **DDIA Chapter 8**, Transactions. No unit in this curriculum implements isolation levels or multi-object transactions, so there's no clean place to attach it as required reading, but it's the one DDIA chapter this curriculum otherwise skips entirely, and it's foundational enough to be worth reading on its own rather than forced into an unrelated unit.
 - **DDIA Chapter 4** (2nd ed.) also gained a Vector Embeddings section, folded into the storage-and-retrieval chapter alongside full-text and multidimensional indexing. No unit currently builds against it, but it's the most directly AI-relevant new material in the 2nd edition and worth reading given the curriculum's focus on AI workflows; a natural pairing with W12's attention/KV-cache work if you want the retrieval side of the same systems.
 - [The Google File System](https://dl.acm.org/doi/10.1145/945445.945450): Ghemawat et al., SOSP 2003, the original scale-out storage paper
 - [Bigtable: A Distributed Storage System for Structured Data](https://dl.acm.org/doi/10.1145/1365815.1365816): Chang et al., OSDI 2006

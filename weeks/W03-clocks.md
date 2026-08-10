@@ -6,7 +6,7 @@ status: not-started
 # W03: Clocks, Causality, Time, and Unreliable Networks
 
 > **Arc:** Storage, Batch, and Failure · **Language:** Go
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 Vector clocks + causal message delivery in Go, then a failure detector over the same three nodes. 3 simulated nodes, each its own goroutine, communicating over channels. Assert that no node delivers a message before the messages it causally depends on, then watch your detector confidently declare a perfectly healthy node dead.
@@ -107,6 +107,15 @@ assert merge(vc2, vc3) == {"A": 2, "B": 1}
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What clicked:**
 
 **What surprised me:**
@@ -124,3 +133,12 @@ assert merge(vc2, vc3) == {"A": 2, "B": 1}
 **Where else in this curriculum have you already seen a timeout standing in for knowledge nobody has? (You will hit this again in W09, W11, W14, and W16; note it here so it's familiar when you do.)**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

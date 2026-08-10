@@ -6,7 +6,7 @@ status: not-started
 # W09: Distributed Training
 
 > **Arc:** Distributed ML Systems · **Language:** Python
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 Data-parallel training using Python multiprocessing and raw sockets, built entirely around the distributed mechanics rather than the model. You're given a small, already-implemented 2-layer MLP (forward, backward, and the ReLU/softmax/cross-entropy math all provided); deriving backpropagation by hand is real, valuable work that belongs to a dedicated ML/AI track, not this one. Two workers each train on half of MNIST using that provided model, exchange gradients via allreduce (ring-allreduce), and converge to the same result. No PyTorch distributed, no Horovod.
@@ -64,6 +64,15 @@ This is a realistic pattern: Go handles the coordination service, Python handles
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What clicked:**
 
 **What surprised me:**
@@ -77,3 +86,12 @@ This is a realistic pattern: Go handles the coordination service, Python handles
 **At what worker count does "fail the whole step" stop being good enough, and what would a real fix need instead (from Break it, then decide above)?**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

@@ -5,7 +5,7 @@ status: not-started
 
 # W00: Infrastructure Setup
 
-> **Budget:** about 5 hours, and it is fine if it takes two sittings. This is the only unit that is mostly installation rather than thinking.
+> **Budget:** about 5 hours, deliberately half of what every other unit gets. This is the only unit that is mostly installation rather than thinking, and it is fine if it takes two sittings.
 
 > **Pre-unit:** Complete before W01 begins · **Language:** Go + shell
 
@@ -127,8 +127,26 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What a ServiceMonitor is and why it exists instead of editing prometheus.yaml directly:**
 
 **What Helm does that raw kubectl apply doesn't:**
 
 **What metrics you'd expose on a real distributed system component (you'll instrument one for real in W15):**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

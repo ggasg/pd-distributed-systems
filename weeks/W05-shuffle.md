@@ -6,7 +6,7 @@ status: not-started
 # W05: Partitioning and the Shuffle
 
 > **Arc:** Data Movement and Execution · **Language:** Java
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 Two halves, and they are deliberately different in kind.
@@ -41,6 +41,7 @@ Data model: `record Record(String key, int value) {}`. The job is a word-count-s
 - [ ] `Partitioner.java`: `sealed interface Partitioner permits HashPartitioner, RangePartitioner { int partitionFor(String key); }`. This is the same sealed-interface idiom you used for `StreamItem` in W04, reused rather than newly introduced. `HashPartitioner` is `Math.floorMod(key.hashCode(), numPartitions)`; use `floorMod`, not `%`, because `hashCode()` can be negative and `%` in Java preserves the sign, which would hand you a negative array index. `RangePartitioner` takes a sorted array of split-point keys and binary-searches (`Arrays.binarySearch`) to find the partition.
 - [ ] `MapTask.java`: takes a `List<Record>` and a `Partitioner`, and writes one file per reduce partition into `spill/map-<mapId>/part-<partitionId>`. Each file is plain text, one `key,value` pair per line. Writing R files instead of one is the whole point: a reduce task should be able to read only what belongs to it.
 - [ ] `ReduceTask.java`: for partition `p`, read `spill/map-*/part-<p>` from every map task, sum values per key, and write `output/part-<p>`. Return the number of records it processed, you will need that number later.
+  - Write the aggregation itself as `Collectors.groupingBy(Record::key, Collectors.summingInt(Record::value))`. One line, and it is worth pausing on: **that line is the entire reduce side of a shuffle.** Everything else you are building in Part 1, the partitioner, the spill files, the fetch, exists for one reason, which is that you cannot call it. The data does not fit in one JVM, so the grouping has to be split across machines and the rows for a key have to be brought together first. A shuffle is `groupingBy` for data larger than memory, and having written both versions three lines apart is the clearest way to hold that.
 - [ ] `Shuffle.java`: wire M map tasks and R reduce tasks together and run them. Keep it single-JVM and run the tasks on plain threads (or sequentially, which is fine and easier to debug). The network is simulated by the filesystem here, deliberately: real spill-to-disk then fetch is what Spark actually does, so this is a simplification of scale, not of structure.
 
 **Constraints:** no Spark, no Hadoop, no external dependencies beyond JUnit 5 in this half. Standard library only. Keep every class under 100 lines; if one is growing past that, the shuffle logic has probably leaked into it from somewhere it doesn't belong.
@@ -73,6 +74,15 @@ Your Part 1 shuffle can be made to skew, and you would then be reading per-reduc
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What clicked:**
 
 **What surprised me:**
@@ -94,3 +104,12 @@ Your Part 1 shuffle can be made to skew, and you would then be reading per-reduc
 **Where would this same partition-then-exchange structure show up in a system you've actually used?**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

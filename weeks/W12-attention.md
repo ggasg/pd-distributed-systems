@@ -6,7 +6,7 @@ status: not-started
 # W12: Attention, KV Cache, and Cache-Aware Routing
 
 > **Arc:** Distributed ML Systems · **Language:** Python (NumPy only)
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 A KV cache for autoregressive generation (Part 1), then a router that has to decide which of two replicas a request should go to, given that each one holds a different cache (Part 2).
@@ -29,6 +29,8 @@ Part 2 is the same cache one level up. Once you have more than one replica of a 
 **Depth: read Sections 3.2 to 3.5 of Attention Is All You Need and Sections 1 to 4 of PagedAttention.** No study reading: multi-head attention is given to you, and the cache and router you build are not described in any of these papers. FlashAttention, Burns Ch.15, and the Gateway API posts are skims.
 
 **Key question:** Naive attention is O(N²) in memory. Where exactly does this quadratic memory come from? Draw the computation graph and label which tensors are the bottleneck.
+
+**Burns, *Designing Distributed Systems*, 2nd ed., Chapter 4** (Ambassadors), for Part 2. Read "Using an Ambassador to Shard a Service" and "Using an Ambassador to Do Experimentation or Request Splitting." Your router is an ambassador: a component that sits in front of several backends and decides which one a request goes to, on a rule the backends themselves know nothing about. Burns names the pattern and shows the sharded-Redis version, which is the same structure with a different routing key. Worth reading alongside Ch.6 rather than instead of it, since Ch.6 explains *why* you would route by session and Ch.4 explains *where the code lives* when you do.
 
 **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 6** (Replicated Load-Balanced Services), for Part 2. Read "Stateless Services," "Session Tracked Services," and "Introducing a Caching Layer." This is the pattern your router is a special case of, written down twenty years before anyone had a KV cache: a session-tracked service routes a request to the replica that already holds state for it, and accepts worse load balance to get it. Part 2 asks you to set exactly that trade-off and defend where you put it, so read this before you pick a number.
 
@@ -100,6 +102,15 @@ That is the same layer W14 is about, and it's the honest answer to why this curr
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What clicked:**
 
 **What surprised me:**
@@ -121,3 +132,12 @@ That is the same layer W14 is about, and it's the honest answer to why this curr
 **Where the skew you caused in Part 2 is the same problem as W05's, and where it genuinely differs:**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

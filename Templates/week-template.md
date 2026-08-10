@@ -50,6 +50,14 @@ Project: `code/[directory]/` ([Language + version])
 
 ## Reflect
 
+**Prediction versus measurement.** Fill the prediction in *before* running anything, and do not edit it afterwards. The gap is the point.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy any number worth keeping into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What clicked:**
 
 **What surprised me:**
@@ -59,3 +67,10 @@ Project: `code/[directory]/` ([Language + version])
 **[Week-specific question 2, connecting to a system you know]:**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+- [ ] **Adversarial review.** Hand over the prediction, the measurement, and the conclusion as three separate things, then ask for the strongest case that the conclusion is not supported. Ask what would falsify it, not whether it is right.
+- [ ] **Ninety seconds, out loud, timed.** What you measured, what surprised you, what decision it would change. If it takes longer than ninety seconds you have notes, not a finding.

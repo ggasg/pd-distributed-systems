@@ -6,7 +6,7 @@ status: not-started
 # W07: Query Planning: Choosing Where Data Moves
 
 > **Arc:** Data Movement and Execution · **Language:** Java (Spark)
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 Not a planner. You are going to make Spark's own planner change its mind, on purpose, four times, and read the evidence each time.
@@ -67,6 +67,15 @@ Spark's Java API, same as W02. Most of this unit is `spark.sql(...)` plus readin
 ## Reflect
 <!-- Fill in at the end of the unit -->
 
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
+
 **What clicked:**
 
 **What surprised me:**
@@ -82,3 +91,12 @@ Spark's Java API, same as W02. Most of this unit is `spark.sql(...)` plus readin
 **A logical `Join` says nothing about data movement. Name every decision a planner has to make before that join can run on a cluster.**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

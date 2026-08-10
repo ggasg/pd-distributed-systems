@@ -6,7 +6,7 @@ status: not-started
 # W11: The Actor Model and Ray
 
 > **Arc:** Distributed ML Systems · **Language:** Python (Ray)
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 A Ray-based actor system in Python that retrains the same data-parallel MNIST job from W09, this time using stateful actors (a pool of `TrainerWorker` actors plus a `ParameterServer` actor) instead of raw sockets, backed by a real PyTorch model instead of a hand-rolled NumPy MLP. You'll benchmark it against W09's implementation to see what the actor abstraction buys you, and what it costs.
@@ -49,6 +49,15 @@ Scenario: reimplement W09's data-parallel training job, but with two changes: wo
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What clicked:**
 
 **What surprised me:**
@@ -60,3 +69,12 @@ Scenario: reimplement W09's data-parallel training job, but with two changes: wo
 **Quorum-with-timeout or wait-for-all-N, and what did that decision cost you (from Break it, then decide above)?**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

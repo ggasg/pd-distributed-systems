@@ -6,7 +6,7 @@ status: not-started
 # W10: Beyond Data Parallelism
 
 > **Arc:** Distributed ML Systems · **Language:** Python
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 Three ways to split a model, rather than the data, across two processes: tensor parallelism (cut a single matrix multiply in half), pipeline parallelism (put different layers on different workers), and sharded optimizer state (each worker keeps only its slice of the optimizer's bookkeeping). You'll reuse the ring-allreduce you wrote in W09 as the communication layer for all three.
@@ -64,6 +64,15 @@ Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `al
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What clicked:**
 
 **What surprised me:**
@@ -77,3 +86,12 @@ Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `al
 **Which strategy did you pick for the too-large-layer scenario, and what interconnect assumption does it rest on?**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

@@ -23,7 +23,9 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 15 units across 4 arcs, plus a W00 setup unit (16 in total, W00 through W15), and an optional W16 grand capstone project.
 
-**Budgeted at 5 hours per unit**, which is one hour a weekday or two evening sessions. That is deliberately modest: this is designed to run alongside a full-time job and whatever else you are studying, not to be your main commitment. At a steady 5 hours a week the core is about 4 months; at 3 hours a week, closer to 7. Neither is falling behind.
+**Budgeted at about 10 hours per unit.** At that pace the core is roughly four months. The Minimum bar in each unit is what a bad week looks like rather than the target, so a week that only clears the bar is still a week that counts.
+
+The budget was 5 hours in an earlier version, sized to run alongside a full-time job. If that is your situation, hit the Minimum bar and treat everything past it as optional; the units are written so that the next one still works.
 
 | Arc | Units | Focus | Language |
 |-----|-------|-------|----------|
@@ -82,7 +84,8 @@ Every unit has:
 - **Read**: one or two named papers or chapters, with specific sections called out
 - **Code**: a concrete implementation task with named files and a clear deliverable
 - **Rehearse it in Python first**: optional, 20 minutes, and now only in W03. Writing the algorithm in Python before writing it in Go tells you whether a failure is the algorithm or the syntax. W02 and W06 used to carry one too, and lost it along with their Go builds when both units moved to measuring a real engine instead
-- **Reflect**: what you built, what surprised you, what you'd do differently
+- **Reflect**: a prediction-versus-measurement table filled in before you run anything, then what surprised you and what you'd do differently
+- **Review and articulate**: an adversarial review of your own conclusion, and a timed ninety-second explanation of the finding. These exist because self-study has no examiner, and confident wrongness is its characteristic failure
 
 ---
 
@@ -114,6 +117,7 @@ Every unit has:
 ├── README.md             # This file
 ├── SETUP.md              # Environment setup (Java, Go, Python, Docker, Obsidian)
 ├── RESOURCES.md          # All papers and books, by unit, with free links
+├── MEASUREMENTS.md       # Running log of numbers you measured yourself, with predictions
 ├── weeks/                # One .md file per unit (W00–W16, where W16 is the optional capstone project)
 ├── code/                 # Your implementations, see code/README.md
 ├── tools/                # Automation tools: plan-dates.go (unrelated to the curriculum's language choices); grad_server, bench_runner, log-aggregator (Go)

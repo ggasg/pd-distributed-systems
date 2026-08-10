@@ -6,7 +6,7 @@ status: not-started
 # W08: ML Data Pipelines and Table Formats
 
 > **Arc:** Distributed ML Systems · **Language:** Python
-> **Budget:** about 5 hours. Hit the Minimum bar first; everything past it is optional.
+> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
 A versioned feature pipeline in Python: raw events to features to versioned Parquet snapshot. Query historical feature snapshots with DuckDB. No ML model, just the data plumbing that makes models reliable. Then, in Part 2, you replace your hand-rolled versioning with a real open table format and open up its transaction log to see how the production answer differs from yours.
@@ -18,6 +18,7 @@ A versioned feature pipeline in Python: raw events to features to versioned Parq
 ## Read
 - [ ] [Hidden Technical Debt in Machine Learning Systems](https://proceedings.neurips.cc/paper_files/paper/2015/file/86df7dcfd896fcaf2674f757a2463eba-Paper.pdf) (Sculley et al., NeurIPS 2015): 9 pages, read all of it. The CACE principle and "glue code" sections are most relevant.
 - [ ] [Delta Lake: High-Performance ACID Table Storage over Cloud Object Stores](https://www.vldb.org/pvldb/vol13/p3411-armbrust.pdf) (Armbrust et al., VLDB 2020): read Sections 1–4. Understand why versioning and ACID matter for ML pipelines, not just OLTP.
+- [ ] **DDIA Chapter 8** (2nd ed.), Transactions, read the atomicity and isolation sections. Previously this chapter had no home in the curriculum and sat in RESOURCES with a note saying so. Part 2 is its home: the Delta Lake paper's title claims *ACID* table storage over object stores, and this chapter is what makes each of those four letters mean something specific rather than being a marketing adjective. Read it before Part 2 and then ask, of the transaction log you open by hand, which of the four Delta actually gives you and at what isolation level.
 - [ ] **DDIA Chapter 5** (2nd ed.), Encoding and Evolution. This is the unit it belongs to and it was not cited anywhere before. Your feature pipeline writes Parquet, a schema-carrying binary format, and then somebody adds a column. The chapter's backward-versus-forward compatibility distinction is precisely the question "can a model trained on v1 features still read v2, and can a v2 reader still read v1," which is the thing `FeatureStore.diff()` exists to make answerable. Read it before Part 2, where Delta's schema evolution turns it from a property you hope for into a setting somebody chose.
 
 **Depth: read Hidden Technical Debt, Sections 1 to 4 of the Delta Lake paper, and DDIA Ch.5.** No study reading: this unit's mechanism lives in the transaction log you open by hand, not in a paper. The Iceberg spec is a skim.
@@ -81,6 +82,15 @@ Same project. New dependency: `deltalake` (`pip install deltalake`), which is de
 
 ## Reflect
 
+
+**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
+
+| Quantity | Predicted | Measured | Which term I got wrong |
+|----------|-----------|----------|------------------------|
+| | | | |
+
+Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+
 **What clicked:**
 
 **What surprised me:**
@@ -96,3 +106,12 @@ Same project. New dependency: `deltalake` (`pip install deltalake`), which is de
 **How a streaming system could replace the batch feature pipeline:**
 
 **What I'd do differently:**
+
+---
+
+## Review and articulate
+
+Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
+
+- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
+- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.
