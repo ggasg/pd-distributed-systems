@@ -25,7 +25,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 **Budgeted at about 10 hours per unit.** At that pace the core is roughly four months. The Minimum bar in each unit is what a bad week looks like rather than the target, so a week that only clears the bar is still a week that counts.
 
-The budget was 5 hours in an earlier version, sized to run alongside a full-time job. If that is your situation, hit the Minimum bar and treat everything past it as optional; the units are written so that the next one still works.
+Running this alongside a full-time job, at around 5 hours a unit, works: hit the Minimum bar and treat everything past it as optional. The units are written so that the next one still works.
 
 | Arc | Units | Focus | Language |
 |-----|-------|-------|----------|
@@ -83,7 +83,7 @@ The budget was 5 hours in an earlier version, sized to run alongside a full-time
 Every unit has:
 - **Read**: one or two named papers or chapters, with specific sections called out
 - **Code**: a concrete implementation task with named files and a clear deliverable
-- **Rehearse it in Python first**: optional, 20 minutes, and now only in W03. Writing the algorithm in Python before writing it in Go tells you whether a failure is the algorithm or the syntax. W02 and W06 used to carry one too, and lost it along with their Go builds when both units moved to measuring a real engine instead
+- **Rehearse it in Python first**: optional, 20 minutes, W03 only. Writing the algorithm in Python before writing it in Go tells you whether a failure is the algorithm or the syntax
 - **Reflect**: a prediction-versus-measurement table filled in before you run anything, then what surprised you and what you'd do differently
 - **Review and articulate**: an adversarial review of your own conclusion, and a timed ninety-second explanation of the finding. These exist because self-study has no examiner, and confident wrongness is its characteristic failure
 
@@ -96,8 +96,8 @@ Every unit has:
 | W00 | Go | Service + k8s deployment; Prometheus metrics. `net/http` (standard library) keeps this framework-free, and this small a service is the gentlest possible first exposure to Go before W01 and W03 lean on it for real |
 | W01, W03 | Go | Storage measurement and coordination logic. MIT's 6.824/6.5840 distributed systems course builds this material in Go, the field's own canonical choice, not an arbitrary one. Goroutines and channels are Go's signature idiom for W03's message-passing simulation; W01 is deliberately the gentlest Go exercise in the plan: file I/O, a loop, and a stopwatch |
 | W02 | Python (PySpark) | No framework to build, so no reason to pick a language for expressiveness. The evidence is a stage DAG, not code you wrote, so the driver should be the lightest surface available. PySpark is also the one Spark is actually driven with |
-| W04 | Java (Flink) / Python (Spark) | Part 1 is Java because Flink 2.0 removed the Scala API and PyFlink lags on exactly the knobs this unit turns, so Java is the only real option rather than a preference. The Spark comparison switches to PySpark, since the point is what the two engines do, not what two APIs look like. Part 2 stays a hand-built Java exercise, because comparing block, drop, and spill against one overload is something no framework will do for you: each implements exactly one policy and hides it |
-| W05 | Java (Part 1) / Python (Part 2) | The one build in Arc 2 that survives whole, and the split is the rule in miniature. Part 1 authors the shuffle in Java, where sealed interfaces give `Partitioner` compiler-enforced exhaustiveness from the same idiom W04 and W13 use. Part 2 drives Spark in PySpark, because finding a straggler in the Spark UI is a diagnosis skill and the driver language is nearly invisible while you do it |
+| W04 | Java (Flink) / Python (Spark) | Part 1 is Java because Flink 2.0 ships no other API that exposes the knobs this unit turns. The Spark comparison switches to PySpark, since the point is what the two engines do, not what two APIs look like. Part 2 is a hand-built Java exercise, because comparing block, drop, and spill against one overload is something no framework will do for you: each implements exactly one policy and hides it |
+| W05 | Java (Part 1) / Python (Part 2) | Part 1 authors the shuffle in Java, where sealed interfaces give `Partitioner` compiler-enforced exhaustiveness from the same idiom W04 and W13 use. Part 2 drives Spark in PySpark, because finding a straggler in the Spark UI is a diagnosis skill and the driver language is nearly invisible while you do it |
 | W06 | Python (DuckDB, NumPy) | Three implementations of one query: a generator pipeline (which *is* the Volcano model, lazy and pull-based, given to you as a language feature), hand-rolled NumPy vectorization, and DuckDB. The middle term is what makes it honest, separating "vectorized beats row-at-a-time" from "C beats Python." DuckDB rather than Spark because Spark's per-query overhead would swamp the effect at this data size |
 | W07 | Python (PySpark) and SQL | Spark's own planner rather than a toy one. A planner you wrote agrees with you by construction and cannot surprise you; Catalyst has a cost model you did not write and will make decisions you did not expect. Almost the whole unit is `spark.sql(...)` and reading what comes back, which is precisely why the driver should be the lightest surface going |
 | W08–W12 | Python | ML ecosystem and numerical computing, plus Ray for distributed actors. W10 deliberately adds no new dependency; it imports W09's own `ring_allreduce` as its communication layer |
@@ -120,7 +120,7 @@ Every unit has:
 ├── MEASUREMENTS.md       # Running log of numbers you measured yourself, with predictions
 ├── weeks/                # One .md file per unit (W00–W16, where W16 is the optional capstone project)
 ├── code/                 # Your implementations, see code/README.md
-├── tools/                # Automation tools: plan-dates.go (unrelated to the curriculum's language choices); grad_server, bench_runner, log-aggregator (Go)
+├── tools/                # Automation: plan-dates.go, grad_server, bench_runner, log-aggregator (Go)
 └── Templates/            # week-template.md for adding custom units
 ```
 
@@ -152,15 +152,15 @@ Every unit has:
 
 **Skip the infrastructure arc?** W00, W14, and W15 are independent. You can complete W01 through W13 without touching Kubernetes and come back to them when it's relevant to your work.
 
-**Add your own unit?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically. The `week` naming in filenames and frontmatter is legacy and kept only because Home.md's queries depend on it.
+**Add your own unit?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically. Keep the `week` naming in filenames and frontmatter: Home.md's queries depend on it.
 
 **Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers, merging `main` into `progress` but never the reverse. That works cleanly as long as answers go on the blank line *below* each Reflect question rather than on the question line, so curriculum edits and progress edits never touch the same line.
 
 **Why these languages?** One rule decides all of them: **each system is driven in the language that system is actually written and used in**, and the hand-built units pick whichever language makes the mechanism clearest.
 
-That gives **Python** the largest share, because it is what Spark is driven with (W02, W05 Part 2, W07, W14), what DuckDB is driven with (W06, W08), and what the entire ML arc runs on (W08 to W12, W16). **Java** survives in two situations only: W04 Part 1, where Flink 2.0 removed every alternative, and the units where you author a mechanism and sealed interfaces plus record patterns do real work (W04 Part 2, W05 Part 1, W13, W15). **Go** carries W00, W01, W03, and the secondary tooling: net new, deliberately gentle, and with a footprint real enough to make W14's operator reading legible rather than token.
+That gives **Python** the largest share: it is what Spark is driven with (W02, W05 Part 2, W07, W14), what DuckDB is driven with (W06, W08), and what the entire ML arc runs on (W08 to W12, W16). **Java** covers two situations: W04 Part 1, where Flink ships no alternative, and the units where you author a mechanism and sealed interfaces plus record patterns do real work (W04 Part 2, W05 Part 1, W13, W15). **Go** carries W00, W01, W03, and the secondary tooling, with a footprint large enough to make W14's operator reading legible rather than token.
 
-Scala was cut deliberately. It previously bought one unit (W07's toy planner) and one packaging exercise, in exchange for a fourth language and a build tool used nowhere else. W07 now reads Spark's real planner instead of imitating it, which removed the only argument for keeping Scala. Deeper FP mastery is a separate, dedicated plan, not this curriculum's job.
+Three languages, no fourth. Deeper functional-programming work is a separate plan, not this one.
 
 Substitutions: if you don't have a Java background the way this plan assumes, the hand-built Java units could run in Go instead (the two are close in scope for these exercises), though the engine-driving units would then need PySpark and PyFlink; the Python units could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
 
@@ -175,7 +175,7 @@ Substitutions: if you don't have a Java background the way this plan assumes, th
 
 No PhD required. No ML background required for the early arcs.
 
-**Already know Java? New to Go?** Java (W04, W05 Part 1, W13, W15) is the lowest-ramp language in the curriculum against a production Java background: near-zero syntax review, closer to formalizing patterns (records, sealed interfaces, pattern matching) you may not have named explicitly than learning anything new. Go (W00–W03 and secondary tooling) is this curriculum's one deliberately introduced new component, kept gentle by design: `net/http` and goroutines-plus-channels cover nearly everything it's used for, no framework, no generics-heavy code. Budget real ramp time for Go specifically before W00: [A Tour of Go](https://go.dev/tour/) (~1 hour for the Basics and Methods/Interfaces sections) covers everything the early units need. See the language-specific sections of [SETUP.md](SETUP.md) for what to review before each.
+**Already know Java? New to Go?** Against a production Java background, the Java units (W04, W05 Part 1, W13, W15) are near-zero syntax review: mostly naming patterns you already use (records, sealed interfaces, pattern matching). Go (W00–W03 and secondary tooling) is kept deliberately narrow: `net/http` and goroutines-plus-channels cover nearly everything it's used for, no framework, no generics-heavy code. Budget ramp time for Go before W00: [A Tour of Go](https://go.dev/tour/) (~1 hour for the Basics and Methods/Interfaces sections) covers everything the early units need. See the language-specific sections of [SETUP.md](SETUP.md) for what to review before each.
 
 ---
 
