@@ -5,7 +5,7 @@ status: not-started
 
 # W04: Stream Processing Primitives
 
-> **Arc:** Data Movement and Execution · **Language:** Java (Flink, then Spark)
+> **Arc:** Data Movement and Execution · **Language:** Java (Flink) / Python (Spark comparison)
 > **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
@@ -34,6 +34,8 @@ Part 1 is about *time*: which events belong to which window, and when it is safe
 
 Project: `code/streaming/` (Java 21, Maven, Flink 2.3.0)
 
+**Java here is not a preference, it is the only option.** Flink deprecated its Scala API in 1.17 and removed it entirely in 2.0, and PyFlink's DataStream API lags the Java one on exactly the features this unit turns: watermark strategies, allowed lateness, and late-data side outputs. Flink is a Java system now. This is the one unit where that is true, and it is why the Spark comparison below switches languages rather than staying put.
+
 **A version note:** Flink 2.x recommends Java 17 and treats Java 21 as beta. The rest of this curriculum's JVM stack is pinned to Java 21 to match DBR 18, and a single-job local Flink run will not go anywhere near the edges that beta status is about. Stay on 21. Also note that Flink 2.0 removed the old `Time` class in favour of `java.time.Duration`, so tutorials showing `Time.seconds(10)` predate the version you are running.
 
 - [ ] `Event.java`: `record Event(long eventTime, int value) {}`, plus a bounded source that emits a scripted sequence you control exactly. Do not use a random or wall-clock-driven source. The entire unit depends on you deciding precisely which event arrives when, so a hardcoded list replayed in a fixed order is the correct design here.
@@ -48,7 +50,7 @@ Project: `code/streaming/` (Java 21, Maven, Flink 2.3.0)
 
 **Then the comparison, which is the point of Part 1:**
 
-- [ ] `SparkWindows.java`: the same aggregation in Spark Structured Streaming, using `withWatermark("eventTime", "5 seconds")` and a tumbling `window(...)`. Same scripted input, same window size, same bound.
+- [ ] `spark_windows.py`: the same aggregation in Spark Structured Streaming (PySpark), using `withWatermark("eventTime", "5 seconds")` and a tumbling `window(...)`. Same scripted input, same window size, same bound. Switching languages between the two halves is deliberate and costs you nothing: you are comparing what the two engines do, not what the two APIs look like, and each one is written in the language its community actually uses.
 - [ ] Run it against case 3, the late event. Note what Spark gives you and what it does not: there is no side-output equivalent for late records, and the output mode (`append` versus `update`) decides whether you see corrected results at all or only finalised ones. Write down which of Flink's four behaviours above Spark can reproduce and which it cannot.
 
 **Minimum bar (Part 1):** all four Flink runs done, with the dropped-record count from run 3 and both fixes from run 4 observed in real output. Plus one paragraph on what the Spark version does differently. Writing the Spark job is the bar; tuning it is not.

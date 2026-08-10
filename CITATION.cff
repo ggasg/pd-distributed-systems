@@ -10,7 +10,7 @@ authors:
   - family-names: Guitart
     given-names: Gaston
 type: dataset
-version: 0.4.0
+version: 0.5.0
 url: "https://github.com/ggasg/pd-distributed-systems"
 repository-code: "https://github.com/ggasg/pd-distributed-systems"
 license: CC-BY-4.0
@@ -33,3 +33,6 @@ abstract: >-
   and Kubernetes operators with production observability. Roughly half
   the units build a mechanism from primitives; the rest drive a real
   engine (Spark, Flink, DuckDB, Kubeflow) until it fails instructively.
+  Each system is driven in the language that system is actually written
+  and used in, so the curriculum spans Python, Java, and Go rather than
+  standardising on one.

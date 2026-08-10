@@ -1,7 +1,6 @@
-# Session context for AI-assisted authoring. Deliberately untracked: it is a
-# working file about the author rather than about the curriculum, and it does
-# not belong in a public repo. Keep it locally; back it up outside git.
+# Authoring notes and decision history. Local only, single machine, not published.
 CONTEXT.md
+*.local.md
 
 # Obsidian workspace state (machine-specific)
 .obsidian/workspace.json
@@ -15,3 +14,15 @@ CONTEXT.md
 # Syncthing / other sync
 .stfolder
 .stignore
+
+# Build and dependency output
+target/
+__pycache__/
+*.pyc
+.venv/
+venv/
+spill/
+output/
+data/
+metastore_db/
+derby.log

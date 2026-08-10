@@ -5,7 +5,7 @@ status: not-started
 
 # W06: Query Execution
 
-> **Arc:** Data Movement and Execution · **Language:** Java (DuckDB JDBC)
+> **Arc:** Data Movement and Execution · **Language:** Python (DuckDB, NumPy)
 > **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
@@ -33,35 +33,36 @@ Not a query engine. One naive row-at-a-time pipeline you write, the same query r
 
 ## Code
 
-Project: `code/query-exec/` (Java 21, Maven, DuckDB JDBC)
+Project: `code/query-exec/` (Python 3.12, `duckdb`, `numpy`, `pyarrow`)
 
-DuckDB rather than Spark for this one unit, deliberately. Spark's per-query overhead is large enough to swamp the effect being measured at this data size, and DuckDB is a single-node vectorized engine, which is exactly and only the thing this unit is about. You already depend on it in W08.
+DuckDB rather than Spark for this one unit, deliberately: Spark's per-query overhead would swamp the effect being measured at this data size, and DuckDB is a single-node vectorized engine, which is exactly and only what this unit is about. Python because that is DuckDB's primary surface, the one W08 already uses, and the one where this comparison is most useful to you: pandas against NumPy against DuckDB is a decision you will make repeatedly in ML data work, and it is the same decision the 2005 paper is arguing about.
 
 **Data:** 10,000,000 rows with columns `id`, `dept`, `salary`, written once to Parquet. Same file feeds both sides of the comparison, so neither side gets to blame the input.
 
-**Two baselines, both of which you write.** This is a three-way comparison, not a two-way one, and the middle term is the interesting one.
+**Three implementations of one query.** The middle one is the interesting term, and the ordering is the lesson.
 
-- [ ] `RowAtATime.java`: read the Parquet file, materialise rows as objects, and run filter (`salary > threshold`), then projection, then a hash join against a second table, one row at a time through a `next()`-style iterator. Write it the obvious way, as a plain indexed loop. This is the Volcano model and it is not a straw man; it is how most query engines worked for two decades and how most hand-written data processing code still works.
-- [ ] `StreamPipeline.java`: **the same query as a Java `Stream` pipeline**, `rows.stream().filter(...).map(...)` with the join built through `Collectors.groupingBy` or a hash map probe. Write it idiomatically, the way you would in production Java.
+- [ ] `row_at_a_time.py`: read the Parquet file and run filter (`salary > threshold`), then projection, then a hash join against a second table, **one row at a time through a Python generator pipeline**. Write it the obvious way: `(r for r in rows if r.salary > t)` chained into the next stage.
 
-**Why the Stream version earns its place, and it is not for style.** Java's `Stream` *is* the Volcano model. Lazy, pull-based, one element at a time, with each stage requesting the next element from the stage below it. Graefe described the architecture in 1994 and the JDK shipped it as a language feature in 2014. So this unit's central argument is not abstract for you: the model MonetDB/X100 argues against is the one you reach for by default every working day.
+  Worth naming what you just wrote. A Python generator is lazy, pull-based, and yields one element at a time, with each stage requesting the next element from the stage below it. That is the Volcano iterator model Graefe described in 1994, and Python gives it to you as a language feature. The architecture MonetDB/X100 argues against is the one you reach for by default.
 
-Predict, before measuring, whether the Stream pipeline will beat or lose to the plain loop. Then measure. It will most likely be *slower*, and the reasons are exactly the ones the paper names: a lambda per element, megamorphic call sites the JIT cannot inline once several implementations are in play, and boxing wherever the stream is not primitive-specialised. That is per-element interpretation overhead, which is what vectorization exists to amortise. You have now measured the paper's argument in your own idiom rather than against a straw man you wrote to lose.
+- [ ] `vectorized_numpy.py`: the same query with NumPy arrays. Filter becomes a boolean mask over a column, projection becomes a masked take, and the join becomes a dictionary probe over arrays. No per-row Python at all. This is hand-rolled vectorization, and it is the middle term that makes the comparison honest: it separates "vectorized beats row-at-a-time" from "C beats Python."
+- [ ] `duckdb_run.py`: the same query as SQL over the same Parquet file, through DuckDB's Python API.
 
-**The real engine, which you drive:**
+Predict all three orderings before you measure. Most people get the first gap right (row-at-a-time loses badly) and the second one wrong.
 
-- [ ] `DuckDbRun.java`: the same query as SQL over the same Parquet file, via the DuckDB JDBC driver.
-- [ ] **Set `SET threads=1` before measuring.** This matters more than anything else in the unit. DuckDB parallelises by default, so without this you are measuring core count and calling it vectorization. You want the execution model isolated, and you can turn threads back on afterwards to see what parallelism adds on top, which is a separate and also interesting number.
-- [ ] `EXPLAIN ANALYZE` the query and read the per-operator timing. This is the artifact the unit is really after: you can see which operator ate the time, and the answer is frequently not the one you would have guessed from reading the SQL.
+**Measuring it honestly:**
 
-**Minimum bar:** all three pipelines produce the same result on the same data, you have the single-threaded ratios between them, and you can explain the gap in terms of memory layout and batch size rather than instruction count. Plus one `EXPLAIN ANALYZE` output you can read out loud, operator by operator.
+- [ ] **Run `duckdb.sql("SET threads=1")` before measuring.** This matters more than anything else in the unit. DuckDB parallelises by default, so without this you are measuring core count and calling it vectorization. You want the execution model isolated, and you can turn threads back on afterwards to see what parallelism adds on top, which is a separate and also interesting number.
+- [ ] `EXPLAIN ANALYZE` the query (via `duckdb.sql`) and read the per-operator timing. This is the artifact the unit is really after: you can see which operator ate the time, and the answer is frequently not the one you would have guessed from reading the SQL.
+
+**Minimum bar:** all three implementations produce the same result on the same data, you have the single-threaded ratios between them, and you can explain **both** gaps: generator to NumPy, and NumPy to DuckDB. They have different causes and saying so is the unit. Plus one `EXPLAIN ANALYZE` output you can read out loud, operator by operator.
 
 **Break it, then decide:**
 
 - [ ] **Selectivity sweep.** Run three thresholds: one where under 1 percent of rows pass, one near 50 percent, one where nearly everything passes. Plot or tabulate the ratio at each. The gap is not constant, and the shape of how it changes tells you what the engine is actually spending its time on. Predict the shape before you run it.
-- [ ] **Make the join side exceed memory.** Grow the build side of the join until it does not fit. Your `RowAtATime.java` will die with an `OutOfMemoryError`, because a naive hash join builds the whole table before probing. DuckDB will not: it spills to disk and finishes slower. Measure how much slower. This is the single most important difference between a toy engine and a real one, and it is worth having felt rather than read about.
+- [ ] **Make the join side exceed memory.** Grow the build side of the join until it does not fit. Both of your implementations will die, the generator one with a `MemoryError` and the NumPy one when the array allocation fails, because a naive hash join builds the whole table before probing. DuckDB will not: it spills to disk and finishes slower. Measure how much slower. This is the single most important difference between a toy engine and a real one, and it is worth having felt rather than read about.
 - [ ] **Your call:** given the number you just measured for the spill, would you rather an engine that fails fast when a join will not fit, so you find out immediately and go fix the query, or one that silently degrades to disk and finishes eventually? Both are defensible and real engines differ on this. Say which you would want as a platform operator, then say whether your answer changes if the person running the query is an analyst rather than you.
-- [ ] **Your call on the Stream result.** Given the number you measured, would you still write production data-processing code as Stream pipelines? There is a defensible yes: readability and correctness usually matter more than a constant factor, and most code is not in a hot loop. Say where your own line is, in rows per second or in dataset size, and what would move it.
+- [ ] **Your call, and it is one you will actually make.** Given the two gaps you measured, where is your own line between "write the loop," "reach for NumPy or pandas," and "push it into DuckDB"? Answer in rows or in bytes, not in adjectives. Then say what would move the line: a different selectivity, a join that does not fit, or a transformation NumPy cannot express.
 - [ ] Turn threads back on and re-measure. Report vectorization and parallelism as two separate numbers rather than one combined one. Being able to say which of the two bought you what is the difference between understanding a benchmark and quoting it.
 
 ---

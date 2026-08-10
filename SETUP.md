@@ -57,13 +57,15 @@ java --version    # openjdk 21.x
 mvn --version     # Apache Maven 3.9.x, and confirms it's picking up JDK 21
 ```
 
-**W02 and W04 through W07, plus W13 and W15** use Java. That is the whole of Arc 2 plus fault tolerance and instrumentation, and it splits into two kinds of work. Where you build something, Java is chosen because its sealed interfaces and record patterns give a real, compiler-enforced advantage (W04's `Policy`, W05's `Partitioner`, W13's `Message`) rather than by default. Where you drive an engine (Spark in W02, W05 Part 2, and W07; Flink in W04 Part 1; DuckDB over JDBC in W06), Java is simply the one driver language for all of them, which keeps the arc on a single stack.
+**W04, W05 Part 1, W13, and W15** use Java, and the rule that put it there is worth stating because it decides every language in this curriculum: **each system is driven in the language that system is actually written and used in.**
+
+Java survives in exactly two situations. First, **W04 Part 1, where Flink leaves no choice**: the Scala API was deprecated in 1.17 and removed in 2.0, and PyFlink's DataStream API lags on watermark strategies, allowed lateness, and side outputs, which are the three knobs that unit turns. Flink is a Java system now. Second, **the units where you author a mechanism rather than drive an engine** (W04 Part 2's backpressure policies, W05 Part 1's shuffle, W13's snapshot protocol, W15's instrumentation), where sealed interfaces and record patterns give compiler-enforced exhaustiveness that does real work on `Policy`, `Partitioner`, and `Message`.
+
+Everything Spark-shaped moved to PySpark, and DuckDB moved to Python, because those are the surfaces those systems are actually driven with.
 
 Each project is its own Maven project (`pom.xml` per directory, no shared parent build file, same isolation principle as the Go projects); `mvn compile`/`mvn test`/`mvn package` fetch whatever the project's `pom.xml` declares.
 
-**A note on the `_2.13` suffix you will see in Spark artifact names.** Spark is written in Scala and publishes per-Scala-version artifacts, so its Java-facing JARs are still named `spark-sql_2.13`. You are not writing Scala anywhere in this curriculum, and you do not need Scala or sbt installed. The suffix names the language Spark itself was built in, nothing more.
-
-**Spark on Java 21 needs `--add-opens`.** Spark reaches into internal JDK APIs that the module system closed off. Add the flags to your Maven `exec` configuration or run configuration up front; the alternative is discovering them one `InaccessibleObjectException` at a time.
+You do not need Scala or sbt installed anywhere in this curriculum.
 
 **Already know Java?** If your Java is production-grade, this is close to a zero-ramp module: the only genuinely new surface is Java 21 itself, not the language you already know. Skim before W04: `record` types for immutable data (they auto-generate `equals`/`hashCode`/`toString`, but field-by-field, which matters for array-typed fields), and `sealed` interfaces with exhaustive pattern-matching `switch` plus record patterns (JEP 440), both used directly in W04 and W13. [What's New in Java 21](https://openjdk.org/projects/jdk/21/) (official release notes) covers both in about 15 minutes. No Spring, no Kafka anywhere in this curriculum, by design.
 
@@ -85,20 +87,15 @@ By the time you reach W14 you'll have written Go in three other weeks (W00 throu
 
 ---
 
-## Apache Spark 4.1.0 (via Maven, W02, W05, W07, W14)
+## Apache Spark 4.1.0 (PySpark, W02, W05 Part 2, W07, W14)
 
-Nothing to install. Spark is a Maven dependency in the projects that use it, and it runs in local mode inside your own JVM.
-
-```xml
-<!-- in each Spark unit's pom.xml -->
-<dependency>
-  <groupId>org.apache.spark</groupId>
-  <artifactId>spark-sql_2.13</artifactId>
-  <version>4.1.0</version>
-</dependency>
+```bash
+pip install "pyspark==4.1.0"     # the Spark version DBR 18 runs
 ```
 
-Four units drive Spark, each asking it a different question: W02 reads a stage DAG to see materialization cost, W05 Part 2 reads the task duration distribution to find a straggler, W07 reads `EXPLAIN` output to catch a join strategy changing, and W14 packages a job into an image and submits it to the Spark Operator. Local mode throughout, no cluster, no account.
+Spark runs on the JVM regardless of the Python surface, and the Java 21 you installed above already satisfies it, so there is no second runtime to manage. If you hit `InaccessibleObjectException`, that is Spark reaching into internal JDK APIs the module system closed off; set `--add-opens` via `spark.driver.extraJavaOptions` in your `SparkSession` builder rather than finding them one stack trace at a time.
+
+Four units drive Spark, each asking it a different question: W02 reads a stage DAG to see materialization cost, W05 Part 2 reads the task duration distribution to find a straggler, W07 reads `EXPLAIN` output to catch a join strategy changing, and W14 packages a job into an image and submits it to the Spark Operator. Local mode throughout, no cluster, no account. PySpark rather than the Java API because it is the surface Spark is actually driven with, and because in three of those four units the driver code is a handful of lines around a `spark.sql()` call.
 
 **The Spark UI is the actual tool** in three of those four. It serves at `localhost:4040` while a driver is alive, so put a `System.in.read()` at the end of `main` when you want to look around after a job finishes.
 
@@ -174,9 +171,13 @@ pip install numpy                 # NumPy only, no PyTorch for this week
 
 ---
 
-## No PySpark
+## DuckDB (W06, W08)
 
-Spark appears in four units and all of them drive it through the Java API and Maven, so there is nothing to `pip install`. If you already have PySpark on your machine from other work it will not conflict; the units simply do not use it.
+```bash
+pip install duckdb numpy pyarrow
+```
+
+W06 measures DuckDB against two baselines you write yourself, and W08 uses it to query versioned Parquet. Python is DuckDB's primary surface and the one both units use.
 
 ---
 

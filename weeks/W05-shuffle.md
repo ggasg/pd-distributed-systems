@@ -5,7 +5,7 @@ status: not-started
 
 # W05: Partitioning and the Shuffle
 
-> **Arc:** Data Movement and Execution · **Language:** Java
+> **Arc:** Data Movement and Execution · **Language:** Java (Part 1) / Python (Part 2, PySpark)
 > **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
@@ -56,11 +56,13 @@ Data model: `record Record(String key, int value) {}`. The job is a word-count-s
 
 ## Part 2: Find the skew in real Spark
 
-Project: `code/shuffle-skew/` (Java 21, Maven, Spark 4.1.0, local mode)
+Project: `code/shuffle-skew/` (Python 3.12, PySpark 4.1.0, local mode)
+
+PySpark here even though Part 1 is Java, and the switch is the point rather than an inconsistency. Part 1 is a mechanism you author, where the language's type system does real work. Part 2 is an engine you drive and a UI you read, where the language is almost invisible and the only thing that matters is getting to the evidence with minimal ceremony.
 
 Your Part 1 shuffle can be made to skew, and you would then be reading per-reducer counts you printed yourself, from a system you wrote, in a format you chose. That teaches the mechanism and nothing about the diagnosis. Here you get the version where the system is not yours and the evidence is where it will be at work.
 
-- [ ] `SkewJob.java`: generate two datasets of the same size, one with uniformly random keys and one Zipf-distributed (a handful of keys taking most of the rows, which is what real data looks like: a few huge customers, one null-ish default value, one bot account). Run the same `groupBy` and aggregation over both.
+- [ ] `skew_job.py`: generate two datasets of the same size, one with uniformly random keys and one Zipf-distributed (a handful of keys taking most of the rows, which is what real data looks like: a few huge customers, one null-ish default value, one bot account). Run the same `groupBy` and aggregation over both.
 - [ ] Run against the uniform dataset first, so you know what healthy looks like. Open the Spark UI at `localhost:4040`, find the aggregation stage, and look at the **task duration distribution**: min, 25th percentile, median, 75th, max. On uniform data these are close together.
 - [ ] Now run against the Zipf dataset and look at the same summary. The max is a large multiple of the median, and stage wall time is essentially that one task's duration, because every other task finished and the stage cannot complete without the straggler. **Write down the max-to-median ratio.** That ratio is the diagnosis, and recognising it on sight is the actual skill this part exists to build.
 - [ ] Find the same story a second way, in the **Shuffle Read Size / Records** column per task. One task read far more than its share. Being able to distinguish "one task got more data" from "one task was on a slow machine" is what separates a skew diagnosis from a guess, and these two views are how you tell them apart.

@@ -5,7 +5,7 @@ status: not-started
 
 # W07: Query Planning: Choosing Where Data Moves
 
-> **Arc:** Data Movement and Execution · **Language:** Java (Spark)
+> **Arc:** Data Movement and Execution · **Language:** Python (PySpark) and SQL
 > **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
@@ -38,13 +38,13 @@ Choosing between these is the highest-leverage decision a distributed query engi
 
 ## Code
 
-Project: `code/query-plans/` (Java 21, Maven, Spark 4.1.0, local mode)
+Project: `code/query-plans/` (Python 3.12, PySpark 4.1.0, local mode)
 
-Spark's Java API, same as W02. Most of this unit is `spark.sql(...)` plus reading output, so the driver language barely shows; the point is the plans, not the code.
+Almost all of this unit is `spark.sql(...)` and reading what comes back, so the driver language barely shows at all. That is precisely why it should be the lightest one available.
 
 **Setup:**
 
-- [ ] `Fixtures.java`: generate three Parquet tables with deliberately lopsided sizes, then register them as tables so the catalog can hold statistics for them: `orders` at 10,000,000 rows, `customers` at 200,000, `regions` at 50. Give `orders` a `customer_id` and `customers` a `region_id` so a three-table join is natural.
+- [ ] `fixtures.py`: generate three Parquet tables with deliberately lopsided sizes, then register them as tables so the catalog can hold statistics for them: `orders` at 10,000,000 rows, `customers` at 200,000, `regions` at 50. Give `orders` a `customer_id` and `customers` a `region_id` so a three-table join is natural.
 - [ ] Run `ANALYZE TABLE <t> COMPUTE STATISTICS FOR ALL COLUMNS` on all three. Without this, Spark falls back to file-size estimates, and half this unit's behaviour becomes noise rather than signal. This step is also the answer to a question you will meet again below.
 
 **The four experiments. Each one is: change one thing, re-explain, diff the plan.**

@@ -17,10 +17,10 @@ code/
 │   ├── appendlog.go         # append-only file, never seeks
 │   ├── bench.go             # 100k records in random order, both paths, timed
 │   └── go.mod
-├── batch-spark/            # W02: Java (Maven, Spark 4.1.0, local mode)
-│   ├── GraphGen.java            # 100k-node random graph to Parquet, fixed seed
-│   ├── PageRank.java            # 10 iterations, DataFrame API, cached and uncached runs
-│   └── pom.xml
+├── batch-spark/            # W02: Python (PySpark 4.1.0, local mode)
+│   ├── graph_gen.py             # 100k-node random graph to Parquet, fixed seed
+│   ├── pagerank.py              # 10 iterations, DataFrame API, cached and uncached runs
+│   └── requirements.txt
 │   # No framework to build. The artifact is the stage DAG and the I/O arithmetic.
 │
 ├── clocks/                 # W03: Go (modules)
@@ -34,8 +34,10 @@ code/
 ├── streaming/               # W04 Part 1: Java (Maven, Flink 2.3.0, MiniCluster)
 │   ├── Event.java               # record Event(long eventTime, int value)
 │   ├── FlinkWindows.java        # watermark strategy, tumbling window, allowedLateness, side output
-│   ├── SparkWindows.java        # same aggregation in Structured Streaming, for the comparison
+│   ├── spark_windows.py         # same aggregation in PySpark Structured Streaming, for the comparison
 │   └── pom.xml
+│   # Java here is not a preference: Flink 2.0 removed the Scala API and PyFlink
+│   # lags on exactly the knobs this unit turns.
 │
 ├── backpressure/            # W04 Part 2: Java (Maven, no framework)
 │   ├── Rates.java               # configurable arrival rate and service rate
@@ -54,19 +56,20 @@ code/
 │   ├── ShuffleTest.java         # JUnit 5
 │   └── pom.xml
 │
-├── shuffle-skew/           # W05 Part 2: Java (Maven, Spark 4.1.0, local mode)
-│   ├── SkewJob.java             # uniform vs Zipf keys; diagnosis happens in the Spark UI
-│   └── pom.xml
+├── shuffle-skew/           # W05 Part 2: Python (PySpark 4.1.0, local mode)
+│   ├── skew_job.py              # uniform vs Zipf keys; diagnosis happens in the Spark UI
+│   └── requirements.txt
 │
-├── query-exec/             # W06: Java (Maven, DuckDB JDBC)
-│   ├── RowAtATime.java          # the Volcano-model baseline you write
-│   ├── DuckDbRun.java           # same query as SQL; SET threads=1 before measuring
-│   └── pom.xml
+├── query-exec/             # W06: Python (duckdb, numpy, pyarrow)
+│   ├── row_at_a_time.py         # generator pipeline: the Volcano model as a language feature
+│   ├── vectorized_numpy.py      # hand-rolled vectorization, the honest middle term
+│   ├── duckdb_run.py            # same query as SQL; SET threads=1 before measuring
+│   └── requirements.txt
 │
-├── query-plans/            # W07: Java (Maven, Spark 4.1.0, local mode)
-│   ├── Fixtures.java            # three lopsided Parquet tables + ANALYZE TABLE
-│   ├── Explain.java             # EXPLAIN FORMATTED / EXPLAIN COST across four experiments
-│   └── pom.xml
+├── query-plans/            # W07: Python (PySpark 4.1.0, local mode) and SQL
+│   ├── fixtures.py              # three lopsided Parquet tables + ANALYZE TABLE
+│   ├── explain.py               # EXPLAIN FORMATTED / EXPLAIN COST across four experiments
+│   └── requirements.txt
 │   # Nothing is built here. The deliverable is four plan diffs.
 │
 ├── feature-pipeline/       # W08: Python
@@ -123,12 +126,10 @@ code/
 │   ├── SnapshotTest.java
 │   └── pom.xml
 │
-├── spark-k8s-job/          # W14 Part 2b: Java (Maven), submitted to the Spark Operator
-│   ├── pom.xml              # spark-sql_2.13 with <scope>provided</scope>
-│   ├── src/main/java/
-│   │   └── Main.java        # deliberately boring: SparkSession + one groupBy/agg
-│   ├── Dockerfile           # FROM apache/spark:<version>, COPY the thin JAR in
-│   └── README.md            # the mvn package -> docker build -> kind load sequence
+├── spark-k8s-job/          # W14 Part 2b: Python (PySpark), submitted to the Spark Operator
+│   ├── main.py              # deliberately boring: SparkSession + one groupBy/agg
+│   ├── Dockerfile           # FROM apache/spark:<version>, COPY main.py in, plus any deps
+│   └── README.md            # the script -> image -> kind load sequence, and the dependency-packaging problem
 │
 ├── operator/                # W14: deployment configs only, no code built. Kubeflow Trainer, Kubeflow's
 │   │                        # and Spark Operator are installed per SETUP.md; you deploy CRs
@@ -136,7 +137,7 @@ code/
 │   └── config/
 │       ├── train-job.yaml     # TrainJob CR (Kubeflow Trainer); W15 edits this to add a sidecar container
 │       ├── spark-pi.yaml      # SparkApplication CR, built-in example, used as a smoke test
-│       ├── spark-job.yaml     # SparkApplication CR running your own JAR from spark-k8s-job/
+│       ├── spark-job.yaml     # SparkApplication CR, type: Python, running main.py from spark-k8s-job/
 │
 └── capstone-platform/      # W16 (optional): Python, combines W08+W09+W12+W13+W15, deploys as a TrainJob via W14's Trainer
     ├── train_worker.py
@@ -156,7 +157,7 @@ code/
 ```bash
 go build ./...
 go test ./...
-go test -bench=. -benchmem ./...                    # W06's benchmark_test.go files
+go test -bench=. -benchmem ./...                    # W01's storage benchmark
 go run .
 go vet ./...                                         # catch common mistakes before they cost you a debugging session
 ```
@@ -195,5 +196,6 @@ No `go build` specific to W14/W16 themselves: those two weeks deploy CRs against
 - Code in this directory is the "lab." It's meant to be written, broken, and rewritten.
 - The `tools/` directory (at repo root) holds automation scripts that aren't part of a specific week's deliverable
 - Go projects (W00 through W03, and the secondary tools in `tools/`) put tests in `<name>_test.go` files sitting directly alongside the code they test, no separate `tests/` directory, that's Go's own toolchain convention (`go test` discovers `_test.go` files automatically in the same package), a different layout convention from the other languages here, not a departure from how the rest of this repo organizes things
+- **The language of each project follows the system it drives.** Spark units are PySpark, DuckDB units are Python, the ML arc is Python, Flink is Java because Flink 2.0 removed every alternative, and the units where you author a mechanism rather than drive an engine use Java for compiler-enforced exhaustiveness or Go where the concurrency model is the subject.
 - Java projects each have their own `pom.xml`, one Maven project per directory, no shared parent POM, same isolation as every other language here. Source files sit flat in the project root rather than under the conventional `src/main/java/...` package tree; these are small, single-package exercises, and skipping the package hierarchy keeps the file listing above honest about what's actually in each directory. The one exception is `spark-k8s-job/`, which uses the standard Maven layout because the JAR it produces has to be loadable by a Spark image
 - **Several projects here build nothing and that is deliberate.** `batch-spark/`, `query-plans/`, and `shuffle-skew/` exist to run a query against a real engine and read what it tells you. Their deliverable is a plan diff, a stage DAG, or a task duration distribution, not a passing test suite

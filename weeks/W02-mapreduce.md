@@ -5,7 +5,7 @@ status: not-started
 
 # W02: MapReduce and Its Limits
 
-> **Arc:** Storage, Batch, and Failure · **Language:** Java (Spark)
+> **Arc:** Storage, Batch, and Failure · **Language:** Python (PySpark)
 > **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
@@ -33,27 +33,27 @@ MapReduce's defining cost is that intermediate state has to hit disk between sta
 
 ## Code
 
-Project: `code/batch-spark/` (Java 21, Maven, Spark 4.1.0)
+Project: `code/batch-spark/` (Python 3.12, PySpark 4.1.0)
 
-Spark's Java API rather than Scala or Python. It is the same engine and the same physical plan underneath, and it keeps this arc on one language.
+PySpark, because it is the API Spark is actually driven with. The engine, the physical plan, and the stage DAG are identical whichever surface you use, so the only thing the choice changes is how much ceremony sits between you and the measurement. That argues for the surface with the most examples, the most documentation, and the least typing.
 
 **Minimum bar:** the written I/O calculation from the Key question, plus two wall-clock numbers for the same 10-iteration job, cached and uncached, plus one sentence naming what the Spark UI showed you was different between them. That is the unit.
 
 **Setup:**
 
-- [ ] `pom.xml`: depend on `org.apache.spark:spark-core_2.13` and `org.apache.spark:spark-sql_2.13` at 4.1.0, scope `provided` is wrong here since you are running locally, so leave them at default `compile`. Spark 4 is built against Scala 2.13, which is why the artifact names carry that suffix; you are not writing Scala, the JAR is just named after the language Spark itself is written in.
-- [ ] Spark on Java 21 needs `--add-opens` flags for its use of internal JDK APIs. Add them to your Maven `exec` or run configuration rather than discovering them one stack trace at a time. If you see `InaccessibleObjectException` on the first run, this is why.
+- [ ] `pip install "pyspark==4.1.0"`. Spark runs on the JVM regardless of the Python surface, so the Java 21 you installed for W04 satisfies it; there is no second JVM to manage.
+- [ ] If you hit `InaccessibleObjectException` on the first run, that is Spark reaching into internal JDK APIs the module system closed off. Set `--add-opens` flags via `spark.driver.extraJavaOptions` in your `SparkSession` builder rather than discovering them one stack trace at a time.
 
 **The job:**
 
-- [ ] `GraphGen.java`: generate a random directed graph, 100,000 nodes, average out-degree 5, written once to Parquet as `(src, dst)` pairs. Fixed seed, so both runs below see identical input.
-- [ ] `PageRank.java`: ten iterations of PageRank using the DataFrame API. Each iteration joins ranks to edges, divides each rank by its out-degree, aggregates contributions per destination, and applies damping at 0.85. The shape that matters: the edge list never changes across iterations, and the ranks do. Keep them as separate DataFrames.
+- [ ] `graph_gen.py`: generate a random directed graph, 100,000 nodes, average out-degree 5, written once to Parquet as `(src, dst)` pairs. Fixed seed, so both runs below see identical input.
+- [ ] `pagerank.py`: ten iterations of PageRank using the DataFrame API. Each iteration joins ranks to edges, divides each rank by its out-degree, aggregates contributions per destination, and applies damping at 0.85. The shape that matters: the edge list never changes across iterations, and the ranks do. Keep them as separate DataFrames.
 - [ ] Run it once with no caching at all. Then run it again with the edge DataFrame cached (`edges.cache()` before the loop, and force materialization with a `count()` so the caching actually happens before the first iteration rather than during it).
 - [ ] Record wall-clock time for both.
 
 **Read the DAG. This is the actual unit:**
 
-- [ ] While the job runs, open the Spark UI at `localhost:4040`. Keep it open after the job finishes; Spark serves it until the driver exits, so put a `Thread.sleep` or a `System.in.read()` at the end of `main` if you need time to look.
+- [ ] While the job runs, open the Spark UI at `localhost:4040`. Keep it open after the job finishes; Spark serves it until the driver exits, so put an `input()` call at the end of the script if you need time to look.
 - [ ] In the **Stages** tab, count the stages for the uncached run. Then count them for the cached run. The difference is the shape of the argument you read in the RDD paper, drawn for you.
 - [ ] Open one iteration's stage and find **Shuffle Write** and **Shuffle Read** in the summary metrics. Multiply by iterations. Compare that number to the I/O cost you predicted in the Key question above. If you were wrong, work out which term you got wrong before reading on; being wrong here is more instructive than being right, because the usual error is forgetting that the edge list gets re-read too.
 - [ ] In the **SQL / DataFrame** tab, open the query plan for one iteration and find the `Exchange` nodes. Every one of them is an all-to-all data movement. W05 builds one of those by hand and W07 is about choosing how many you get.
