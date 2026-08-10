@@ -1,6 +1,7 @@
 # Authoring notes and decision history. Local only, single machine, not published.
 CONTEXT.md
 *.local.md
+release-*.sh
 
 # Obsidian workspace state (machine-specific)
 .obsidian/workspace.json

@@ -10,7 +10,7 @@ W05, W06, W07, W08, W15, and W16 all run against one synthetic commerce dataset,
 
 The other units use data their subject requires and do not touch this: W01 fixed-width records, W02 a random directed graph, W03 and W13 messages, W09 and W11 MNIST, W10 synthetic tensors, W12 token sequences.
 
-**Schema.** Four tables, written to Parquet under `code/data/`:
+**Schema.** Four tables, written to Parquet. The generator source lives in `code/datagen/`; its Parquet output goes to a `data/` directory, which `.gitignore` excludes, so generated tables never enter the repo.
 
 | Table | Columns |
 |-------|---------|
@@ -19,7 +19,7 @@ The other units use data their subject requires and do not touch this: W01 fixed
 | `events` | `event_id` int64, `customer_id` int64, `event_type` string, `value` float64, `event_ts` int64 |
 | `regions` | `region_id` int32, `region_name` string |
 
-**Generator.** You write it once, in W05, as `code/data/gen.py`, and later units call it with different arguments:
+**Generator.** You write it once, in W05, as `code/datagen/gen.py`, and later units call it with different arguments:
 
 ```bash
 python gen.py --tables orders,customers --scale 0.5 --skew 1.2 --seed 42 --out data/skewed/
@@ -86,9 +86,10 @@ code/
 │   ├── ShuffleTest.java         # JUnit 5
 │   └── pom.xml
 │
-├── data/                   # Shared commerce dataset, written in W05, reused by W06-W08, W15, W16
+├── datagen/                # Shared commerce dataset, written in W05, reused by W06-W08, W15, W16
 │   ├── gen.py                   # --tables --scale --skew --seed --out; schema above
 │   └── requirements.txt
+│   # Source lives here; its Parquet output goes to data/, which is gitignored.
 │
 ├── shuffle-skew/           # W05 Part 2: Python (PySpark 4.1.0, local mode)
 │   ├── skew_job.py              # uniform vs Zipf runs; diagnosis happens in the Spark UI
@@ -101,7 +102,7 @@ code/
 │   └── requirements.txt
 │
 ├── query-plans/            # W07: Python (PySpark 4.1.0, local mode) and SQL
-│   ├── fixtures.py              # calls data/gen.py, then ANALYZE TABLE on all three
+│   ├── fixtures.py              # calls datagen/gen.py, then ANALYZE TABLE on all three
 │   ├── explain.py               # EXPLAIN FORMATTED / EXPLAIN COST across four experiments
 │   └── requirements.txt
 │   # Nothing is built here. The deliverable is four plan diffs.

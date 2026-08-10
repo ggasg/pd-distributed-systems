@@ -66,7 +66,7 @@ Your Part 1 shuffle can be made to skew, and you would then be reading per-reduc
 
 **Data.** This unit introduces the shared commerce dataset that W06, W07, W08, W15, and W16 also use, so you write the generator here and reuse it later. Schema in [code/README.md](../code/README.md).
 
-- [ ] `data/gen.py`: emit `orders` and `customers` to Parquet. Two arguments matter: `--scale`, multiplying base row counts of 10,000,000 orders over 200,000 customers, and `--skew`, a Zipf exponent applied to `customer_id`. Fixed `--seed` so both runs below are reproducible.
+- [ ] `datagen/gen.py`: emit `orders` and `customers` to Parquet, writing under `data/`, which is gitignored so generated tables stay out of the repo. Two arguments matter: `--scale`, multiplying base row counts of 10,000,000 orders over 200,000 customers, and `--skew`, a Zipf exponent applied to `customer_id`. Fixed `--seed` so both runs below are reproducible.
 - [ ] Generate two sets at `--scale 0.5`, which is **5,000,000 orders over 100,000 customers** in each: one uniform (`--skew 0`), one skewed (`--skew 1.2`). Same seed, so the only difference between them is the key distribution.
 
 **Check the data before you run the job**, because the exponent decides whether this unit works at all. Run a `groupBy("customer_id").count()` on the skewed set and confirm the top customer holds roughly 19 percent of all rows and the top ten hold roughly 48 percent. That is what `1.2` buys you: with 200 shuffle partitions the heaviest one carries about 40 times the average. At `0.8` the top customer holds under 2 percent and the heaviest partition runs about 5 times the average, which is small enough that you will conclude the exercise is broken when the exponent was the problem.
