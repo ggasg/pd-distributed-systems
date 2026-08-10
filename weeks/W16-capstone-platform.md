@@ -46,7 +46,9 @@ Project: `code/capstone-platform/` (Python for training, coordination, and servi
 
 **Part 1: Data (reuse W08)**
 
-- [ ] Reuse `feature_pipeline/` from W08 (or a trimmed copy) to generate a versioned training dataset. No changes needed; this is the input to Part 2.
+- [ ] Reuse `feature_pipeline/` from W08 (or a trimmed copy) to generate a versioned training dataset. No code changes needed; this is the input to Part 2.
+
+  **Scale it down.** Everything here runs inside kind on one laptop, sharing CPU and memory with a Prometheus stack, an operator control plane, and several worker Pods, so generate at `--scale 0.05` (about 50,000 events over 10,000 customers) rather than W08's full million. The platform is what you are demonstrating, not throughput, and a dataset that makes a single training step take minutes turns every later failure test into a waiting game. Keep `--seed 42` so a rerun after a crash gives you the same data.
 
 **Part 2: Distributed training (combine W09 and W12)**
 

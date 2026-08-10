@@ -10,11 +10,11 @@ authors:
   - family-names: Guitart
     given-names: Gaston
 type: dataset
-version: 0.5.0
+version: 0.6.0
 url: "https://github.com/ggasg/pd-distributed-systems"
 repository-code: "https://github.com/ggasg/pd-distributed-systems"
 license: CC-BY-4.0
-date-released: 2026-08-06
+date-released: 2026-08-10
 keywords:
   - distributed-systems
   - data-intensive-systems

@@ -44,6 +44,10 @@ Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=
 
 **Given, not built:** `attention.py`'s `MultiHeadAttention` class is provided as a starter file: `__init__` (random `W_q`/`W_k`/`W_v`/`W_o` projections, shape `[d_model, d_model]`), `scaled_dot_product(Q, K, V, mask=None)` (`softmax(QK^T / sqrt(d_head)) V`, with an optional causal mask), and `forward(X)` (split into heads, apply SDPA per head, concatenate, project with `W_o`). Read it closely enough to know what shape `forward(X)` expects and returns, since `kv_cache.py` and `generate.py` both call into it directly, but you won't need to modify it. Deriving this mechanism yourself is real, valuable work; it's just not what this unit is testing.
 
+**Dimensions.** `d_model = 256`, 4 heads, 4 layers, vocabulary 1000, prompt length 512, generating 64 tokens. Tokens are random integers; there is no corpus and no training, since this unit is about the shape of the computation rather than about what the model says.
+
+Sequence length is the parameter that decides whether this unit works. The cached and uncached paths differ by a factor of N, so at a short prompt both finish in milliseconds and the gap disappears into interpreter overhead. At 512 tokens the uncached path is re-running attention over a 512-plus-growing sequence at every one of 64 steps, which is unmistakable in both wall time and peak memory. Target: the uncached run should be at least 5x slower. If yours is under 2x, raise the prompt length before concluding anything, and record the length you used, since the ratio is meaningless without it.
+
 - [ ] `kv_cache.py`: `KVCache` class:
   - Stores past keys and values per layer: `Dict[int, Tuple[np.ndarray, np.ndarray]]`
   - `update(layer_id, new_k, new_v)`: concatenates new K/V to cached K/V along the sequence dimension
@@ -51,7 +55,7 @@ Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=
 - [ ] `generate.py`: autoregressive generation:
   - Without cache: re-run full attention over the entire sequence each step (O(N²) per step)
   - With cache: run attention only for the new token against the cached K/V (O(N) per step)
-  - Generate 20 tokens from a random start token; measure wall time and peak memory (`tracemalloc`) for both approaches
+  - Generate 64 tokens from a 512-token random prompt; measure wall time and peak memory (`tracemalloc`) for both approaches
 - [ ] Print the comparison from inside `generate.py` rather than a separate file: tokens generated, time in ms, and peak memory in MB, cached versus uncached. Two numbers side by side is the whole deliverable and it does not need its own module.
 
 **Break it, then decide:**
@@ -63,6 +67,8 @@ Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=
 ## Part 2: Routing to a Cache
 
 You just made the cache per-request. That change has a consequence that only shows up once there is more than one copy of your model running, and it is the thing this part is about.
+
+**Two terms first, since everything below turns on the difference.** **Prefill** is the first pass over a request: the model processes every token of the prompt at once, computing keys and values for all of them, which is a small number of large matrix operations and is therefore compute-bound. **Decode** is what follows: the model generates one token at a time, and each step attends over the whole cached history to produce a single new token, which is a large number of tiny operations dominated by reading the cache out of memory, and is therefore memory-bound. The two phases have opposite performance characteristics on the same hardware, and the KV cache exists precisely so that decode does not have to redo prefill's work at every step. That asymmetry is the reason routing matters at all.
 
 Picture a chat service. A user sends a message, your server runs prefill over the whole conversation so far, caches the keys and values, and generates a reply. The user sends a follow-up. If that follow-up lands on the same replica, the cache is already there and you only prefill the new message. If it lands on a different replica, that replica has never seen this conversation, so it prefills the entire history again from scratch. Same answer, several times the latency, for no reason other than which machine picked up the request.
 

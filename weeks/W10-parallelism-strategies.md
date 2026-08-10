@@ -37,6 +37,10 @@ Dependencies: `numpy`, `multiprocessing`. You'll import `ring_allreduce` and `al
 
 **Given, not built:** `layers.py` is provided, a `Linear` class with `forward` and `backward` and a GeLU activation, all NumPy. Same principle as W09: the calculus is not what's being tested here.
 
+**Dimensions, because the numbers you measure depend entirely on them.** Use `d_model = 1024`, a hidden width of `4096` (the 4x expansion Megatron's MLP block uses), and a batch of 256, with synthetic random inputs. There is no dataset here; the tensors are the workload.
+
+The reason to pin these: every measurement in this unit is a ratio between compute and communication, and at small dimensions communication wins by default and tells you nothing. Before trusting any bubble number in Part 2, time one stage's forward pass and time one socket round-trip, and print both. You want per-stage compute to be at least an order of magnitude above the round-trip. If it is not, the bubble fraction you measure is socket latency wearing a costume, it will not track the theoretical `(S-1)/(M+S-1)` curve, and the mismatch will look like a bug in your pipeline when it is a problem with your dimensions. Widen the layers until the ratio holds, and write down the two timings next to your results.
+
 **Part 1: Tensor parallelism**
 
 - [ ] `tensor_parallel.py`: implement `ColumnParallelLinear` and `RowParallelLinear` for two workers.

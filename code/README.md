@@ -2,6 +2,37 @@
 
 One subdirectory per week. Each is a self-contained project with its own build file.
 
+---
+
+## The shared dataset
+
+W05, W06, W07, W08, W15, and W16 all run against one synthetic commerce dataset, so a schema you learn once carries across the data-movement arc and the units can be compared against each other. W04's event shape matches it too, though that unit scripts its events by hand rather than generating them.
+
+The other units use data their subject requires and do not touch this: W01 fixed-width records, W02 a random directed graph, W03 and W13 messages, W09 and W11 MNIST, W10 synthetic tensors, W12 token sequences.
+
+**Schema.** Four tables, written to Parquet under `code/data/`:
+
+| Table | Columns |
+|-------|---------|
+| `customers` | `customer_id` int64, `region_id` int32, `segment` string, `signup_ts` int64 (epoch ms) |
+| `orders` | `order_id` int64, `customer_id` int64, `amount` float64, `status` string, `order_ts` int64 |
+| `events` | `event_id` int64, `customer_id` int64, `event_type` string, `value` float64, `event_ts` int64 |
+| `regions` | `region_id` int32, `region_name` string |
+
+**Generator.** You write it once, in W05, as `code/data/gen.py`, and later units call it with different arguments:
+
+```bash
+python gen.py --tables orders,customers --scale 0.5 --skew 1.2 --seed 42 --out data/skewed/
+```
+
+- `--scale` multiplies the base row counts, which at scale 1 are `orders` 10,000,000, `customers` 200,000, `events` 1,000,000, `regions` 50
+- `--skew` is the Zipf exponent applied to `customer_id` in `orders` and `events`. `0` means uniform. The exponent matters more than it looks: over 200,000 customers, `1.2` puts the top customer at roughly 19 percent of all rows, while `0.8` puts it at under 2 percent. Each unit states the value it needs and why
+- `--seed` is fixed so runs are reproducible and two units can generate byte-identical inputs
+
+Each week states the exact invocation it needs, the volume, and the target that volume has to clear. Read the unit, not this table, for what to run.
+
+---
+
 ```
 code/
 ├── hello-metrics/          # W00: Go service (modules) + k8s manifests
@@ -36,8 +67,7 @@ code/
 │   ├── FlinkWindows.java        # watermark strategy, tumbling window, allowedLateness, side output
 │   ├── spark_windows.py         # same aggregation in PySpark Structured Streaming, for the comparison
 │   └── pom.xml
-│   # Java here is not a preference: Flink 2.0 removed the Scala API and PyFlink
-│   # lags on exactly the knobs this unit turns.
+│   # Use the Java DataStream API: PyFlink lags on the knobs this unit turns.
 │
 ├── backpressure/            # W04 Part 2: Java (Maven, no framework)
 │   ├── Rates.java               # configurable arrival rate and service rate
@@ -56,8 +86,12 @@ code/
 │   ├── ShuffleTest.java         # JUnit 5
 │   └── pom.xml
 │
+├── data/                   # Shared commerce dataset, written in W05, reused by W06-W08, W15, W16
+│   ├── gen.py                   # --tables --scale --skew --seed --out; schema above
+│   └── requirements.txt
+│
 ├── shuffle-skew/           # W05 Part 2: Python (PySpark 4.1.0, local mode)
-│   ├── skew_job.py              # uniform vs Zipf keys; diagnosis happens in the Spark UI
+│   ├── skew_job.py              # uniform vs Zipf runs; diagnosis happens in the Spark UI
 │   └── requirements.txt
 │
 ├── query-exec/             # W06: Python (duckdb, numpy, pyarrow)
@@ -67,7 +101,7 @@ code/
 │   └── requirements.txt
 │
 ├── query-plans/            # W07: Python (PySpark 4.1.0, local mode) and SQL
-│   ├── fixtures.py              # three lopsided Parquet tables + ANALYZE TABLE
+│   ├── fixtures.py              # calls data/gen.py, then ANALYZE TABLE on all three
 │   ├── explain.py               # EXPLAIN FORMATTED / EXPLAIN COST across four experiments
 │   └── requirements.txt
 │   # Nothing is built here. The deliverable is four plan diffs.
