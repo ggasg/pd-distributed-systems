@@ -1,7 +1,7 @@
-// plan-dates.go — print the full study schedule given a start date for W01.
+// plan-dates.go: print the full study schedule given a start date for W01.
 //
 // Usage:
-//   go run tools/plan-dates.go --start 2026-07-06
+//   go run tools/plan-dates.go --start 2026-08-17
 //
 // W00 (Infrastructure Setup) falls the week before the given start date.
 // W01 starts on the given date. Each subsequent week is +7 days.
@@ -51,7 +51,7 @@ func main() {
 	flag.Parse()
 
 	if *startStr == "" {
-		fmt.Fprintln(os.Stderr, "error: --start is required (e.g. --start 2026-07-06)")
+		fmt.Fprintln(os.Stderr, "error: --start is required (e.g. --start 2026-08-17)")
 		os.Exit(1)
 	}
 

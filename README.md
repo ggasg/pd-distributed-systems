@@ -25,7 +25,7 @@ This isn't for people who want to pass system design interviews. It's for engine
 
 **Budgeted at about 10 hours per unit.** At that pace the core is roughly four months. The Minimum bar in each unit is what a bad week looks like rather than the target, so a week that only clears the bar is still a week that counts.
 
-Running this alongside a full-time job, at around 5 hours a unit, works: hit the Minimum bar and treat everything past it as optional. The units are written so that the next one still works.
+Running this alongside a full-time job works at roughly half that pace: hit the Minimum bar, treat everything past it as optional, and expect a unit to span two calendar weeks. The units are written so that the next one still works.
 
 | Arc | Units | Focus | Language |
 |-----|-------|-------|----------|
