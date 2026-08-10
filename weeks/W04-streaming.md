@@ -19,6 +19,36 @@ Part 1 is about *time*: which events belong to which window, and when it is safe
 
 ---
 
+## Vocabulary
+
+Read this before Part 1. Every term below appears in the exercises, in the Flink API, or in both, and several of them are used loosely enough in the industry that the loose version will cost you an argument eventually. One or two sentences each, with the authoritative source in brackets. You are not expected to memorise these; you are expected to stop guessing at them.
+
+**Event time** is the timestamp the event carries, assigned when it happened on the device or service that produced it. **Processing time** is the wall clock on the machine handling it. **Ingestion time** is the wall clock when it entered the system. Event time is the only one of the three that gives the same answer when you replay the same data tomorrow, which is why every correctness argument in this unit is made in event time. Reference: [Flink, Timely Stream Processing](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/time/).
+
+**Watermark.** A marker flowing inline with the data, carrying a timestamp `t`, which asserts that no further event with a timestamp at or below `t` should arrive. It is an assertion, not a fact: it is a heuristic the system makes on your behalf, it can be wrong, and everything that follows in Part 1 is about what happens when it is. A watermark is what lets an operator decide a window is finished and emit a result, since without one an event-time window has no way of knowing whether the stream is done with it or merely quiet. Reference: [Flink, Generating Watermarks](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/event-time/generating_watermarks/).
+
+**Out-of-orderness bound.** How far behind the largest timestamp seen so far the watermark is held, which is the knob you set with `forBoundedOutOfOrderness`. It buys tolerance for late arrival and pays for it in latency, since every window now waits that much longer before firing. Setting it is a direct trade of completeness against delay, and there is no value that avoids the trade.
+
+**Window.** A finite bucket carved out of an infinite stream so an aggregation can terminate. **Tumbling** windows are fixed-size and non-overlapping, so each event lands in exactly one. **Sliding** windows are fixed-size with a separate slide interval, so they overlap and an event can land in several. **Session** windows have no fixed size at all: they group events separated by less than a configured gap of inactivity, so their boundaries come from the data rather than from the clock. Reference: [Flink, Windows](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/operators/windows/).
+
+**Trigger.** The condition that decides when a window emits. In this unit the default event-time trigger fires when the watermark passes the end of the window, but a window can fire more than once, which is exactly what `allowedLateness` causes.
+
+**Allowed lateness.** A grace period past the end of a window during which a late event is still accepted and the window fires again with a corrected result. Default is zero. The cost is that a downstream consumer sees a number it already processed change.
+
+**Late data and side output.** An event whose timestamp falls in a window the watermark has already passed, beyond any allowed lateness, is late and is dropped silently by default. A **side output** is a second, separately tagged output stream you can route those events to instead, which keeps the main output immutable and makes reconciliation an explicit downstream job rather than an invisible loss.
+
+**Stateful operator.** An operator that keeps information between events, such as the running sum inside an open window, rather than mapping each event independently. State is what makes windowing possible and what makes failure recovery a problem worth solving. Reference: [Flink, Stateful Stream Processing](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/stateful-stream-processing/).
+
+**Checkpoint.** A consistent snapshot of every operator's state plus the source positions it corresponds to, taken periodically and automatically, so that after a failure the job restarts from that snapshot instead of from nothing. Flink takes checkpoints by injecting **barriers** into the stream, which are markers that flow with the data and tell each operator when to snapshot. That is Chandy-Lamport adapted to a dataflow graph, and **W13 is where you implement the underlying algorithm**; here you only need to know that checkpointing is what makes a streaming job's state survive a crash. A **savepoint** is the same snapshot triggered by you rather than by a timer, used for upgrades and rescaling, and it does not expire when newer checkpoints complete. A **state backend** is where that state and those snapshots are actually kept. References: [Flink, Checkpointing](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/fault-tolerance/checkpointing/), [Savepoints](https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/state/savepoints/), [State Backends](https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/state/state_backends/).
+
+**Incremental processing.** Computing over only what arrived since the last run, carrying state forward, rather than recomputing over the whole input. It is the property that makes a streaming aggregation affordable: a tumbling sum updates a running total per event instead of rescanning the window. **Continuous** execution processes each event as it arrives, which is Flink's model. **Micro-batch** execution collects events into small batches on a timer and runs a batch job over each, which is Spark Structured Streaming's default model, and it is why the two engines below give you different latency and different answers about when a result is final. The same word means something related but distinct at the table level in W08, where an incremental read consumes only the new commits in a Delta log rather than rescanning the table.
+
+**Delivery semantics** (at-most-once, at-least-once, effectively-once) are defined in [W03](W03-clocks.md) and are not redefined here. DDIA Ch.12's exactly-once material assumes them, so if that distinction is fuzzy, reread that section of W03 before starting.
+
+**Backpressure** is defined and measured in Part 2 below, where you build the three possible responses to it by hand.
+
+---
+
 ## Part 1: Windows and Watermarks
 
 ### Read
@@ -28,17 +58,19 @@ Part 1 is about *time*: which events belong to which window, and when it is safe
 
 **Depth: read DDIA Ch.12 and Sections 1 to 4 of the Dataflow Model.** The Flink docs pages are references rather than readings.
 
-**Key question:** What is a watermark, exactly? What breaks if your heuristic is too aggressive? What breaks if it is too conservative? Answer before you configure anything, then check yourself against the dropped-record count Flink reports.
+**Key question:** Restate what a watermark asserts, in your own words and without looking back at the Vocabulary section. Then answer the part the definition does not give you: what breaks if your heuristic is too aggressive, and what breaks if it is too conservative? Answer before you configure anything, then check yourself against the dropped-record count Flink reports.
 
 ### Code
 
 Project: `code/streaming/` (Java 21, Maven, Flink 2.3.0)
 
-**Java here is not a preference, it is the only option.** Flink deprecated its Scala API in 1.17 and removed it entirely in 2.0, and PyFlink's DataStream API lags the Java one on exactly the features this unit turns: watermark strategies, allowed lateness, and late-data side outputs. Flink is a Java system now. This is the one unit where that is true, and it is why the Spark comparison below switches languages rather than staying put.
+**Use the Java DataStream API here.** PyFlink's DataStream API lags the Java one on exactly the features this unit turns: watermark strategies, allowed lateness, and late-data side outputs. That is why the Spark comparison below switches languages rather than staying put.
 
-**A version note:** Flink 2.x recommends Java 17 and treats Java 21 as beta. The rest of this curriculum's JVM stack is pinned to Java 21 to match DBR 18, and a single-job local Flink run will not go anywhere near the edges that beta status is about. Stay on 21. Also note that Flink 2.0 removed the old `Time` class in favour of `java.time.Duration`, so tutorials showing `Time.seconds(10)` predate the version you are running.
+**A version note:** Flink 2.x recommends Java 17 and treats Java 21 as beta. Stay on 21, which is what the rest of the JVM stack here is pinned to; a single-job local Flink run will not go anywhere near the edges that beta status is about. Also note that Flink 2.0 removed the old `Time` class in favour of `java.time.Duration`, so tutorials showing `Time.seconds(10)` predate the version you are running.
 
-- [ ] `Event.java`: `record Event(long eventTime, int value) {}`, plus a bounded source that emits a scripted sequence you control exactly. Do not use a random or wall-clock-driven source. The entire unit depends on you deciding precisely which event arrives when, so a hardcoded list replayed in a fixed order is the correct design here.
+**Data:** roughly twenty events, written out by hand. This is the one unit that does not generate data and should not, because the entire exercise depends on you controlling precisely which event arrives when, down to the individual timestamp. A generator would take that control away. The event shape matches the shared commerce dataset the later data units use (see [code/README.md](../code/README.md)), so `eventTime` is an `event_ts` and `value` is an order amount, but you are writing the list, not sampling one.
+
+- [ ] `Event.java`: `record Event(long eventTime, int value) {}`, plus a bounded source that emits a scripted sequence you control exactly. Do not use a random or wall-clock-driven source. A hardcoded list replayed in a fixed order is the correct design here. Keep it small enough to reason about on paper: two or three tumbling windows' worth of events is plenty, and you need to be able to say what the correct sum is for each window without running anything.
 - [ ] `FlinkWindows.java`: assign timestamps and watermarks with `WatermarkStrategy.forBoundedOutOfOrderness(Duration.ofSeconds(5))`, key the stream, apply `TumblingEventTimeWindows.of(Duration.ofSeconds(10))`, and sum. Print each window as it fires, with its start and end.
 
 **Four runs. Same job, one knob changed each time:**

@@ -18,7 +18,7 @@ This unit is really about one thing with three faces. The network is unreliable,
 ---
 
 ## Read
-- [ ] DDIA Ch.9 (2nd ed.): unreliable clocks and causality. Focus on "Unreliable Clocks" and "Knowledge, Truth, and Lies"; the "Ordering Guarantees" material this used to point to actually lives in Ch.10 (Consistency and Consensus), not this chapter, so don't go looking for it here.
+- [ ] DDIA Ch.9 (2nd ed.): unreliable clocks and causality. Focus on "Unreliable Clocks" and "Knowledge, Truth, and Lies". The "Ordering Guarantees" material lives in Ch.10 (Consistency and Consensus), not here, so don't go looking for it in this chapter.
 - [ ] [Time, Clocks, and the Ordering of Events in a Distributed System](https://lamport.azurewebsites.net/pubs/time-clocks.pdf) (Lamport, 1978): 11 pages. Read all of it. This paper is the foundation.
 - [ ] Optional: [Spanner: Google's Globally Distributed Database](https://dl.acm.org/doi/10.1145/2491245) (Corbett et al., 2012): read only Section 3 (TrueTime API, ~3 pages). Understand how they use bounded clock uncertainty.
 
@@ -26,6 +26,8 @@ This unit is really about one thing with three faces. The network is unreliable,
 - [ ] Optional: [Unreliable Failure Detectors for Reliable Distributed Systems](https://dl.acm.org/doi/10.1145/226643.226647) (Chandra & Toueg, JACM 1996; free copies are easy to find). Theory-heavy, and you do not need all of it. What is worth taking is the framing: a failure detector is allowed to be wrong, and the interesting question is not "is it correct" but "how wrong, how often, and how fast." That reframing is more useful in practice than any specific algorithm.
 
 **Depth: study Lamport 1978.** Eleven pages, you implement what it describes, and it rewards a slow pass more than almost anything else in this curriculum. DDIA Ch.9 is a read. Spanner's TrueTime section, Fidge, and Chandra & Toueg are skims; the last one especially, take the framing and leave the proofs.
+
+**The vocabulary Lamport defines, since the rest of the unit uses it constantly.** **Happens-before**, written `a → b`, is the relation the paper builds everything on, and it is defined by exactly three rules: if `a` and `b` are events in the same process and `a` comes first, then `a → b`; if `a` is the sending of a message and `b` is its receipt, then `a → b`; and it is transitive, so `a → b` and `b → c` gives `a → c`. Nothing else creates the relation. Two events are **concurrent** when neither `a → b` nor `b → a`, and this is the word most often misread: it does not mean the events happened at the same instant, it means nothing in the system's message history establishes an order between them, so no observer is entitled to claim one. A **partial order** is exactly that situation, an ordering under which some pairs are simply incomparable. A **total order** orders every pair, which is what you get if you break ties by process ID, and which is useful but no longer means anything causal. Keep that distinction sharp: the Key question below turns on it, and your `concurrent()` function is a direct encoding of it.
 
 **Key question:** Lamport clocks establish a partial order. What does vector clocks give you that Lamport clocks don't?
 
@@ -64,7 +66,7 @@ Project: `code/clocks/` (Go modules)
 
 ## Rehearse it in Python first (optional, 20 minutes)
 
-> **Why this exists, and when it stops.** This unit builds in Go, which is the one language here you are still learning. Writing the vector clock itself in Python first means that when the Go version misbehaves you already know whether the problem is the algorithm or the syntax, which is the single most useful thing to know at that moment. These sections appear only in the Go units (W02, W03, W06) and stop after W06, by which point Go should no longer be the thing in your way. Skip it whenever the algorithm is already obvious to you.
+> **Why this step exists.** This unit builds in Go, the newest language in the curriculum for most people. Writing the vector clock in Python first means that when the Go version misbehaves, you already know whether the problem is the algorithm or the syntax, which is the most useful thing to know at that moment. This is the only unit that offers the step. Skip it if the algorithm is already obvious to you.
 
 **Dicts as vector clocks**: a vector clock is just a dict. Implement the three core operations in Python before building the Go version.
 

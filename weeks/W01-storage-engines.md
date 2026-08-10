@@ -13,7 +13,7 @@ Not a storage engine. Two write paths and a stopwatch.
 
 DDIA Ch.4's central claim is that appending to a log is dramatically faster than updating records in place, and that this single fact is why LSM-trees exist and why write-heavy systems are built the way they are. This unit has you measure that claim on your own machine rather than take it on faith, then watch the bill come due on the read side.
 
-**Why not build the whole engine?** An earlier version of this unit had you write a MemTable, an SSTable with a binary format and a sparse index, and a merged read path. That is genuinely 8 to 12 hours in a language you are still learning, it is the most database-internals thing this curriculum could ask for, and nothing else in the plan depends on it. What you actually need from storage engines is the trade-off, stated precisely enough to defend in a design conversation. You get that from the chapter plus two numbers you measured, and you get it in an evening.
+**Why measure rather than build.** Writing a MemTable, an SSTable with a binary format and a sparse index, and a merged read path is 8 to 12 hours of work, and nothing later in the curriculum depends on having done it. What you need from storage engines is the trade-off, stated precisely enough to defend in a design conversation. The chapter plus two numbers you measured yourself gets you there in an evening.
 
 **Scenario:** someone proposes switching a write-heavy service from an update-in-place store to a log-structured one, and asks you what it buys and what it costs. You should be able to answer with a ratio you have personally measured and a specific, named cost, not with the phrase "better write throughput."
 
@@ -23,9 +23,11 @@ DDIA Ch.4's central claim is that appending to a log is dramatically faster than
 - [ ] **DDIA Ch.4** (2nd ed.), Storage and Retrieval. Focus on the LSM-tree versus B-tree comparison and the section on SSTables. You do not need the full index taxonomy, and you can skip the vector-embeddings section unless it interests you; W12's attention work is the retrieval-side counterpart if it does.
 - [ ] Optional: [LevelDB source](https://github.com/google/leveldb), 20 minutes, `db/memtable.h` and nothing else. Read it to see what a real MemTable looks like, not to understand it. C++, and the syntax is irrelevant here.
 
-**Depth: read DDIA Ch.4, do not study it.** This unit no longer implements the mechanism the chapter describes, so a careful read is the right level; the measurement below is what will make it stick, not a third pass through the prose. Everything else here is a skim.
+**Depth: read DDIA Ch.4, do not study it.** A careful read is the right level here; the measurement below is what makes it stick, not a third pass through the prose. Everything else here is a skim.
 
-**Key question to answer before coding:** Why is appending to a file faster than updating a record in place, given that both end up writing the same number of bytes? Answer in terms of what the disk is physically doing, then keep your answer and check it against your measurement.
+**The vocabulary this unit measures in, which the chapter uses without always naming.** **Sequential I/O** writes or reads bytes at consecutive offsets; **random I/O** jumps between scattered offsets. The gap between them is the reason a log wins, and it survives the move from spinning disks to SSDs for different reasons at each layer, so state which layer you mean when you explain it. **Write amplification** is the ratio of bytes actually written to the device over bytes your application asked to write, and it is where an update in place quietly loses: rewriting a whole page to change one record is amplification. **Read amplification** is the same ratio on the read side, and it is the bill the log-structured design defers rather than avoids, since a key may now live in any of several files. Two mechanics sit underneath both: the **page cache** is the kernel's in-memory copy of file data, so a "write" that returns quickly has often only reached memory, and **fsync** is the call that forces those pages to durable storage and is therefore where the real cost of durability shows up. If your benchmark never calls fsync, you are measuring the page cache.
+
+**Key question to answer before coding:** Why is appending to a file faster than updating a record in place, given that both end up writing the same number of bytes? Answer in terms of what the disk is physically doing, using the terms above, then keep your answer and check it against your measurement.
 
 ---
 
