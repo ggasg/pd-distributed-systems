@@ -8,11 +8,11 @@ All papers, books, and docs referenced in this curriculum. Organized by unit. Fr
 
 | Book | Author | Units | Notes |
 |------|--------|-------|-------|
-| [Designing Data-Intensive Applications (DDIA), 2nd ed.](https://dataintensive.net) | Kleppmann & Riccomini (2026) | Ch.1 pre-curriculum, then W01, W02, W03, W04, W05, W06, W07, W08, W13, W15, W16. 13 of 14 chapters cited; Ch.14 (law and society) is deliberately out of scope for an engineering plan | The single most useful book for this curriculum. Buy it. 2nd edition (Feb 2026) restructures the whole book: 12 chapters became 14, and every chapter after the first is renumbered. Chapter references below are to the 2nd edition. |
+| [Designing Data-Intensive Applications (DDIA), 2nd ed.](https://dataintensive.net) | Kleppmann & Riccomini (2026) | W00, W01, W02, W03, W04, W05, W06, W07, W08, W13, W15, W16. 13 of 14 chapters cited; Ch.14 (law and society) is out of scope for an engineering plan | The single most useful book for this curriculum. Buy it. 2nd edition (Feb 2026) restructures the whole book: 12 chapters became 14, and every chapter after the first is renumbered. Chapter references below are to the 2nd edition. |
 | [The Art of Multiprocessor Programming](https://www.amazon.com/dp/0123705916) | Herlihy & Shavit | W03, W13 | For concurrency primitives and correctness |
 | [Observability Engineering](https://www.oreilly.com/library/view/observability-engineering/9781492076438/) | Majors, Fong-Jones, Miranda | W15 | O'Reilly; pairs well with the Google SRE chapter |
 | [Google SRE Book](https://sre.google/sre-book/table-of-contents/) | Google | W15 (optional) | **Free online.** Ch. 6, optional; overlaps DDIA Ch.2 |
-| [Designing Distributed Systems, 2nd ed.](https://www.oreilly.com/library/view/designing-distributed-systems/9781098156343/) | Burns (O'Reilly, Dec 2024) | Ch.1 pre-curriculum, then W02, W04, W05, W06, W12, W13, W14, W15. 15 of 16 chapters cited | The pattern catalogue this curriculum is organised around, and short: 220 pages of largely self-contained chapters. All references are to the **2nd edition**, which is the printed one; the free PDF circulating from Microsoft is the 2018 1st edition and its chapter numbers do not line up. Ch.9 (Functions and Event-Driven Processing) is the one chapter deliberately uncited: nothing here is serverless, and a forced fit would be worse than an honest gap |
+| [Designing Distributed Systems, 2nd ed.](https://www.oreilly.com/library/view/designing-distributed-systems/9781098156343/) | Burns (O'Reilly, Dec 2024) | W00, W02, W04, W05, W06, W12, W13, W14, W15. 15 of 16 chapters cited | The pattern catalogue this curriculum is organised around, and short: 220 pages of largely self-contained chapters. All references are to the **2nd edition**, which is the printed one; the free PDF circulating from Microsoft is the 2018 1st edition and its chapter numbers do not line up. Ch.9 (Functions and Event-Driven Processing) is the one chapter deliberately uncited: nothing here is serverless, and a forced fit would be worse than an honest gap |
 
 ---
 
@@ -22,18 +22,11 @@ All papers, books, and docs referenced in this curriculum. Organized by unit. Fr
 
 ---
 
-## Before You Start (outside any unit's budget)
-
-- **DDIA Chapter 1** (2nd ed.), Trade-Offs in Data Systems Architecture. **Depth: skim.** Read this once, whenever you like, before or during W00. It is orientation rather than prerequisite: nothing in any unit depends on having read it, and it contains no mechanism you will implement. What it gives you is the operational-versus-analytical and distributed-versus-single-node framing that the whole curriculum is arranged around, which makes the difference between W01's write path and W06's columnar executor legible as a deliberate contrast rather than two unrelated builds. Forty-five minutes at skim depth. Do not study it.
-
-- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 1** (Introduction). **Depth: skim, twenty minutes.** Same job as DDIA Ch.1 and worth reading in the same sitting: it argues that distributed systems are assembled from a small number of recurring patterns, which is the premise the other fourteen chapters spend their time cashing out. Nothing depends on having read it, but it makes the later chapters land as a catalogue rather than as fifteen unrelated essays.
-
-DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliability, scalability, and tail latency have a running system to attach to.
-
----
-
 ## W00: Infrastructure Setup
 
+- **DDIA Chapter 1**: Trade-Offs in Data Systems Architecture. The operational-versus-analytical and distributed-versus-single-node framing the curriculum is arranged around
+- **DDIA Chapter 2**: Defining Nonfunctional Requirements. Reliability, scalability, maintainability, percentiles, and tail latency. Revisited in W15 at the percentile sections
+- **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 1**: Introduction, optional. The premise the rest of that book cashes out: distributed systems are assembled from recurring patterns
 - [kind docs](https://kind.sigs.k8s.io/): Kubernetes in Docker
 - [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack): Helm chart for Prometheus + Grafana
 - [Prometheus Java client library](https://github.com/prometheus/client_java)
@@ -75,8 +68,12 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 - [The Dataflow Model](https://research.google/pubs/the-dataflow-model-a-practical-approach-to-balancing-correctness-latency-and-cost-in-massive-scale-unbounded-out-of-order-data-processing/): Akidau et al., VLDB 2015 (**free PDF via Google Research**), the paper behind Apache Beam and Flink's model
 - **DDIA Chapter 12**: Stream Processing (watermarks, windows, exactly-once)
 - [Streaming 101](https://www.oreilly.com/radar/the-world-beyond-batch-streaming-101/): Akidau (O'Reilly blog), free, accessible intro before the paper
+- [Flink: Timely Stream Processing](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/time/): definitions of event, processing, and ingestion time, and of watermarks
 - [Flink: Generating Watermarks](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/event-time/generating_watermarks/): Part 1 reference. `forBoundedOutOfOrderness`, `allowedLateness`, and `sideOutputLateData` are the three knobs Part 1 turns
-- [Spark Structured Streaming programming guide](https://spark.apache.org/docs/latest/structured-streaming-programming-guide.html): Part 1 reference, the "Handling Late Data and Watermarking" and "Output Modes" sections only. Spark's answer to the same question, and the differences from Flink are the point of the comparison
+- [Flink: Windows](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/operators/windows/): tumbling, sliding, and session assigners, triggers, and the allowed-lateness semantics
+- [Flink: Stateful Stream Processing](https://nightlies.apache.org/flink/flink-docs-stable/docs/concepts/stateful-stream-processing/): keyed state, and the barrier-based snapshot mechanism W13 implements
+- [Flink: Checkpointing](https://nightlies.apache.org/flink/flink-docs-stable/docs/dev/datastream/fault-tolerance/checkpointing/), [Savepoints](https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/state/savepoints/), [State Backends](https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/state/state_backends/): vocabulary references, not exercises. The mechanism is built in W13
+- [Spark Structured Streaming programming guide](https://spark.apache.org/docs/latest/streaming/index.html): Part 1 reference. The Overview states the micro-batch default; the "Handling Late Data and Watermarking" and "Output Modes" sections live under [APIs on DataFrames and Datasets](https://spark.apache.org/docs/latest/streaming/apis-on-dataframes-and-datasets.html). Spark's answer to the same question, and the differences from Flink are the point of the comparison
 - [Flink: Network Stack and Backpressure](https://nightlies.apache.org/flink/flink-docs-stable/docs/ops/monitoring/back_pressure/): Part 2 required reading, short. How backpressure is detected and why it propagates upstream through the job graph rather than being absorbed locally. Note which of Part 2's three policies that is: Flink made the choice for you
 - **Little's Law** (`L = λW`): no link needed, it is one line, but Part 2 is built on it. Average items in the system equals arrival rate times average time in the system. It is what turns "the queue is filling up" into arithmetic you can do before running anything
 - **Burns, *Designing Distributed Systems*, 2nd ed., Ch.12**: Event-Driven Batch Processing, optional, Part 2. "Work Stealing" is a fifth overload response the unit does not give you; "Errors, Priority, and Retry" is the case it assumes away
@@ -100,7 +97,7 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 - [MonetDB/X100: Hyper-Pipelining Query Execution](https://www.cidrdb.org/cidr2005/papers/P19.pdf): Boncz, Zukowski, Nes, CIDR 2005 (**free PDF**), the vectorized execution paper
 - [Dremel: Interactive Analysis of Web-Scale Datasets](https://research.google/pubs/dremel-interactive-analysis-of-web-scale-datasets/): Melnik et al., Google, VLDB 2010 (**free PDF**), optional. Columnar storage (the ancestor of Parquet) plus a multi-level serving tree that fans aggregation out across thousands of machines, the distributed-scale continuation of the single-node vectorized-execution argument above. Sourced from [dancres' reading list](https://dancres.github.io/Pages/), Google section.
 - [An Overview of Query Optimization in Relational Systems](https://dl.acm.org/doi/10.1145/275487.275492): Chaudhuri (1998), optional background
-- [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended. A real, actively maintained vectorized query engine in C++, and no longer a foreign artifact: this unit measures it, and W08 depends on it.
+- [DuckDB execution engine source](https://github.com/duckdb/duckdb/tree/main/src/execution): optional but recommended. A real, actively maintained vectorized query engine in C++: this unit measures it, and W08 depends on it.
 - [DuckDB `EXPLAIN ANALYZE`](https://duckdb.org/docs/stable/guides/meta/explain_analyze): reference. Per-operator timing is the artifact this unit is after, and reading it is most of the exercise.
 - **Burns, *Designing Distributed Systems*, 2nd ed., Ch.8**: Scatter/Gather, optional. Pairs with Dremel above; "Choosing the Right Number of Leaves" is the partition-count question again
 
@@ -209,10 +206,10 @@ DDIA Chapter 2 used to sit alongside it here. It now lives in W15, where reliabi
 - **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3**: The Sidecar Pattern. Read before Part 3; names the pattern your log-aggregator sidecar already implements.
 - [Prometheus data model](https://prometheus.io/docs/concepts/data_model/) + [metric types](https://prometheus.io/docs/concepts/metric_types/)
 - [OpenTelemetry concepts](https://opentelemetry.io/docs/concepts/)
-- **DDIA Chapter 2**: Defining Nonfunctional Requirements. Moved here from W00 on purpose: percentiles and tail latency mean something once you have a system emitting them
-- [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): **free online**, optional, overlaps DDIA Ch.2 heavily
+- **DDIA Chapter 2**: Defining Nonfunctional Requirements, second pass. The response-time and percentile sections only, at study depth; the chapter is skimmed in full in W00
+- [Google SRE Book, Chapter 6: Monitoring Distributed Systems](https://sre.google/sre-book/monitoring-distributed-systems/): **free online**, optional. The four golden signals; covers much the same ground as DDIA Ch.2
 - [Grafana dashboarding docs](https://grafana.com/docs/grafana/latest/dashboards/)
-- [Prometheus Java client](https://github.com/prometheus/client_java): used to instrument the W06 DD engine (same library W00 already uses)
+- [Prometheus Java client](https://github.com/prometheus/client_java): used to instrument the W05 shuffle (same library W00 already uses)
 - [OpenTelemetry Java SDK](https://opentelemetry.io/docs/languages/java/): official docs, used for the `ScopedSpan` tracing setup
 - [Go `net/http` docs](https://pkg.go.dev/net/http): the standard library package the Part 3 log-aggregator sidecar is built on
 - [The Tail at Scale](https://research.google/pubs/the-tail-at-scale/): Dean & Barroso, CACM 2013 (**free PDF**), required, study depth. Six pages on why a service of a hundred healthy components is still slow, and the arithmetic of fan-out that makes a component's p99 into a request's median

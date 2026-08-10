@@ -5,7 +5,7 @@ status: not-started
 
 # W00: Infrastructure Setup
 
-> **Budget:** about 5 hours, deliberately half of what every other unit gets. This is the only unit that is mostly installation rather than thinking, and it is fine if it takes two sittings.
+> **Budget:** about 7 hours, split roughly 2 hours reading and 5 hours installing. Below a full unit because it is mostly installation rather than thinking, and it is fine if it takes two sittings.
 
 > **Pre-unit:** Complete before W01 begins · **Language:** Go + shell
 
@@ -18,9 +18,14 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 ## Read
 
-**Depth: skim everything here.** These are reference docs you will come back to, not material to absorb up front. Twenty minutes each, tops.
+**Depth: skim everything here, without exception.** This unit is a vocabulary ramp-up, not a study session. Read for the terms and the shape of the arguments, then move on to the install. Do not work through the code examples, do not chase the footnoted papers, and do not stop to reconcile anything against systems you already know. Every idea in these chapters gets built or measured later, and that is when it will stick. Budget about 2 hours for all of it.
 
-> **DDIA Chapters 1 and 2 are no longer part of this unit.** They used to be, and that was a mistake: they are the least mechanism-dense chapters in the book, nothing in W00 or W01 depends on them, and putting roughly 70 pages of careful reading in front of an infrastructure install guaranteed the first unit overran before anything was built. Chapter 1 is now pre-curriculum orientation you read at your own pace, outside any unit's budget (see [RESOURCES.md](../RESOURCES.md)). Chapter 2 moved to W15, where you will have a running system to measure and its definitions of reliability and tail latency will have something to attach to.
+- [ ] **DDIA Chapter 1** (2nd ed.), Trade-Offs in Data Systems Architecture. About 45 minutes at skim depth. This gives you the two axes the whole curriculum is arranged along: operational versus analytical, and distributed versus single-node. They are what make W01's write path and W06's columnar executor read as a deliberate contrast rather than two unrelated builds.
+- [ ] **DDIA Chapter 2** (2nd ed.), Defining Nonfunctional Requirements. About 45 minutes at skim depth. This is where reliability, scalability, maintainability, response-time percentiles, and tail latency get defined precisely rather than used as adjectives. You are skimming for the definitions only. W15 sends you back to the percentile and tail-latency sections at study depth, once you have a system emitting numbers that the definitions can attach to.
+- [ ] Optional: **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 1** (Introduction). Twenty minutes, same job as DDIA Ch.1 and worth reading in the same sitting. It argues that distributed systems are assembled from a small number of recurring patterns, which is the premise the rest of that book cashes out across W02 through W15.
+- [ ] [kind docs](https://kind.sigs.k8s.io/) and [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack): reference material for the install below. Twenty minutes each, tops. You will come back to both rather than absorb them now.
+
+**You should be able to define these afterwards, in one sentence each:** operational versus analytical system, data warehouse, reliability, fault versus failure, scalability, load parameter, response time versus latency, percentile, p99, tail latency, and maintainability. If any of them is still vague, that is fine at this stage; W15 is where the last four have to be exact.
 
 ---
 
