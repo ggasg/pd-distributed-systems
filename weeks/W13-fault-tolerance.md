@@ -45,19 +45,23 @@ Project: `code/snapshot/` (Java 21, Maven)
 ### Step 2: `Message.java`
 
 - [ ] A sealed sum type over the two message kinds:
-  ```java
-  sealed interface Message permits DataMessage, Marker {}
-  record DataMessage(String fromNode, String toNode, int value) implements Message {}
-  record Marker(String fromNode, String toNode, int snapshotId) implements Message {}
-  ```
+
+```java
+sealed interface Message permits DataMessage, Marker {}
+record DataMessage(String fromNode, String toNode, int value) implements Message {}
+record Marker(String fromNode, String toNode, int snapshotId) implements Message {}
+```
+
 - [ ] Dispatch with an exhaustive `switch`, using [record patterns](https://openjdk.org/jeps/440) to deconstruct in the case label rather than binding the object and calling accessors afterwards:
-  ```java
-  switch (msg) {
-      case DataMessage(var from, var to, var value) -> handleData(from, to, value);
-      case Marker(var from, var to, var snapshotId) -> handleMarker(from, to, snapshotId);
-  }
-  ```
-  Because `Message` is sealed over exactly these two types, the compiler requires the switch to cover both, with no `default`. Add a third message type later and every switch over `Message` fails to compile until you handle it.
+
+```java
+switch (msg) {
+    case DataMessage(var from, var to, var value) -> handleData(from, to, value);
+    case Marker(var from, var to, var snapshotId) -> handleMarker(from, to, snapshotId);
+}
+```
+
+Because `Message` is sealed over exactly these two types, the compiler requires the switch to cover both, with no `default`. Add a third message type later and every switch over `Message` fails to compile until you handle it.
 
 ### Step 3: `Node.java`
 

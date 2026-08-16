@@ -54,12 +54,14 @@ Project: `code/clocks/` (Go modules)
 ### Step 1: `vector_clock.go`
 
 - [ ] `type VectorClock struct { counts map[string]int }`, with four functions that return a new value rather than mutating:
-  ```go
-  func Increment(vc VectorClock, node string) VectorClock
-  func Merge(a, b VectorClock) VectorClock
-  func HappensBefore(a, b VectorClock) bool
-  func Concurrent(a, b VectorClock) bool
-  ```
+
+```go
+func Increment(vc VectorClock, node string) VectorClock
+func Merge(a, b VectorClock) VectorClock
+func HappensBefore(a, b VectorClock) bool
+func Concurrent(a, b VectorClock) bool
+```
+
 - [ ] Copy before writing. `maps.Clone` gives you a shallow copy in one call; you still write the changed key on the copy yourself. Nothing in Go's type system stops a caller from mutating the `counts` map directly, so treat any function that writes without copying first as a bug.
 
 ### Step 2: `message.go`

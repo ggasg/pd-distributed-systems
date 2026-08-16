@@ -95,4 +95,6 @@ Delete this section from the unit you write; it is guidance for the author, not 
 - No prose that explains a choice the student does not make, and no commentary on why the curriculum is arranged the way it is.
 - No record of the plan's own history: nothing was cut, renamed, or previously done differently.
 - Never open a sentence by counting what follows ("Two things to notice", "Three details decide"). Use a list and let it do the counting.
+- Never put a fenced code block inside a `- [ ]` item, and never start a fence on the checkbox line. Bullet text ending in a colon, blank line, then the fence at column zero.
+- Every unit that containerizes or deploys something has a run-it-locally step first, with the exact command and the exact output to check, before the image build.
 - No em-dashes anywhere.

@@ -55,19 +55,25 @@ Add observability to `code/shuffle/` (your W05 shuffle). Skew is not something y
   - `active_partitions`: `Gauge`, reduce tasks currently running
   - Start an `HTTPServer` (from `prometheus-metrics-exporter-httpserver`) on port 9091 serving `/metrics`. The Prometheus client ships its own server because exposing the registry is all it has to do.
 - [ ] `TracingSetup.java` + `ScopedSpan.java`: initialize an OpenTelemetry `SdkTracerProvider` with an OTLP exporter. Java has no attribute-macro sugar for this, but it has `AutoCloseable` plus try-with-resources. Write `ScopedSpan implements AutoCloseable`: the constructor starts a span, `close()` ends it, and try-with-resources guarantees `close()` runs when the block exits, including on an exception. The span ends when the enclosing block exits, on the success path and the exception path alike:
-  ```java
-  try (var span = new ScopedSpan(tracer, "consolidate")) {
-      // ... consolidate logic ...
-      span.setAttribute("input", inputSize);
-      span.setAttribute("output", outputSize);
-  }
-  ```
-  Wrap `MapTask.run`, `ReduceTask.run`, and the fetch step this way, recording partition id and record count as span attributes. A trace over one job then shows you the straggler directly: every reduce span short except one.
+
+```java
+try (var span = new ScopedSpan(tracer, "consolidate")) {
+    // ... consolidate logic ...
+    span.setAttribute("input", inputSize);
+    span.setAttribute("output", outputSize);
+}
+```
+
+Wrap `MapTask.run`, `ReduceTask.run`, and the fetch step this way, recording partition id and record count as span attributes. A trace over one job then shows you the straggler directly: every reduce span short except one.
+
 - [ ] `Logging.java`: a small helper that builds one structured JSON log line by hand (`String.format` or a `StringBuilder`, five fields doesn't need a library) and writes it to stdout:
-  ```json
-  {"level":"INFO","ts":"2026-10-19T10:00:00Z","op":"consolidate","input":1000,"output":42,"duration_ms":3}
-  ```
-  Replace any `System.out.println` in the shuffle with calls through this helper.
+
+```json
+{"level":"INFO","ts":"2026-10-19T10:00:00Z","op":"consolidate","input":1000,"output":42,"duration_ms":3}
+```
+
+Replace any `System.out.println` in the shuffle with calls through this helper.
+
 - [ ] Run the W05 Part 1 shuffle over the skewed dataset from W05 Part 2, generated with the same arguments (`--scale 0.5 --skew 1.2 --seed 42`). The exponent matters here for the same reason it mattered there: at a flatter value the duration histogram has one mode instead of two and there is nothing to see. Verify `/metrics` at `localhost:9091`, and confirm `reduce_task_duration_seconds` is visibly bimodal: a cluster of fast tasks and one slow one. That shape *is* the skew, and recognising it on a dashboard is the transferable skill.
 
 ### Break it, then decide
@@ -91,38 +97,46 @@ Add observability to `code/shuffle/` (your W05 shuffle). Skew is not something y
 
 > Parts 1 and 2 are the unit. The sidecar is a satisfying build and a genuinely different pattern, but it is a second sitting, not the same one.
 
-- [ ] `tools/log-aggregator/main.go`: HTTP server (`net/http`, standard library, matching the same "no framework needed for two routes" approach every other small service in this curriculum uses) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Back it with a fixed-capacity ring buffer guarded by a `sync.RWMutex` rather than a plain `sync.Mutex`: `POST /log` is a rare write and `GET /logs` can be a frequent read, and a plain mutex serializes readers behind each other even though none of them mutate anything.
+- [ ] `tools/log-aggregator/main.go`: HTTP server (`net/http`, standard library) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Back it with a fixed-capacity ring buffer guarded by a `sync.RWMutex` rather than a plain `sync.Mutex`: `POST /log` is a rare write and `GET /logs` can be a frequent read, and a plain mutex serializes readers behind each other even though none of them mutate anything.
 - [ ] The 100-line cap means anything logging faster than something reads `/logs` silently evicts the oldest lines. This is W04's `Drop` policy again. Decide whether that is acceptable for a debugging aid, or whether `POST /log` should block or reject once the buffer is full, and say what a blocking `POST /log` would cost the trainer container sharing the Pod.
 - [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.26` builder → `gcr.io/distroless/static` runtime, the same shape as W00's), `EXPOSE 8080`.
 - [ ] Build and load into the kind cluster from W14:
-  ```bash
-  docker build -t log-aggregator:latest tools/log-aggregator
-  kind load docker-image log-aggregator:latest --name pd-systems
-  ```
-- [ ] Add the sidecar to your W14 `TrainJob`'s node Pod template (`code/operator/config/train-job.yaml`), as a second entry alongside the existing trainer container:
-  ```yaml
-  - name: log-aggregator
-    image: log-aggregator:latest
-    ports:
-      - containerPort: 8080
-  ```
-  Kubeflow Trainer builds node Pods from the `TrainingRuntime` the job references, so there are two places this can go and the difference is worth understanding rather than guessing at. Adding it to the `TrainJob` affects only this job. Adding it to a `ClusterTrainingRuntime` affects every job that references that runtime, which is how a platform team would actually ship a logging sidecar to everyone at once. Do it on the `TrainJob` first, since a change you can see the blast radius of is the better thing to learn on.
 
-  Reapply and check:
-  ```bash
-  kubectl apply -f code/operator/config/train-job.yaml
-  kubectl get pod -l trainer.kubeflow.org/trainjob-name=<your-job-name> \
-    -o jsonpath='{.items[0].spec.containers[*].name}'
-  # expect the trainer container and log-aggregator side by side
-  ```
+```bash
+docker build -t log-aggregator:latest tools/log-aggregator
+kind load docker-image log-aggregator:latest --name pd-systems
+```
+
+- [ ] Add the sidecar to your W14 `TrainJob`'s node Pod template (`code/operator/config/train-job.yaml`), as a second entry alongside the existing trainer container:
+
+```yaml
+- name: log-aggregator
+  image: log-aggregator:latest
+  ports:
+    - containerPort: 8080
+```
+
+Kubeflow Trainer builds node Pods from the `TrainingRuntime` the job references, so there are two places this can go and the difference is worth understanding rather than guessing at. Adding it to the `TrainJob` affects only this job. Adding it to a `ClusterTrainingRuntime` affects every job that references that runtime, which is how a platform team would actually ship a logging sidecar to everyone at once. Do it on the `TrainJob` first, since a change you can see the blast radius of is the better thing to learn on.
+
+Reapply and check:
+
+```bash
+kubectl apply -f code/operator/config/train-job.yaml
+kubectl get pod -l trainer.kubeflow.org/trainjob-name=<your-job-name> \
+  -o jsonpath='{.items[0].spec.containers[*].name}'
+# expect the trainer container and log-aggregator side by side
+```
+
 - [ ] Confirm the two containers share a network namespace: the point of the sidecar pattern, not just "two containers exist":
-  ```bash
-  POD=$(kubectl get pod -l trainer.kubeflow.org/trainjob-name=<your-job-name> -o jsonpath='{.items[0].metadata.name}')
-  kubectl exec $POD -c <trainer-container> -- wget -qO- --post-data='{"msg":"hello from the trainer"}' localhost:8080/log
-  kubectl exec $POD -c <trainer-container> -- wget -qO- localhost:8080/logs
-  # the posted line should come back
-  ```
-  Spark Operator's `spec.executor.sidecars` field is the equivalent mechanism on the other operator from W14, worth knowing exists if you want to try the same thing there.
+
+```bash
+POD=$(kubectl get pod -l trainer.kubeflow.org/trainjob-name=<your-job-name> -o jsonpath='{.items[0].metadata.name}')
+kubectl exec $POD -c <trainer-container> -- wget -qO- --post-data='{"msg":"hello from the trainer"}' localhost:8080/log
+kubectl exec $POD -c <trainer-container> -- wget -qO- localhost:8080/logs
+# the posted line should come back
+```
+
+Spark Operator's `spec.executor.sidecars` field is the equivalent mechanism on the other operator from W14, worth knowing exists if you want to try the same thing there.
 
 **Minimum bar (Part 3):** the node Pod runs two containers; the trainer container reaches the sidecar over `localhost` with no Service or DNS involved; a log line posted from the trainer round-trips through `GET /logs`.
 

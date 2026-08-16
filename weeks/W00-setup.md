@@ -42,14 +42,17 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 ## Deploy the Observability Stack
 
 - [ ] Add Helm repo and install kube-prometheus-stack:
-  ```bash
-  helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-  helm repo update
-  helm install monitoring prometheus-community/kube-prometheus-stack \
-    --namespace monitoring --create-namespace \
-    --set grafana.adminPassword=admin
-  ```
-  The release name `monitoring` matters beyond this command. Every resource below is named after it, and the `ServiceMonitor` you write later has to carry it as a label. If you pick a different name, substitute it consistently everywhere.
+
+```bash
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring --create-namespace \
+  --set grafana.adminPassword=admin
+```
+
+The release name `monitoring` matters beyond this command. Every resource below is named after it, and the `ServiceMonitor` you write later has to carry it as a label. If you pick a different name, substitute it consistently everywhere.
+
 - [ ] Wait for pods: `kubectl get pods -n monitoring -w`
 - [ ] Port-forward Grafana: `kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring`
 - [ ] Verify Grafana at `localhost:3000` (admin / admin). Check that the Prometheus datasource is connected.
@@ -146,102 +149,144 @@ On the ten lines the histogram occupies, from the [Prometheus metric types docum
 
 - [ ] Register both routes and start the server on `:8080` with `http.ListenAndServe`.
 
-### Step 6: `Dockerfile`
+### Step 6: run it locally, before any of the Kubernetes work
+
+Everything from Step 7 on puts the service inside a container inside a cluster, where a mistake in `main.go` looks the same as a mistake in a manifest. Get the service correct here first, where the feedback loop is one command long.
+
+- [ ] Start it:
+
+```bash
+go run .
+```
+
+- [ ] In a second terminal, drive it and read both endpoints:
+
+```bash
+curl -s localhost:8080/                       # {"status":"ok"}
+for i in $(seq 1 5); do curl -s localhost:8080/ > /dev/null; done
+curl -s localhost:8080/metrics | grep '^request_'
+```
+
+- [ ] Confirm all of the following before continuing. Each one catches a mistake that is much harder to see once this is a Pod:
+  - `request_count_total` reads 6, not 0. A zero here means the metric is being constructed inside the handler rather than once at package scope.
+  - `request_duration_seconds_count` also reads 6. If the counter moved and this did not, the `Observe` call is not being reached.
+  - `request_duration_seconds_bucket{le="+Inf"}` equals `_count`. Any other value means the buckets are not what you think they are.
+  - `go_*` and `process_*` series are present. Their absence means you registered against a custom registry while serving `promhttp.Handler()`, which reads the default one.
+
+- [ ] Re-run `go run .` after every change in Steps 7 to 9 that touches Go code. Rebuilding the image to test a one-line handler change costs a minute each time and tells you less.
+
+### Step 7: `Dockerfile`
 
 - [ ] Multi-stage build:
-  ```dockerfile
-  FROM golang:1.26 AS builder
-  WORKDIR /app
-  COPY . .
-  RUN CGO_ENABLED=0 go build -o hello-metrics .
 
-  FROM gcr.io/distroless/static
-  COPY --from=builder /app/hello-metrics /hello-metrics
-  EXPOSE 8080
-  ENTRYPOINT ["/hello-metrics"]
-  ```
+```dockerfile
+FROM golang:1.26 AS builder
+WORKDIR /app
+COPY . .
+RUN CGO_ENABLED=0 go build -o hello-metrics .
 
-### Step 7: Kubernetes manifests
+FROM gcr.io/distroless/static
+COPY --from=builder /app/hello-metrics /hello-metrics
+EXPOSE 8080
+ENTRYPOINT ["/hello-metrics"]
+```
+
+### Step 8: Kubernetes manifests
 
 **The full pipeline, before you write these:** your Go service registers and updates the two metrics, they render as text at `/metrics`, the `ServiceMonitor` tells Prometheus to scrape that text every 15s and store it as a time series, and Grafana panels query Prometheus (never your Go service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
 
 - [ ] `k8s/deployment.yaml`: a `Deployment` (1 replica, image `hello-metrics:latest`, `imagePullPolicy: Never` so kubelet uses the image you side-loaded into kind rather than trying to pull it) plus a `Service`. The Service needs two things the `ServiceMonitor` depends on:
-  ```yaml
-  apiVersion: v1
-  kind: Service
-  metadata:
-    name: hello-metrics
-    labels:
-      app: hello-metrics      # the ServiceMonitor selects on this
-  spec:
-    type: ClusterIP
-    selector:
-      app: hello-metrics      # this one selects pods, a different job
-    ports:
-      - name: http            # the ServiceMonitor references this name
-        port: 8080
-        targetPort: 8080
-  ```
-  An unnamed port is the most common reason a `ServiceMonitor` produces no target at all.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-metrics
+  labels:
+    app: hello-metrics      # the ServiceMonitor selects on this
+spec:
+  type: ClusterIP
+  selector:
+    app: hello-metrics      # this one selects pods, a different job
+  ports:
+    - name: http            # the ServiceMonitor references this name
+      port: 8080
+      targetPort: 8080
+```
+
+An unnamed port is the most common reason a `ServiceMonitor` produces no target at all.
 
 - [ ] `k8s/service-monitor.yaml`:
-  ```yaml
-  apiVersion: monitoring.coreos.com/v1
-  kind: ServiceMonitor
-  metadata:
-    name: hello-metrics
-    namespace: default
-    labels:
-      release: monitoring     # must match your Helm release name
-  spec:
-    selector:
-      matchLabels:
-        app: hello-metrics    # matches the Service's labels, not the pods'
-    namespaceSelector:
-      matchNames:
-        - default
-    endpoints:
-      - port: http            # the Service port's *name*, not its number
-        path: /metrics
-        interval: 15s
-  ```
 
-  Each of the following fails silently when wrong, with no error message anywhere:
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hello-metrics
+  namespace: default
+  labels:
+    release: monitoring     # must match your Helm release name
+spec:
+  selector:
+    matchLabels:
+      app: hello-metrics    # matches the Service's labels, not the pods'
+  namespaceSelector:
+    matchNames:
+      - default
+  endpoints:
+    - port: http            # the Service port's *name*, not its number
+      path: /metrics
+      interval: 15s
+```
 
-  - **`labels.release: monitoring`.** kube-prometheus-stack configures its Prometheus to pick up only ServiceMonitors labelled with the Helm release name. Without this label your resource is created successfully, sits in the cluster, and is ignored. Confirm what your Prometheus is actually selecting with:
-    ```bash
-    kubectl get prometheus -n monitoring -o jsonpath='{.items[0].spec.serviceMonitorSelector}'
-    ```
-  - **`spec.selector` matches the Service, not the Deployment.** A `ServiceMonitor` selects Services; the Service selects pods. Pointing the ServiceMonitor at pod labels is a common miss, and it only shows up as a missing target.
-  - **`endpoints[].port` is the port name.** Numbers go in `targetPort` if you need them.
+Each of the following fails silently when wrong, with no error message anywhere.
 
-### Step 8: build and deploy
+**`labels.release: monitoring`.** kube-prometheus-stack configures its Prometheus to pick up only ServiceMonitors labelled with the Helm release name. Without this label your resource is created successfully, sits in the cluster, and is ignored. Confirm what your Prometheus is actually selecting:
 
-- [ ] ```bash
-  docker build -t hello-metrics:latest .
-  kind load docker-image hello-metrics:latest --name pd-systems
-  kubectl apply -f k8s/
-  ```
+```bash
+kubectl get prometheus -n monitoring -o jsonpath='{.items[0].spec.serviceMonitorSelector}'
+```
+
+**`spec.selector` matches the Service, not the Deployment.** A `ServiceMonitor` selects Services; the Service selects pods. Pointing the ServiceMonitor at pod labels is a common miss, and it only shows up as a missing target.
+
+**`endpoints[].port` is the port name.** Numbers go in `targetPort` if you need them.
+
+### Step 9: build and deploy
+
+- [ ] Build the image, side-load it into kind, and apply the manifests:
+
+```bash
+docker build -t hello-metrics:latest .
+kind load docker-image hello-metrics:latest --name pd-systems
+kubectl apply -f k8s/
+```
 
 ---
 
 ## Verify
 
 - [ ] Port-forward the service in one terminal:
-  ```bash
-  kubectl port-forward svc/hello-metrics 8080:8080
-  ```
+
+```bash
+kubectl port-forward svc/hello-metrics 8080:8080
+```
+
 - [ ] In a second terminal, send 20 requests sequentially. Concurrency is not the point here; you are checking that the counter moves, not measuring throughput.
-  ```bash
-  for i in $(seq 1 20); do curl -s localhost:8080/ > /dev/null; done
-  ```
+
+```bash
+for i in $(seq 1 20); do curl -s localhost:8080/ > /dev/null; done
+```
+
 - [ ] Confirm the target is healthy at `localhost:9090/targets` before querying anything. A missing or `DOWN` target explains every empty result below, and checking it first saves you from debugging a query that was never the problem.
 - [ ] Query `request_count_total` in Prometheus. It should read 20, possibly after up to 15 seconds of waiting for the next scrape.
 - [ ] Now generate continuous traffic for about two minutes, leaving it running:
-  ```bash
-  while true; do curl -s localhost:8080/ > /dev/null; sleep 0.2; done
-  ```
-  `rate()` over a 1m window needs at least two scrapes inside that window to return anything. Twenty requests fired in one second land in a single scrape, so `rate(request_count_total[1m])` will be empty or flat even though the counter is clearly moving. This is not a bug in your setup and it is worth seeing once.
+
+```bash
+while true; do curl -s localhost:8080/ > /dev/null; sleep 0.2; done
+```
+
+`rate()` over a 1m window needs at least two scrapes inside that window to return anything. Twenty requests fired in one second land in a single scrape, so `rate(request_count_total[1m])` will be empty or flat even though the counter is clearly moving. This is not a bug in your setup and it is worth seeing once.
+
 - [ ] With traffic still flowing, query `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`. Confirm it returns a real number rather than an empty result. An empty result means the `Observe` call is never reached.
 
   Expect roughly 0.005 or below. A handler that writes fifteen bytes finishes in microseconds, so every observation falls in the first bucket and `histogram_quantile` interpolates inside it. The number you get is a property of your bucket boundaries, not a measurement of your handler. Real latency numbers arrive in W15, when the buckets are chosen against a workload that actually spends time.

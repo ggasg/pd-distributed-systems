@@ -53,12 +53,14 @@ Model: 2-layer MLP on MNIST (784 → 128 → 10). Implemented in NumPy only.
 The backprop math is not this unit's exercise. Write this file once from any standard reference, or reuse an implementation you already have, and do not spend the unit on it.
 
 - [ ] An `MLP` class in NumPy with exactly this interface, since `worker.py` calls all four:
-  ```python
-  forward(X)            # logits
-  backward(X, Y)        # returns list of gradient arrays, same order as params()
-  params()              # returns list of weight arrays
-  apply_grads(grads)    # in-place update from a list in params() order
-  ```
+
+```python
+forward(X)            # logits
+backward(X, Y)        # returns list of gradient arrays, same order as params()
+params()              # returns list of weight arrays
+apply_grads(grads)    # in-place update from a list in params() order
+```
+
 - [ ] ReLU, softmax, cross-entropy. No PyTorch.
 
 ### Step 2: `ring_allreduce.py`

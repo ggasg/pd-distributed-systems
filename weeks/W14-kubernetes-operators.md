@@ -45,40 +45,48 @@ The router you wrote in W12 Part 2, the one that sends a request to the replica 
 ### Part 1: Kubeflow Trainer
 
 - [ ] Install the Trainer control plane and the default runtimes. Trainer's install is versioned, and the manifests move between releases, so pin a real version rather than copying a tag from here: check the [releases page](https://github.com/kubeflow/trainer/releases) for the current `v2.x.y`, then follow the [installation guide](https://www.kubeflow.org/docs/components/trainer/operator-guides/installation/). It is a two-step install, the manager first and the runtimes second, and skipping the second step is the most common way this goes wrong. The symptom is a `TrainJob` that sits there doing nothing because the runtime it references does not exist.
-  ```bash
-  # after installing, confirm both the CRDs and the runtimes are present
-  kubectl get crds | grep trainer.kubeflow.org
-  kubectl get clustertrainingruntimes
-  kubectl get pods -n kubeflow-system   # the trainer controller should be Running
-  ```
+
+```bash
+# after installing, confirm both the CRDs and the runtimes are present
+kubectl get crds | grep trainer.kubeflow.org
+kubectl get clustertrainingruntimes
+kubectl get pods -n kubeflow-system   # the trainer controller should be Running
+```
+
 - [ ] `code/operator/config/train-job.yaml`: a small `TrainJob` referencing the built-in `torch-distributed` runtime, with `numNodes: 2` and a trivial training script (a few steps of a tiny model, or even a script that just initializes the process group and prints its rank, which is enough to prove distributed setup worked). Confirm the API group with `kubectl api-resources | grep trainjob` before writing the file, since the exact `apiVersion` depends on the release you installed.
 - [ ] Apply it, watch it converge:
-  ```bash
-  kubectl apply -f code/operator/config/train-job.yaml
-  kubectl get trainjob -w
-  kubectl get pods -l trainer.kubeflow.org/trainjob-name=<your-job-name>
-  kubectl logs <one-of-the-node-pods>   # each node should report a distinct rank
-  ```
+
+```bash
+kubectl apply -f code/operator/config/train-job.yaml
+kubectl get trainjob -w
+kubectl get pods -l trainer.kubeflow.org/trainjob-name=<your-job-name>
+kubectl logs <one-of-the-node-pods>   # each node should report a distinct rank
+```
+
 - [ ] **Break it, on purpose:** `kubectl delete pod <one-of-the-node-pods>` directly, without touching the `TrainJob`. Watch `kubectl get pods -w`. The Pod comes back, because the controller sees a gap between desired and actual and closes it. Now notice the part that matters more: the restarted Pod starts from scratch, with no memory of the training progress the old one had. The operator restarted your *process*; it did nothing about your *state*. That division of labor is the single most important idea in this unit and it's what W16 builds on directly.
 - [ ] Skim the real reconciler: browse [`kubeflow/trainer`](https://github.com/kubeflow/trainer) and search for `TrainJobReconciler` (the package path has moved between releases; look under `pkg/controller/` or `internal/controller/` depending on the tag you're viewing). Find the top-level `Reconcile` function. You don't need to read the whole file. Compare its shape, fetch object, compute desired state, diff against actual, patch the difference, against what you predicted for the Key Question.
 
 ### Part 2: Spark Operator
 
 - [ ] Install Kubeflow's Spark Operator via Helm:
-  ```bash
-  helm repo add spark-operator https://kubeflow.github.io/spark-operator
-  helm repo update
-  helm install spark-operator spark-operator/spark-operator --namespace spark-operator --create-namespace
-  kubectl get pods -n spark-operator   # controller and webhook pods should be Running
-  ```
+
+```bash
+helm repo add spark-operator https://kubeflow.github.io/spark-operator
+helm repo update
+helm install spark-operator spark-operator/spark-operator --namespace spark-operator --create-namespace
+kubectl get pods -n spark-operator   # controller and webhook pods should be Running
+```
+
 - [ ] `code/operator/config/spark-pi.yaml`: a `SparkApplication` CR running the operator's built-in SparkPi example (`apiVersion: sparkoperator.k8s.io/v1beta2`; copy the example from the quick-start guide you read above rather than hand-writing the full spec, it's long and none of it is new to you after the Spark work in W02, W05, and W07).
 - [ ] Apply it, watch it run to completion:
-  ```bash
-  kubectl apply -f code/operator/config/spark-pi.yaml -n spark-operator
-  kubectl get sparkapplication spark-pi -n spark-operator -w   # State: SUBMITTED -> RUNNING -> COMPLETED
-  kubectl logs <driver-pod-name> -n spark-operator   # should print an estimate of Pi
-  ```
-  Treat SparkPi as a smoke test rather than an exercise. Getting it green first means that when your own job fails in a minute, you already know the operator, the cluster, and the RBAC are fine, so the problem is yours. That sequencing is a habit worth having, not a formality.
+
+```bash
+kubectl apply -f code/operator/config/spark-pi.yaml -n spark-operator
+kubectl get sparkapplication spark-pi -n spark-operator -w   # State: SUBMITTED -> RUNNING -> COMPLETED
+kubectl logs <driver-pod-name> -n spark-operator   # should print an estimate of Pi
+```
+
+Treat SparkPi as a smoke test rather than an exercise. Getting it green first means that when your own job fails in a minute, you already know the operator, the cluster, and the RBAC are fine, so the problem is yours. That sequencing is a habit worth having, not a formality.
 
 ### Part 2b: Submit your own job (optional, stretch)
 
@@ -90,11 +98,14 @@ Keep the job itself boring on purpose. Twenty lines of aggregation is plenty, be
 
 - [ ] `code/spark-k8s-job/main.py`: the same PySpark you have been writing since W02. Create a `SparkSession`, build a small DataFrame inline (no external data, nothing to mount), do a `groupBy().agg()`, and print the result. Twenty lines.
 - [ ] `code/spark-k8s-job/Dockerfile`: `FROM apache/spark:<matching-version>` and `COPY` your script to `/opt/spark/work-dir/`. **This is where the real lesson lives.** A JVM job ships one self-contained JAR; a Python job ships a script plus an interpreter environment, and if your script imports anything beyond the standard library you now have a dependency-packaging problem that the image must solve. Add one third-party import on purpose and find out what it takes to make it available inside the driver and executor Pods. This is the single most common operational pain in running PySpark on Kubernetes, and it does not exist on the JVM side. Then the same two commands you already know from W00 and W15:
-  ```bash
-  docker build -t pd-spark-job:latest code/spark-k8s-job
-  kind load docker-image pd-spark-job:latest --name pd-systems
-  ```
-  Matching the image's Spark version to the one you developed against is not optional, and a mismatch here produces a runtime error that reads like a code bug.
+
+```bash
+docker build -t pd-spark-job:latest code/spark-k8s-job
+kind load docker-image pd-spark-job:latest --name pd-systems
+```
+
+Matching the image's Spark version to the one you developed against is not optional, and a mismatch here produces a runtime error that reads like a code bug.
+
 - [ ] `code/operator/config/spark-job.yaml`: a `SparkApplication` pointing at your image, with `spec.type: Python`, `spec.pythonVersion: "3"`, and `spec.mainApplicationFile` set to `local:///opt/spark/work-dir/main.py`. The `local://` scheme means "already inside the image," as opposed to a path the driver would have to download at submit time.
 - [ ] Apply it and confirm it reaches `COMPLETED`, with your aggregation in the driver logs.
 - [ ] **Break it, on purpose:** point `mainApplicationFile` at a path that does not exist in the image, or import a module you never installed, and reapply. The job fails, and the interesting part is where the explanation lives. `kubectl get sparkapplication` shows you a terminal state and nothing useful about why; `kubectl describe` gets you closer; the actual `ModuleNotFoundError` or file-not-found is only in the driver Pod's logs. Walk all three and note the order you would check them next time. This is the single most common Spark-on-Kubernetes failure and the debugging path is not obvious the first time.
@@ -114,20 +125,22 @@ Neither Part 1 nor Part 2 would work if the Kubernetes API server itself couldn'
 
 - [ ] Install etcd locally: `brew install etcd` (or download a release binary from [etcd-io/etcd releases](https://github.com/etcd-io/etcd/releases) if you're not on macOS). This gives you the `etcd` server and `etcdctl` client, no cluster build required.
 - [ ] Start a 3-member local cluster: run each of the following in its own terminal (or backgrounded with `&`, logs redirected to a file per member). This is the same single-machine, distinct-ports bootstrap etcd's own docs use for local testing, just run by hand instead of via their `Procfile`/`goreman` wrapper:
-  ```bash
-  # shared across all three
-  TOKEN=etcd-cluster-1
-  CLUSTER="infra1=http://localhost:2380,infra2=http://localhost:22380,infra3=http://localhost:32380"
 
-  # terminal 1
-  etcd --name infra1 --data-dir /tmp/etcd-infra1 \
-    --listen-client-urls http://localhost:2379 --advertise-client-urls http://localhost:2379 \
-    --listen-peer-urls http://localhost:2380 --initial-advertise-peer-urls http://localhost:2380 \
-    --initial-cluster-token $TOKEN --initial-cluster $CLUSTER --initial-cluster-state new
+```bash
+# shared across all three
+TOKEN=etcd-cluster-1
+CLUSTER="infra1=http://localhost:2380,infra2=http://localhost:22380,infra3=http://localhost:32380"
 
-  # terminal 2 (name infra2, data-dir /tmp/etcd-infra2, client 22379, peer 22380)
-  # terminal 3 (name infra3, data-dir /tmp/etcd-infra3, client 32379, peer 32380)
-  ```
+# terminal 1
+etcd --name infra1 --data-dir /tmp/etcd-infra1 \
+  --listen-client-urls http://localhost:2379 --advertise-client-urls http://localhost:2379 \
+  --listen-peer-urls http://localhost:2380 --initial-advertise-peer-urls http://localhost:2380 \
+  --initial-cluster-token $TOKEN --initial-cluster $CLUSTER --initial-cluster-state new
+
+# terminal 2 (name infra2, data-dir /tmp/etcd-infra2, client 22379, peer 22380)
+# terminal 3 (name infra3, data-dir /tmp/etcd-infra3, client 32379, peer 32380)
+```
+
 - [ ] Confirm all three joined: `etcdctl --endpoints=localhost:2379,localhost:22379,localhost:32379 member list -w table`.
 - [ ] Find the current leader: `etcdctl --endpoints=localhost:2379,localhost:22379,localhost:32379 endpoint status --cluster -w table`. Exactly one row shows `true` under `IS LEADER`; note its `TERM` number and which member (`infra1`/`infra2`/`infra3`) it is.
 - [ ] **Kill the leader specifically**, not just any member: Ctrl-C the terminal running that member's `etcd` process. Immediately re-run `endpoint status --cluster` against the two remaining endpoints.
