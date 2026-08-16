@@ -10,6 +10,7 @@ status: not-started
 > **Pre-unit:** Complete before W01 begins · **Language:** Go + shell
 
 ## What you'll build
+
 A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana), plus one small Go service, `hello-metrics`, running inside it and being scraped. By the end of this unit you can deploy any later code artifact to kind and see its metrics in Grafana. This stack is your running lab. You'll return to it in W14 and W15.
 
 **Scenario:** you've just inherited `hello-metrics` from someone who left the team, and the only handoff note is "it's fine, I think." Nobody, including you, currently has evidence for that claim. Standing up the stack below is what turns "I think it's fine" into something you can actually check.

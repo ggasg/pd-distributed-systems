@@ -9,9 +9,10 @@ status: not-started
 > **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
+
 A KV cache for autoregressive generation (Part 1), then a router that has to decide which of two replicas a request should go to, given that each one holds a different cache (Part 2).
 
-Part 1 builds the cache against a given multi-head self-attention implementation rather than one you derive from scratch: the attention forward pass itself is standard transformer mechanics that belongs to a dedicated ML/AI track, not this one. Its actual subject is what happens to memory and latency once you start caching past keys and values across generation steps, and where a naive cache can leak state between requests it was never supposed to share. No PyTorch.
+Part 1 builds the cache on top of a standard multi-head self-attention forward pass rather than one you derive. Its subject is what happens to memory and latency once you cache past keys and values across generation steps, and where a naive cache leaks state between requests it was never supposed to share. No PyTorch.
 
 Part 2 is the same cache one level up. Once you have more than one replica of a model, the cache stops being an implementation detail and becomes the thing that decides where a request should be sent, because sending it to the wrong replica means throwing away work that was already done.
 
@@ -22,43 +23,51 @@ Part 2 is the same cache one level up. Once you have more than one replica of a 
 ## Part 1: The Cache Itself
 
 ### Read
-- [ ] [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (Vaswani et al., 2017): read Sections 3.2–3.5 (the attention mechanism and multi-head attention) to understand the mechanism `attention.py` gives you below, not to derive it yourself. Skip the training details.
+
+- [ ] [Attention Is All You Need](https://arxiv.org/abs/1706.03762) (Vaswani et al., 2017): read Sections 3.2–3.5 (the attention mechanism and multi-head attention) for the mechanism `attention.py` implements, not to derive it yourself. Skip the training details.
 - [ ] Optional: [FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness](https://arxiv.org/abs/2205.14135) (Dao et al., 2022): read Sections 1–3. The key insight is tiling attention to avoid materializing the full N×N attention matrix. You won't implement this, but you need to understand *why* naive attention is memory-bound.
 - [ ] [Efficient Memory Management for Large Language Model Serving with PagedAttention](https://arxiv.org/abs/2309.06180) (Kwon et al., 2023): read Sections 1–4. Understand why KV cache fragmentation is a problem and how paging solves it.
+- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 6** (Replicated Load-Balanced Services), for Part 2. Read "Stateless Services," "Session Tracked Services," and "Introducing a Caching Layer." Your router is a special case of a pattern written down twenty years before anyone had a KV cache: a session-tracked service routes a request to the replica that already holds state for it, and accepts worse load balance to get it. Part 2 asks you to set that trade-off and defend where you put it, so read this before you pick a number.
+- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 4** (Ambassadors), for Part 2. Read "Using an Ambassador to Shard a Service" and "Using an Ambassador to Do Experimentation or Request Splitting." Your router is an ambassador: a component in front of several backends that decides which one a request goes to, on a rule the backends know nothing about. Ch.6 explains why you would route by session; Ch.4 explains where that code lives.
+- [ ] Optional: **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 15** (AI Inference and Serving), "Hosting a Model" and "Distributing a Model." The papers above are the compute and memory mechanics inside one forward pass; this is the layer above, hosting and distributing a model as a service.
 
-**Depth: read Sections 3.2 to 3.5 of Attention Is All You Need and Sections 1 to 4 of PagedAttention.** No study reading: multi-head attention is given to you, and the cache and router you build are not described in any of these papers. FlashAttention, Burns Ch.15, and the Gateway API posts are skims.
+**Depth: read Sections 3.2 to 3.5 of Attention Is All You Need and Sections 1 to 4 of PagedAttention.** No study reading: the cache and router you build are not described in any of these papers. FlashAttention, Burns Ch.15, and the Gateway API posts are skims.
 
 **Key question:** Naive attention is O(N²) in memory. Where exactly does this quadratic memory come from? Draw the computation graph and label which tensors are the bottleneck.
-
-**Burns, *Designing Distributed Systems*, 2nd ed., Chapter 4** (Ambassadors), for Part 2. Read "Using an Ambassador to Shard a Service" and "Using an Ambassador to Do Experimentation or Request Splitting." Your router is an ambassador: a component that sits in front of several backends and decides which one a request goes to, on a rule the backends themselves know nothing about. Burns names the pattern and shows the sharded-Redis version, which is the same structure with a different routing key. Worth reading alongside Ch.6 rather than instead of it, since Ch.6 explains *why* you would route by session and Ch.4 explains *where the code lives* when you do.
-
-**Burns, *Designing Distributed Systems*, 2nd ed., Chapter 6** (Replicated Load-Balanced Services), for Part 2. Read "Stateless Services," "Session Tracked Services," and "Introducing a Caching Layer." This is the pattern your router is a special case of, written down twenty years before anyone had a KV cache: a session-tracked service routes a request to the replica that already holds state for it, and accepts worse load balance to get it. Part 2 asks you to set exactly that trade-off and defend where you put it, so read this before you pick a number.
-
-**Optional: Burns, *Designing Distributed Systems*, 2nd ed., Chapter 15** (AI Inference and Serving). The three papers above are about the compute and memory mechanics inside one forward pass; Burns' chapter is the layer above that, hosting and distributing a model as a service. "Hosting a Model" and "Distributing a Model" are the production framing for what your `KVCache` and its memory/latency tradeoff exist to support, and it's a good warm-up for Part 2.
 
 ### Code
 
 Project: `code/attention/` (Python 3.12+, NumPy only)
 
-Model config: `d_model=64`, `n_heads=4`, `d_head=16`, `seq_len=32`, `vocab_size=256`.
+**Dimensions, used by every file below.** `d_model = 256`, 4 heads (`d_head = 64`), 4 layers, vocabulary 1000, prompt length 512, generating 64 tokens. Tokens are random integers; there is no corpus and no training, since this unit is about the shape of the computation rather than what the model says.
 
-**Given, not built:** `attention.py`'s `MultiHeadAttention` class is provided as a starter file: `__init__` (random `W_q`/`W_k`/`W_v`/`W_o` projections, shape `[d_model, d_model]`), `scaled_dot_product(Q, K, V, mask=None)` (`softmax(QK^T / sqrt(d_head)) V`, with an optional causal mask), and `forward(X)` (split into heads, apply SDPA per head, concatenate, project with `W_o`). Read it closely enough to know what shape `forward(X)` expects and returns, since `kv_cache.py` and `generate.py` both call into it directly, but you won't need to modify it. Deriving this mechanism yourself is real, valuable work; it's just not what this unit is testing.
+**Write once, then leave alone:** `attention.py`, a `MultiHeadAttention` class with:
 
-**Dimensions.** `d_model = 256`, 4 heads, 4 layers, vocabulary 1000, prompt length 512, generating 64 tokens. Tokens are random integers; there is no corpus and no training, since this unit is about the shape of the computation rather than about what the model says.
+```python
+__init__()                              # random W_q/W_k/W_v/W_o, each [d_model, d_model]
+scaled_dot_product(Q, K, V, mask=None)  # softmax(QK^T / sqrt(d_head)) V, optional causal mask
+forward(X)                              # split into heads, SDPA per head, concatenate, project with W_o
+```
+
+`kv_cache.py` and `generate.py` call `forward(X)` directly, so fix its input and output shapes before moving on. Deriving the mechanism is not what this unit tests; reuse an implementation if you have one.
 
 Sequence length is the parameter that decides whether this unit works. The cached and uncached paths differ by a factor of N, so at a short prompt both finish in milliseconds and the gap disappears into interpreter overhead. At 512 tokens the uncached path is re-running attention over a 512-plus-growing sequence at every one of 64 steps, which is unmistakable in both wall time and peak memory. Target: the uncached run should be at least 5x slower. If yours is under 2x, raise the prompt length before concluding anything, and record the length you used, since the ratio is meaningless without it.
 
-- [ ] `kv_cache.py`: `KVCache` class:
-  - Stores past keys and values per layer: `Dict[int, Tuple[np.ndarray, np.ndarray]]`
-  - `update(layer_id, new_k, new_v)`: concatenates new K/V to cached K/V along the sequence dimension
-  - `get(layer_id)`: returns full K/V including cache
-- [ ] `generate.py`: autoregressive generation:
-  - Without cache: re-run full attention over the entire sequence each step (O(N²) per step)
-  - With cache: run attention only for the new token against the cached K/V (O(N) per step)
-  - Generate 64 tokens from a 512-token random prompt; measure wall time and peak memory (`tracemalloc`) for both approaches
-- [ ] Print the comparison from inside `generate.py` rather than a separate file: tokens generated, time in ms, and peak memory in MB, cached versus uncached. Two numbers side by side is the whole deliverable and it does not need its own module.
+#### Step 1: `kv_cache.py`
 
-**Break it, then decide:**
+- [ ] A `KVCache` class storing past keys and values per layer as `Dict[int, Tuple[np.ndarray, np.ndarray]]`.
+- [ ] `update(layer_id, new_k, new_v)`: concatenate the new K/V onto the cached K/V along the sequence dimension.
+- [ ] `get(layer_id)`: return the full K/V, cache included.
+
+#### Step 2: `generate.py`
+
+- [ ] Without cache: re-run full attention over the entire sequence at each step, O(N²) per step.
+- [ ] With cache: run attention only for the new token against the cached K/V, O(N) per step.
+- [ ] Generate 64 tokens from a 512-token random prompt and measure wall time and peak memory (`tracemalloc`) for both paths.
+- [ ] Print the comparison from inside `generate.py`: tokens generated, time in ms, peak memory in MB, cached versus uncached. It does not need its own module.
+
+### Break it, then decide
+
 - [ ] `KVCache` as specified stores past keys and values keyed only by `layer_id`. Simulate two concurrent "conversations" sharing one `KVCache` instance: generate a few tokens for prompt A, then interleave a few tokens for a completely unrelated prompt B, calling `update`/`get` on the same cache object for both. Because the cache has no notion of which request a K/V pair belongs to, B's tokens get concatenated onto A's cached keys and values at the same `layer_id`, so a later step generating for A ends up attending over tokens from B's prompt too. Confirm this by printing what `get(layer_id)` returns after the interleaving and checking whether it contains tokens from both prompts.
 - [ ] Fix it by keying the cache by `(request_id, layer_id)` instead of `layer_id` alone, and decide: would you give each concurrent request its own `KVCache` instance (simple, no shared bookkeeping, but nothing enforces that a caller can't still pass the wrong instance to the wrong request), or one shared `KVCache` keyed internally by request ID (a single object every request goes through, so isolation is enforced in one place instead of trusted to every caller)? Implement whichever you pick, and re-run the interleaved test above to confirm A's generation no longer sees any of B's tokens.
 
@@ -68,15 +77,21 @@ Sequence length is the parameter that decides whether this unit works. The cache
 
 You just made the cache per-request. That change has a consequence that only shows up once there is more than one copy of your model running, and it is the thing this part is about.
 
-**Two terms first, since everything below turns on the difference.** **Prefill** is the first pass over a request: the model processes every token of the prompt at once, computing keys and values for all of them, which is a small number of large matrix operations and is therefore compute-bound. **Decode** is what follows: the model generates one token at a time, and each step attends over the whole cached history to produce a single new token, which is a large number of tiny operations dominated by reading the cache out of memory, and is therefore memory-bound. The two phases have opposite performance characteristics on the same hardware, and the KV cache exists precisely so that decode does not have to redo prefill's work at every step. That asymmetry is the reason routing matters at all.
+Everything below turns on the difference between two phases:
+
+- **Prefill**: the first pass over a request. The model processes every token of the prompt at once, computing keys and values for all of them. A small number of large matrix operations, so it is compute-bound.
+- **Decode**: what follows. The model generates one token at a time, each step attending over the whole cached history to produce a single new token. A large number of tiny operations dominated by reading the cache out of memory, so it is memory-bound.
+
+They have opposite performance characteristics on the same hardware, and the KV cache exists so that decode does not redo prefill's work at every step. That asymmetry is why routing matters at all.
 
 Picture a chat service. A user sends a message, your server runs prefill over the whole conversation so far, caches the keys and values, and generates a reply. The user sends a follow-up. If that follow-up lands on the same replica, the cache is already there and you only prefill the new message. If it lands on a different replica, that replica has never seen this conversation, so it prefills the entire history again from scratch. Same answer, several times the latency, for no reason other than which machine picked up the request.
 
-An ordinary load balancer cannot know any of this. Round-robin is correct, fair, and completely wrong here, because it treats replicas as interchangeable when the whole point is that they are not: **each one holds different state**. Routing that accounts for this is called cache-aware routing, and it is one of the fastest-moving parts of production inference infrastructure right now.
+An ordinary load balancer cannot know any of this. Round-robin is correct, fair, and completely wrong here, because it treats replicas as interchangeable when the whole point is that they are not: **each one holds different state**. Routing that accounts for this is called cache-aware routing.
 
-This part is deliberately small and entirely local. No Kubernetes, no GPU, no serving framework. Two replicas are two Python objects in one process, and the workload is simulated. The goal is to see the effect clearly, not to operate the real thing.
+This part is small and entirely local. No Kubernetes, no GPU, no serving framework. Two replicas are two Python objects in one process, and the workload is simulated. The goal is to see the effect clearly, not to operate the real thing.
 
 ### Read
+
 - [ ] [Introducing Gateway API Inference Extension](https://kubernetes.io/blog/2025/06/05/introducing-gateway-api-inference-extension/) (Kubernetes blog, June 2025): short and readable. Note what it says the router needs to know: KV cache utilization and which LoRA adapters a replica has loaded. Both are facts about a replica's *state*, which is precisely what a normal load balancer is designed not to care about.
 - [ ] Optional: [KV cache aware routing with llm-d](https://developers.redhat.com/articles/2025/10/07/master-kv-cache-aware-routing-llm-d-efficient-ai-inference) (Red Hat). Describes the same idea running against real vLLM replicas, with reported improvements of up to 3x on time-to-first-token.
 
@@ -94,7 +109,8 @@ Same project, `code/attention/`. Still NumPy and the standard library.
 
 **Minimum bar (Part 2):** a measured number, not an argument. Total prefill tokens under round-robin versus cache-aware, on the same workload, with the gap explained in one sentence.
 
-**Break it, then decide:**
+### Break it, then decide
+
 - [ ] Cache-aware routing sends every turn of a conversation to the same replica, which is the point. Now give one conversation a much longer history and many more turns than the others, and watch where it goes: that replica keeps getting picked, its queue grows, and the other one sits idle holding nothing useful. You have just recreated W05's skew problem one layer up. The cause is identical, a routing key whose distribution is uneven, and so is the symptom, one worker doing most of the work while the rest wait.
 - [ ] **Your call:** these two goals genuinely conflict and no policy satisfies both. Pure cache affinity gives the best time-to-first-token and the worst load balance. Pure round-robin gives perfect balance and throws away cache constantly. Implement the middle option: prefer the replica holding the cache *unless* its queue depth exceeds some threshold, at which point you accept the prefill cost and send the request elsewhere. Pick the threshold, say what happens to your prefill-token number when you do, and name the metric you'd put on a dashboard to know whether the threshold was set wrong in either direction.
 
@@ -102,12 +118,11 @@ Same project, `code/attention/`. Still NumPy and the standard library.
 
 Worth knowing, because it connects two units that otherwise sit apart. The production version of `router.py` is not part of the model server at all. It's a component of the Kubernetes control plane: the Gateway API Inference Extension is a Go project, and llm-d's Endpoint Picker is the same idea running as a Kubernetes-native service. Routing has to live there because it needs facts about every replica's state, and the thing that already tracks every replica is the control plane.
 
-That is the same layer W14 is about, and it's the honest answer to why this curriculum has you write Go at all. The tensors are C++ and the model is Python, but deciding *which* replica gets a request, and which GPU that replica runs on, is Go, and it is where an inference platform is actually engineered.
+That is the same layer W14 is about. The tensors are C++ and the model is Python, but deciding *which* replica gets a request, and which GPU that replica runs on, is Go.
 
 ---
 
 ## Reflect
-
 
 **Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
 
@@ -121,9 +136,10 @@ Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
 
 **What surprised me:**
 
-**Benchmark results:**
-- Uncached 20 tokens: __ ms, __ MB peak
-- Cached 20 tokens: __ ms, __ MB peak
+**Benchmark results, 64 tokens from a 512-token prompt:**
+- Uncached: __ ms, __ MB peak
+- Cached: __ ms, __ MB peak
+- Prompt length actually used: __
 
 **What PagedAttention solves that your KVCache doesn't:**
 
@@ -138,12 +154,3 @@ Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
 **Where the skew you caused in Part 2 is the same problem as W05's, and where it genuinely differs:**
 
 **What I'd do differently:**
-
----
-
-## Review and articulate
-
-Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
-
-- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
-- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

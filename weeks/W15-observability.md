@@ -9,6 +9,7 @@ status: not-started
 > **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
 
 ## What you'll build
+
 Instrument your W05 shuffle (Java) with Prometheus metrics, OpenTelemetry traces, and structured JSON logs. Deploy it to the kind cluster (W00 stack). Build a Grafana dashboard with four panels that show operator behavior in real time.
 
 **Scenario:** a dashboard with a confident-looking p99 line is worse than no dashboard at all if the number on it is wrong, because now everyone trusts it. Histogram bucket boundaries are the single easiest way to make that happen silently, and the exercise below shows you exactly how.
@@ -18,8 +19,9 @@ Instrument your W05 shuffle (Java) with Prometheus metrics, OpenTelemetry traces
 ---
 
 ## Read
+
 - [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 3** (The Sidecar Pattern): read before Part 3 below. You're about to build a log-aggregator sidecar and wire it into a node Pod of the `TrainJob` from W14 without ever naming what you're doing; this chapter names it, and walks through the same "modular container with its own small API, composed alongside a main container it knows nothing about" design your log aggregator follows.
-- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 14** (Monitoring and Observability Patterns): the chapter this unit is named after, and it was not cited here until now. Logging, metrics, basic versus advanced request monitoring, alerting, tracing, and aggregation, in the same order you are about to build them. Read it before Part 1 rather than after, because it is the only reading here that treats all three signals as one system instead of three tools.
+- [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 14** (Monitoring and Observability Patterns): the chapter this unit is named after. Logging, metrics, basic versus advanced request monitoring, alerting, tracing, and aggregation, in the same order you are about to build them. Read it before Part 1 rather than after, because it is the only reading here that treats all three signals as one system instead of three tools.
 - [ ] Optional: **Burns Ch.5** (Adapters). Its two hands-on sections are Prometheus monitoring and normalizing mismatched log formats with fluentd, which is precisely what your log-aggregator sidecar does by hand in Part 3. Worth it if you want to see the pattern named before you implement it.
 - [ ] [The Tail at Scale](https://research.google/pubs/the-tail-at-scale/) (Dean & Barroso, CACM 2013): six pages, read all of them, and this is the unit's second study reading. It is the paper that explains why a service made of a hundred healthy components can still be slow for most users, why the 99th percentile of a component becomes the median of a request that fans out, and what the available mitigations are (hedged requests, tied requests, micro-partitioning). Of everything in this curriculum this is the paper most likely to let you answer a hard performance question correctly and immediately, because it gives you the arithmetic of fan-out rather than an intuition about it.
 - [ ] [Prometheus data model + metric types](https://prometheus.io/docs/concepts/data_model/): Counter vs Gauge vs Histogram vs Summary. Know when to use each. When to NOT use a Summary. (~20 min)
@@ -35,14 +37,15 @@ Instrument your W05 shuffle (Java) with Prometheus metrics, OpenTelemetry traces
 
 ## Code
 
-**Part 1: Instrument the DD Engine (Java)**
+### Part 1: Instrument the shuffle (Java)
 
-Add observability to `code/shuffle/` (your W05 shuffle). This is a better instrumentation target than it might look: skew is not a thing you reason about from source, it is a thing you *see* in metrics, and this unit is where you learn to see it.
+Add observability to `code/shuffle/` (your W05 shuffle). Skew is not something you reason about from source, it is something you see in metrics.
 
 - [ ] Add dependencies via Maven (`pom.xml`):
   - [`io.prometheus:prometheus-metrics-core`](https://github.com/prometheus/client_java) (the same Prometheus Java client W00 already uses) plus `prometheus-metrics-exporter-httpserver`, which gives you a standalone metrics HTTP server without wiring `/metrics` into your own `HttpServer` by hand this time. Note the artifact names: the pre-1.0 client used `simpleclient_*`, and a lot of tutorials still show that. The 1.x API is what you want, and it reads slightly differently, `builder()` rather than `build()` and `labelValues()` rather than `labels()`
   - [OpenTelemetry Java SDK](https://opentelemetry.io/docs/languages/java/): `io.opentelemetry:opentelemetry-sdk` plus the OTLP exporter artifact
-  - No JSON library needed for the log lines below; five fields is small enough to build by hand, the same call W00 made for its two-key response body
+  - No JSON library needed for the log lines below; five fields is small enough to build by hand
+
 **Before you add a label, know what it costs.** **Cardinality** is the number of distinct time series a metric produces, and it is the product of the distinct values of every label you attach. A counter with one label of ten values is ten series; add a second label of a thousand values and it is ten thousand. Prometheus holds series in memory, so **cardinality explosion**, the usual name for what happens when someone labels a metric by user ID, request ID, or a raw error string, is the single most common way a working Prometheus deployment falls over. The rule that follows: labels are for values you would group by, from a set you can name in advance. `partition` below is a good label because there are as many values as partitions and you chose that number. A record's key would be a catastrophic one.
 
 - [ ] `Metrics.java`: define and register the following against the default `PrometheusRegistry` (the 1.x replacement for the old `CollectorRegistry`):
@@ -50,8 +53,8 @@ Add observability to `code/shuffle/` (your W05 shuffle). This is a better instru
   - `reduce_task_duration_seconds`: `Histogram` (buckets: 10ms, 50ms, 100ms, 500ms, 2s), wall time per reduce task
   - `spill_file_bytes`: `Histogram`, size of each map-side spill file
   - `active_partitions`: `Gauge`, reduce tasks currently running
-  - Start an `HTTPServer` (from `prometheus-metrics-exporter-httpserver`) on port 9091 serving `/metrics`; this is a different, purpose-built server from the one your own `HttpServer`-based tools use elsewhere in this curriculum, the Prometheus client ships its own because exposing the registry is all it needs to do.
-- [ ] `TracingSetup.java` + `ScopedSpan.java`: initialize an OpenTelemetry `SdkTracerProvider` with an OTLP exporter. Java has no attribute-macro sugar for this, but it has `AutoCloseable` plus try-with-resources. Write `ScopedSpan implements AutoCloseable`: the constructor starts a span, `close()` ends it, and try-with-resources guarantees `close()` runs when the block exits, including on an exception. That is the same "closes when the enclosing scope ends" guarantee RAII gives you in C++, spelled with a different keyword:
+  - Start an `HTTPServer` (from `prometheus-metrics-exporter-httpserver`) on port 9091 serving `/metrics`. The Prometheus client ships its own server because exposing the registry is all it has to do.
+- [ ] `TracingSetup.java` + `ScopedSpan.java`: initialize an OpenTelemetry `SdkTracerProvider` with an OTLP exporter. Java has no attribute-macro sugar for this, but it has `AutoCloseable` plus try-with-resources. Write `ScopedSpan implements AutoCloseable`: the constructor starts a span, `close()` ends it, and try-with-resources guarantees `close()` runs when the block exits, including on an exception. The span ends when the enclosing block exits, on the success path and the exception path alike:
   ```java
   try (var span = new ScopedSpan(tracer, "consolidate")) {
       // ... consolidate logic ...
@@ -67,9 +70,11 @@ Add observability to `code/shuffle/` (your W05 shuffle). This is a better instru
   Replace any `System.out.println` in the shuffle with calls through this helper.
 - [ ] Run the W05 Part 1 shuffle over the skewed dataset from W05 Part 2, generated with the same arguments (`--scale 0.5 --skew 1.2 --seed 42`). The exponent matters here for the same reason it mattered there: at a flatter value the duration histogram has one mode instead of two and there is nothing to see. Verify `/metrics` at `localhost:9091`, and confirm `reduce_task_duration_seconds` is visibly bimodal: a cluster of fast tasks and one slow one. That shape *is* the skew, and recognising it on a dashboard is the transferable skill.
 
-**Break it, then decide:** temporarily reconfigure `reduce_task_duration_seconds`'s buckets to something wildly mismatched with reality, say `1, 5, 10, 30, 60` (seconds) for tasks that actually complete in tens of milliseconds. Re-run the W05 shuffle over a Zipf-distributed key set and query `histogram_quantile(0.99, rate(reduce_task_duration_seconds_bucket[5m]))` in Prometheus. Every observation lands in the lowest bucket, so the p99 estimate comes back as some number near your smallest boundary regardless of whether real reduce tasks take 20ms or 900ms, the histogram has no resolution in the range that actually matters. Put the original buckets back and confirm the p99 number now moves when you change the workload. Which failure would you rather ship: buckets too coarse in the range that matters (what you just saw), or too many buckets, adding memory and cardinality cost for resolution nobody queries? Say which you'd default to when instrumenting a component you don't yet know the real latency distribution of.
+### Break it, then decide
 
-**Part 2: Grafana Dashboard**
+- [ ] Temporarily reconfigure `reduce_task_duration_seconds`'s buckets to something wildly mismatched with reality, say `1, 5, 10, 30, 60` (seconds) for tasks that actually complete in tens of milliseconds. Re-run the W05 shuffle over a Zipf-distributed key set and query `histogram_quantile(0.99, rate(reduce_task_duration_seconds_bucket[5m]))` in Prometheus. Every observation lands in the lowest bucket, so the p99 estimate comes back as some number near your smallest boundary regardless of whether real reduce tasks take 20ms or 900ms, the histogram has no resolution in the range that actually matters. Put the original buckets back and confirm the p99 number now moves when you change the workload. Which failure would you rather ship: buckets too coarse in the range that matters (what you just saw), or too many buckets, adding memory and cardinality cost for resolution nobody queries? Say which you'd default to when instrumenting a component you don't yet know the real latency distribution of.
+
+### Part 2: Grafana dashboard
 
 - [ ] Containerize the instrumented shuffle (`Dockerfile`: the same multi-stage `maven:3.9-eclipse-temurin-21` builder → `eclipse-temurin:21-jre-alpine` runtime shape as W00 and W13; k8s `Deployment` + `ServiceMonitor`)
 - [ ] Deploy to kind: `kind load docker-image shuffle:latest --name pd-systems && kubectl apply -f k8s/`
@@ -80,11 +85,14 @@ Add observability to `code/shuffle/` (your W05 shuffle). This is a better instru
   - `spill_file_bytes`: map-side output size distribution (graph)
 - [ ] Export the dashboard as `config/grafana-dashboard.json` (Grafana → Share → Export)
 
-**Part 3 (optional, stretch): Go log aggregator, wired into W14's TrainJob**
+**Minimum bar:** the instrumented shuffle is deployed to kind, Prometheus is scraping it, and the Grafana dashboard's four panels show the skewed run, with the bimodal duration histogram visible. Plus the bucket-mismatch experiment above run and reverted.
+
+### Part 3: Go log aggregator, wired into W14's TrainJob (optional, stretch)
 
 > Parts 1 and 2 are the unit. The sidecar is a satisfying build and a genuinely different pattern, but it is a second sitting, not the same one.
 
-- [ ] `tools/log-aggregator/main.go`: HTTP server (`net/http`, standard library, matching the same "no framework needed for two routes" approach every other small service in this curriculum uses) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Use a fixed-capacity ring buffer (the same shape as W09's Python DSA Review `RingBuffer`, this time backing a real service) guarded by a `sync.RWMutex`, not a plain `sync.Mutex`. A 100-line cap means a real burst, a tight retry loop, a noisy dependency, anything logging faster than something reads `/logs`, silently evicts the oldest lines before anyone sees them. Decide whether that's acceptable for this sidecar's actual job (a debugging aid, not a durability guarantee) or whether you'd rather have `POST /log` block or reject once the buffer's full instead of silently dropping the oldest entry; whichever you pick, say what it would cost the trainer container if `POST /log` ever blocked on a full buffer. That's not a stylistic preference: `POST /log` is a rare write, `GET /logs` can be a frequent read, and a plain `Mutex` serializes every read behind every other read even though none of them mutate anything; `RWMutex`'s `RLock`/`RUnlock` let concurrent readers through together and only blocks them against the occasional writer. Go's runtime doesn't have the virtual-thread-pinning failure mode a `synchronized` block causes on the JVM, goroutines don't get pinned to an OS thread by holding a lock, but an unnecessarily exclusive lock is still a real, measurable throughput cost under concurrent reads, just a different mechanism than pinning.
+- [ ] `tools/log-aggregator/main.go`: HTTP server (`net/http`, standard library, matching the same "no framework needed for two routes" approach every other small service in this curriculum uses) that accepts structured log lines via `POST /log` (body: JSON) and serves `GET /logs` (last 100 lines, newest first, JSON array). Back it with a fixed-capacity ring buffer guarded by a `sync.RWMutex` rather than a plain `sync.Mutex`: `POST /log` is a rare write and `GET /logs` can be a frequent read, and a plain mutex serializes readers behind each other even though none of them mutate anything.
+- [ ] The 100-line cap means anything logging faster than something reads `/logs` silently evicts the oldest lines. This is W04's `Drop` policy again. Decide whether that is acceptable for a debugging aid, or whether `POST /log` should block or reject once the buffer is full, and say what a blocking `POST /log` would cost the trainer container sharing the Pod.
 - [ ] `tools/log-aggregator/Dockerfile`: multi-stage build (`golang:1.26` builder → `gcr.io/distroless/static` runtime, the same shape as W00's), `EXPOSE 8080`.
 - [ ] Build and load into the kind cluster from W14:
   ```bash
@@ -116,14 +124,13 @@ Add observability to `code/shuffle/` (your W05 shuffle). This is a better instru
   ```
   Spark Operator's `spec.executor.sidecars` field is the equivalent mechanism on the other operator from W14, worth knowing exists if you want to try the same thing there.
 
-**Minimum bar:** the node Pod runs two containers; the trainer container reaches the sidecar over `localhost` with no Service or DNS involved; a log line posted from the trainer round-trips through `GET /logs`.
+**Minimum bar (Part 3):** the node Pod runs two containers; the trainer container reaches the sidecar over `localhost` with no Service or DNS involved; a log line posted from the trainer round-trips through `GET /logs`.
 
 **If you also stood up Spark Operator in W14:** Kubeflow's Spark Operator supports the same idea natively too, `spec.driver.sidecars` and `spec.executor.sidecars` on a `SparkApplication`. Wiring your log aggregator in there as well is optional, not required for the minimum bar, but worth doing if you want the comparison: a batch job's driver/executor Pods are short-lived, so the sidecar's job there is closer to "capture logs before the Pod disappears" than the standing-cluster case above.
 
 ---
 
 ## Reflect
-
 
 **Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
 
@@ -150,12 +157,3 @@ Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
 **Why `RWMutex` instead of a plain `Mutex` for the ring buffer, concretely, in terms of `POST /log` vs `GET /logs` traffic, and what would you actually observe under load if you swapped it for a plain `Mutex` (a correctness bug, or something else)?**
 
 **What I'd do differently:**
-
----
-
-## Review and articulate
-
-Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
-
-- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
-- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

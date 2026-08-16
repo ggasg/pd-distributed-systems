@@ -14,9 +14,9 @@ status: not-started
 
 ## What you'll build
 
-A small end-to-end distributed ML platform on your kind cluster: a versioned feature pipeline feeds a tiny attention-based model that trains across multiple worker Pods via ring-allreduce, checkpoints itself so a killed worker resumes instead of retraining from scratch, runs as a `TrainJob` under the Kubeflow Trainer operator you installed in W14 (you're operating a real operator here, not extending one you wrote), lands in a model registry that records which data version produced it, and is served afterward from a specific registered version through a KV-cached inference endpoint, all instrumented with the Prometheus/Grafana stack from W15.
+A small end-to-end distributed ML platform on your kind cluster: a versioned feature pipeline feeds a tiny attention-based model that trains across multiple worker Pods via ring-allreduce, checkpoints itself so a killed worker resumes instead of retraining from scratch, runs as a `TrainJob` under the Kubeflow Trainer operator you installed in W14, lands in a model registry that records which data version produced it, and is served afterward from a specific registered version through a KV-cached inference endpoint, all instrumented with the Prometheus/Grafana stack from W15.
 
-**Why this unit exists:** it chains six units into a single working system, end to end, on your own cluster: data in, model trained, failure survived, model served, everything observed. It's the closest thing in this curriculum to what you'd actually build on the job, and it's the only place the pieces get tested against each other rather than in isolation.
+Six units chained into one working system: data in, model trained, failure survived, model served, everything observed. It is the only place the pieces get tested against each other rather than in isolation.
 
 ---
 
@@ -30,7 +30,7 @@ No new required reading tied to this unit's build. If any of these feel rusty, s
 - W14: the reconcile loop, and why it's level-triggered
 - W15: the four golden signals
 
-One genuinely new read, if you want it: **DDIA Chapter 13** (2nd ed.), A Philosophy of Streaming Systems (renamed from "The Future of Data Systems"). It's the book's own synthesis chapter (unbundling databases into composable derived-data systems, correctness as a property of the whole pipeline rather than any one component), and this is the unit where that stops being abstract and becomes the actual shape of what you built: a feature store, a trainer, a checkpoint coordinator, an operator, and a server, each correct on its own, wired into one pipeline where correctness is a property of the whole. Fitting bookend to a curriculum that leaned on this book throughout.
+One new read, if you want it: **DDIA Chapter 13** (2nd ed.), A Philosophy of Streaming Systems. The book's synthesis chapter, on unbundling databases into composable derived-data systems and on correctness as a property of the whole pipeline rather than any one component. That is the shape of what you are about to build: a feature store, a trainer, a checkpoint coordinator, an operator, and a server, each correct on its own and wired into one pipeline.
 
 **Depth: skim your own notes, study nothing new.** This unit is synthesis. If a concept feels shaky, the fix is to reread what you wrote in that unit's Reflect section, not to reread the paper.
 
@@ -44,32 +44,32 @@ One genuinely new read, if you want it: **DDIA Chapter 13** (2nd ed.), A Philoso
 
 Project: `code/capstone-platform/` (Python for training, coordination, and serving; Helm/YAML for deploying as a `TrainJob` via the Kubeflow Trainer operator from W14; reusing your W08/W09/W12 code directly)
 
-**Part 1: Data (reuse W08)**
+### Part 1: Data (reuse W08)
 
 - [ ] Reuse `feature_pipeline/` from W08 (or a trimmed copy) to generate a versioned training dataset. No code changes needed; this is the input to Part 2.
 
   **Scale it down.** Everything here runs inside kind on one laptop, sharing CPU and memory with a Prometheus stack, an operator control plane, and several worker Pods, so generate at `--scale 0.05` (about 50,000 events over 10,000 customers) rather than W08's full million. The platform is what you are demonstrating, not throughput, and a dataset that makes a single training step take minutes turns every later failure test into a waiting game. Keep `--seed 42` so a rerun after a crash gives you the same data.
 
-**Part 2: Distributed training (combine W09 and W12)**
+### Part 2: Distributed training (combine W09 and W12)
 
 - [ ] `train_worker.py`: combine W09's `ring_allreduce.py` with a small attention model from W12's `attention.py` (instead of the MLP from W09). Each worker trains on a shard of the feature data and exchanges gradients via ring-allreduce.
 - [ ] Every N steps, each worker writes a checkpoint (model weights + optimizer state + current step number) to a shared path: `checkpoints/worker-{rank}/step-{n}.npz`
 
-**Part 3: Fault tolerance (extend W13)**
+### Part 3: Fault tolerance (extend W13)
 
 - [ ] `checkpoint_coordinator.py`: adapt the Chandy-Lamport idea from W13: when a checkpoint is triggered, the coordinator waits until all workers have paused at the *same* training step (not mid-allreduce) before recording state. This is what makes the recorded checkpoint a genuinely consistent cut across workers, rather than N independent snapshots that disagree with each other.
 - [ ] Kill a worker process mid-training (`kill -9`). Verify: the operator (Part 4) restarts it, it loads the last consistent checkpoint, and training resumes without corrupting the other workers' state.
 
 **Your call:** `checkpoint_coordinator.py` waits until every worker has paused at the same step before recording a checkpoint. Now kill a worker permanently (don't let Part 4's operator restart it, or kill it before starting Part 4) right before a checkpoint is due. The coordinator is now waiting on a step-pause signal from a worker that will never send one, forever. Decide: should the coordinator time out and checkpoint the workers that did pause, accepting that the resulting snapshot is missing one worker's state (and deciding what that even means for a consistent restart), or should a missing worker block checkpointing entirely, on the reasoning that a checkpoint without every worker's state isn't a real consistent cut at all? This is the same "wait for all N or proceed with a quorum" trade-off from W09 and W11, applied to a real consistency mechanism instead of a gradient exchange; whichever you pick, implement a timeout in `checkpoint_coordinator.py` and note what you'd tell a teammate about what the resulting checkpoint does and doesn't guarantee.
 
-**Part 4: Orchestration (operate Kubeflow Trainer from W14)**
+### Part 4: Orchestration (operate Kubeflow Trainer from W14)
 
 - [ ] Deploy your Part 2 training workers as a `TrainJob` instead of raw Pods or `multiprocessing.Process`: `spec.trainer.numNodes` set to your worker count, each node running `train_worker.py`. Reuse the Trainer install from W14 if it's still on your cluster. If you also stood up a queueing layer in W14's optional Part 4, submit through it so the job is admitted as a gang rather than piecemeal; if not, just make sure your cluster has room for every node Pod before you submit, which is the manual version of the same guarantee.
-- [ ] `kill -9` a worker process inside its container, or `kubectl delete pod` on one node Pod directly, the same test you ran in W14 Part 1. The operator's own reconcile loop recreates the Pod; you write zero orchestration code for this. That's the actual point of operating a real operator here instead of hand-rolling one: the "restart a dead worker" mechanism already exists and already works.
+- [ ] `kill -9` a worker process inside its container, or `kubectl delete pod` on one node Pod directly, the same test you ran in W14 Part 1. The operator's own reconcile loop recreates the Pod; you write zero orchestration code for this.
 - [ ] The recovery logic that matters is entirely at the application layer, not the operator layer, and W14 Part 1 already showed you why: the restarted Pod comes back with no memory of anything. On startup, `train_worker.py` checks `checkpoints/worker-{rank}/` for the latest checkpoint written by `checkpoint_coordinator.py` (Part 3) and resumes from it instead of starting at step 0. The operator's job is only "keep N node Pods running"; your code's job is "come back correctly when one of them restarts." Keeping those two responsibilities separate, rather than teaching the operator about your checkpoint format, is itself the lesson: it's the same division of labor a real managed training platform uses.
 - [ ] Track restart events yourself for the Part 6 dashboard: increment a `worker_restarts_total` Prometheus counter from inside `train_worker.py` the moment it detects it's resuming from a checkpoint rather than starting cold, rather than trying to read Pod restart counts back out of Kubernetes.
 
-**Part 5: The handoff (MLflow model registry)**
+### Part 5: The handoff (MLflow model registry)
 
 Parts 1 through 4 produce a trained model. Part 6 serves one. Right now nothing connects them except a file path, and that is a real hole rather than a detail: you cannot say which data version a served model was trained on, you cannot roll back to the previous one, and "what is in production" is answerable only by looking at a disk.
 
@@ -82,10 +82,10 @@ This is W08's lesson again, one level up. Replacing a `latest.txt` pointer with 
 
 **Your call:** you can point serving at a pinned version number or at an alias like `@champion` that you move between versions. Pinning means the deployment spec fully describes what is running, and changing models requires a deploy. An alias means you can promote a new model without touching the deployment, and it also means nobody can tell you what is serving by reading the YAML. Pick one, implement it, then register a second model version and perform a rollback under your chosen scheme. Write down how many steps the rollback took and who would have needed to be involved.
 
-**Part 6: Serving + observability (extend W12 and W15)**
+### Part 6: Serving + observability (extend W12 and W15)
 
 - [ ] `serve.py`: a small HTTP service (Flask/FastAPI is fine here, this isn't the distributed part) that loads the registered model version from Part 5 and serves `/generate` using the KV cache from W12
-- [ ] Instrument the serving endpoint the same way you instrumented the DD engine in W15 (Python's `prometheus_client` this time, not the Java Prometheus client library): `requests_total` (Counter), `generation_latency_seconds` (Histogram), `active_kv_cache_entries` (Gauge)
+- [ ] Instrument the serving endpoint the same way you instrumented the shuffle in W15, with Python's `prometheus_client` this time rather than the Java client: `requests_total` (Counter), `generation_latency_seconds` (Histogram), `active_kv_cache_entries` (Gauge)
 - [ ] Deploy everything to kind: training Job, operator, serving Deployment + ServiceMonitor
 - [ ] Grafana dashboard, 4 panels: training throughput (updates/sec across workers), checkpoint/restore events over time, inference p99 latency, active KV cache size
 
@@ -101,7 +101,6 @@ This is W08's lesson again, one level up. Replacing a `latest.txt` pointer with 
 ---
 
 ## Reflect
-
 
 **Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
 
@@ -122,12 +121,3 @@ Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
 **If you scaled this from 2 workers on one kind cluster to 50 workers on real hardware, what's the first thing that breaks?**
 
 **What you know now, having built this, that you didn't know after W14:**
-
----
-
-## Review and articulate
-
-Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
-
-- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
-- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.

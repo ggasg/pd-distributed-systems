@@ -14,11 +14,11 @@ Not build, operate. Deploy two real, production-grade Kubernetes operators to yo
 
 Part 4 goes one layer up, to the question of who gets scheduled when there isn't enough hardware for everybody. Part 3 is an optional stretch that goes one layer down instead, to the etcd cluster running Raft underneath the control plane both operators depend on; skip it on a normal pass.
 
-**Why operate rather than write an operator?** Writing your own CRD types and a `controller-runtime` reconciler is the skill set of someone *building* a new operator, which is a narrow platform-infrastructure specialization. It's not what a Staff Data Platform Engineer, a Field/Customer/Professional Services Engineer, or a Developer Advocate does day to day; those roles *operate* operators someone else wrote: install via Helm, configure a CR, read logs, debug a stuck reconcile loop. This unit teaches that instead. You've already written Go by now, W00 through W03 all use it, so the reconciler source below reads as familiar syntax applied to a much bigger, real codebase, not a cold start; what this unit specifically avoids isn't Go itself, it's the much larger, narrower skill of authoring a `controller-runtime` operator from scratch.
+Operating an operator means installing via Helm, configuring a CR, reading logs, and debugging a stuck reconcile loop. Authoring a `controller-runtime` operator from scratch is a separate and much narrower skill, and it is not what this unit is for. You read the reconcilers rather than writing one.
 
-**Why Kubeflow Trainer rather than a framework-specific operator?** Because `TrainJob` is the most portable distributed-training abstraction available. Trainer v2 collapsed the old framework-specific CRDs (`PyTorchJob`, `MPIJob`, `JAXJob`, `XGBoostJob`) into one `TrainJob` plus a pluggable runtime, it's governed by Kubeflow rather than by any single vendor, and it runs the same way on a managed cloud offering as it does on the kind cluster on your laptop. Anything you learn here transfers regardless of which company you end up at, which is exactly what a vendor-specific operator cannot promise.
+Trainer v2 collapsed the framework-specific CRDs (`PyTorchJob`, `MPIJob`, `JAXJob`, `XGBoostJob`) into one `TrainJob` plus a pluggable runtime, so the same spec runs on a managed cloud offering and on the kind cluster on your laptop.
 
-**A pointer back to W12.** The router you wrote in W12 Part 2, the one that sends a request to the replica already holding its KV cache, is a control-plane component in production, not part of the model server. It runs as a Kubernetes service, it's written in Go, and it needs exactly the kind of per-replica state that the operators below spend their lives tracking. Keep that in mind while reading the reconcilers: the thing you built by hand for two in-process replicas is a small version of what this layer does for a cluster.
+The router you wrote in W12 Part 2, the one that sends a request to the replica already holding its KV cache, is a control-plane component in production rather than part of the model server. It runs as a Kubernetes service and needs the same per-replica state the operators below spend their lives tracking. Keep that in mind while reading the reconcilers.
 
 **Scenario:** this is what your first week on call for a platform team actually looks like: nothing you're debugging is code you wrote, and the job is reading logs, forming a hypothesis, and checking it, not fixing a bug in your own mental model of a system you built yourself.
 
@@ -27,6 +27,7 @@ Part 4 goes one layer up, to the question of who gets scheduled when there isn't
 ---
 
 ## Read
+
 - [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 2** (Important Distributed System Concepts): read the "Idempotency" and "Orchestration and Kubernetes" sections. Idempotency is the property this unit's Reflect section asks you to observe directly: both operators re-run their reconcile logic constantly, and neither breaks anything by doing so.
 - [ ] **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 10** (Ownership Election): read "Determining If You Even Need Leader Election" and "The Basics of Leader Election." Both operators you are about to install run leader election so that only one replica reconciles at a time, and Part 3's etcd work is the same chapter's hands-on. The first section is the useful one: most people reach for leader election before establishing that they need it.
 - [ ] [Kubernetes Operators](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/): k8s docs. Read "Motivation" and "Deploying operators". (~10 min)
@@ -41,7 +42,7 @@ Part 4 goes one layer up, to the question of who gets scheduled when there isn't
 
 ## Code
 
-**Part 1: Kubeflow Trainer**
+### Part 1: Kubeflow Trainer
 
 - [ ] Install the Trainer control plane and the default runtimes. Trainer's install is versioned, and the manifests move between releases, so pin a real version rather than copying a tag from here: check the [releases page](https://github.com/kubeflow/trainer/releases) for the current `v2.x.y`, then follow the [installation guide](https://www.kubeflow.org/docs/components/trainer/operator-guides/installation/). It is a two-step install, the manager first and the runtimes second, and skipping the second step is the most common way this goes wrong. The symptom is a `TrainJob` that sits there doing nothing because the runtime it references does not exist.
   ```bash
@@ -61,7 +62,7 @@ Part 4 goes one layer up, to the question of who gets scheduled when there isn't
 - [ ] **Break it, on purpose:** `kubectl delete pod <one-of-the-node-pods>` directly, without touching the `TrainJob`. Watch `kubectl get pods -w`. The Pod comes back, because the controller sees a gap between desired and actual and closes it. Now notice the part that matters more: the restarted Pod starts from scratch, with no memory of the training progress the old one had. The operator restarted your *process*; it did nothing about your *state*. That division of labor is the single most important idea in this unit and it's what W16 builds on directly.
 - [ ] Skim the real reconciler: browse [`kubeflow/trainer`](https://github.com/kubeflow/trainer) and search for `TrainJobReconciler` (the package path has moved between releases; look under `pkg/controller/` or `internal/controller/` depending on the tag you're viewing). Find the top-level `Reconcile` function. You don't need to read the whole file. Compare its shape, fetch object, compute desired state, diff against actual, patch the difference, against what you predicted for the Key Question.
 
-**Part 2: Spark Operator**
+### Part 2: Spark Operator
 
 - [ ] Install Kubeflow's Spark Operator via Helm:
   ```bash
@@ -79,7 +80,7 @@ Part 4 goes one layer up, to the question of who gets scheduled when there isn't
   ```
   Treat SparkPi as a smoke test rather than an exercise. Getting it green first means that when your own job fails in a minute, you already know the operator, the cluster, and the RBAC are fine, so the problem is yours. That sequencing is a habit worth having, not a formality.
 
-**Part 2b (optional, stretch): Submit your own job**
+### Part 2b: Submit your own job (optional, stretch)
 
 > Worth doing, and not on top of Parts 1 and 2 in one sitting. Come back to it; the script-to-image-to-`SparkApplication` path is the piece a data platform role actually exercises.
 
@@ -101,15 +102,15 @@ Keep the job itself boring on purpose. Twenty lines of aggregation is plenty, be
 - [ ] **Break it again, differently:** delete the Spark *driver* Pod of a running application. Compare what happens to what happened when you deleted a `TrainJob` node Pod in Part 1. The two operators make genuinely different promises here, and finding out which one is which by doing it is worth more than reading either project's documentation on the subject.
 - [ ] Skim the reconciler: browse [`kubeflow/spark-operator`](https://github.com/kubeflow/spark-operator) for the `SparkApplication` reconcile logic (the exact package path has moved between releases; look under `internal/controller/` or `controllers/` depending on which tag you're viewing, and search for `SparkApplicationReconciler`). You're looking for the same shape you just found in Trainer's: fetch, diff, patch. You don't need to understand the submission-runner mechanics.
 
-**Comparing the two:**
+### Comparing the two
 
 - [ ] In your notes: both `TrainJob` and `SparkApplication` are job-shaped resources, they run to completion and record a terminal state, unlike a CRD describing a cluster you keep standing. But their internal topology differs sharply. A `SparkApplication` has one privileged driver coordinating interchangeable executors, so losing the driver ends the application. A `TrainJob` has a set of peer nodes with no single coordinator, so losing one is recoverable in principle, provided the application code can resume. Write three or four sentences on what that difference implies for how you'd design a job to survive a node failure in each system, and connect it back to what you observed in the two delete tests above.
 
-**Part 3 (optional, stretch): etcd and the Raft Consensus Underneath It All**
+### Part 3: etcd and the Raft consensus underneath it (optional, stretch)
 
 > Skip this on a normal pass and come back to it when you have spare time. It is genuinely worth doing and nothing else in the curriculum depends on it, which is exactly why it is the part to drop when the unit is full. The concept is already carried by W13's Raft paper; what you lose by skipping is watching the algorithm run, not understanding what it does.
 
-Neither Part 1 nor Part 2 would work if the Kubernetes API server itself couldn't agree with the rest of the control plane on what's true. That agreement is etcd's job, and etcd stays consistent across replicas using Raft. This curriculum doesn't implement Raft anywhere, a deliberate scope call, but the mechanism is worth watching directly, not just reading about, since it's the actual foundation the first two parts of this unit rest on. If you haven't already read the Raft paper from W13 (Ongaro & Ousterhout, "In Search of an Understandable Consensus Algorithm"), do that first; Section 5 describes exactly the leader-election mechanism you're about to watch happen.
+Neither Part 1 nor Part 2 would work if the Kubernetes API server itself couldn't agree with the rest of the control plane on what's true. That agreement is etcd's job, and etcd stays consistent across replicas using Raft. You watch the mechanism run here rather than implementing it. If you haven't already read the Raft paper from W13 (Ongaro & Ousterhout, "In Search of an Understandable Consensus Algorithm"), do that first; Section 5 describes exactly the leader-election mechanism you're about to watch happen.
 
 - [ ] Install etcd locally: `brew install etcd` (or download a release binary from [etcd-io/etcd releases](https://github.com/etcd-io/etcd/releases) if you're not on macOS). This gives you the `etcd` server and `etcdctl` client, no cluster build required.
 - [ ] Start a 3-member local cluster: run each of the following in its own terminal (or backgrounded with `&`, logs redirected to a file per member). This is the same single-machine, distinct-ports bootstrap etcd's own docs use for local testing, just run by hand instead of via their `Procfile`/`goreman` wrapper:
@@ -134,7 +135,7 @@ Neither Part 1 nor Part 2 would work if the Kubernetes API server itself couldn'
 - [ ] Restart the killed member with the identical command you started it with (`--initial-cluster-state new` still works since its data directory already has state; it rejoins as a follower and catches up via replicated log entries). Confirm with `endpoint status --cluster` that it's back and no longer shows `true` under `IS LEADER`, since the member that won the election during its absence keeps the role.
 - [ ] Read a slice of the real implementation, not a diagram: [etcd-io/raft](https://github.com/etcd-io/raft), the standalone Raft library that also runs inside Kubernetes' own vendored copy, CockroachDB, and TiKV. Open `raft.go` and find `becomeLeader` and `campaign`; you don't need the whole file, just enough to confirm the shape: a deterministic state machine that takes a `Message` (a timer tick or a peer RPC) as input and emits `{Messages, LogEntries, NextState}` as output. The same "explicit state transition, not implicit control flow" idea W13's sealed-interface `Message` and exhaustive `switch` gave you a small taste of, at production scale.
 
-**Part 4 (optional, stretch): Why Gang Scheduling Exists**
+### Part 4: Why gang scheduling exists (optional, stretch)
 
 Everything so far assumed your cluster had room. Real clusters don't, and the default behaviour is actively wrong for training jobs.
 
@@ -152,7 +153,6 @@ You can see the failure without installing anything, which is the point of doing
 ---
 
 ## Reflect
-
 
 **Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
 
@@ -179,12 +179,3 @@ Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
 **What the un-queued jobs actually looked like when they deadlocked, and how long it took you to be sure nothing was going to resolve it:**
 
 **(Part 4 only) What a queueing layer needs to know that the default scheduler does not, and why that information cannot live in the Pod spec:**
-
----
-
-## Review and articulate
-
-Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
-
-- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
-- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.
