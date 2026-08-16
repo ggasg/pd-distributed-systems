@@ -10,7 +10,7 @@ status: not-started
 > **Pre-unit:** Complete before W01 begins · **Language:** Go + shell
 
 ## What you'll build
-A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana). By the end of this unit you can deploy any later code artifact to kind and see their metrics in Grafana. This stack is your running lab. You'll return to it in W14 and W15.
+A local Kubernetes cluster (kind) with a working observability stack (Prometheus + Grafana), plus one small Go service, `hello-metrics`, running inside it and being scraped. By the end of this unit you can deploy any later code artifact to kind and see its metrics in Grafana. This stack is your running lab. You'll return to it in W14 and W15.
 
 **Scenario:** you've just inherited `hello-metrics` from someone who left the team, and the only handoff note is "it's fine, I think." Nobody, including you, currently has evidence for that claim. Standing up the stack below is what turns "I think it's fine" into something you can actually check.
 
@@ -48,6 +48,7 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
     --namespace monitoring --create-namespace \
     --set grafana.adminPassword=admin
   ```
+  The release name `monitoring` matters beyond this command. Every resource below is named after it, and the `ServiceMonitor` you write later has to carry it as a label. If you pick a different name, substitute it consistently everywhere.
 - [ ] Wait for pods: `kubectl get pods -n monitoring -w`
 - [ ] Port-forward Grafana: `kubectl port-forward svc/monitoring-grafana 3000:80 -n monitoring`
 - [ ] Verify Grafana at `localhost:3000` (admin / admin). Check that the Prometheus datasource is connected.
@@ -60,45 +61,93 @@ A local Kubernetes cluster (kind) with a working observability stack (Prometheus
 
 Project: `code/hello-metrics/` (Go modules)
 
-A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. This is the pattern every small service you build from here on can follow, this one and every secondary tool in later units (W02's job coordinator, W09's gradient server, W14's bench runner, W15's log-aggregator sidecar).
+A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Later units reuse this pattern for their own small services.
 
-- [ ] `go.mod`: `go mod init hello-metrics`, then `go get github.com/prometheus/client_golang/prometheus` and `go get github.com/prometheus/client_golang/prometheus/promhttp`, the standard Go Prometheus client. No web framework: `net/http`, the standard library's own HTTP server, is enough for two routes.
-- [ ] `main.go`: `http.HandleFunc` for two routes, plus two metric objects shared by both handlers.
+**The service has exactly two endpoints:**
 
-  **Setup: two shared metrics**
-  Before starting the server, create two objects once, at package or `main()` scope, using `prometheus.NewCounter` and `prometheus.NewHistogram`, then register both with `prometheus.MustRegister`:
-  - a Counter named `request_count_total`
-  - a Histogram named `request_duration_seconds`, with bucket boundaries spanning roughly 5ms to 500ms (seven boundaries: `0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5`, passed to `prometheus.HistogramOpts.Buckets`)
+| Endpoint | Purpose | Who calls it |
+|----------|---------|--------------|
+| `GET /` | The application itself. Returns `{"status":"ok"}` and updates the two metrics. | You, with `curl`, to generate traffic |
+| `GET /metrics` | Exposes the current value of every registered metric as plain text. | Prometheus, every 15s |
 
-  Keep both as package-level variables, created exactly once, and reuse those same objects in every handler. Never construct a new Counter or Histogram inside a handler; a fresh object on every request would reset to zero each time and nothing would ever accumulate. It's a one-line mistake with a silent failure mode: a `/metrics` endpoint that always reads zero, no error, no panic, just a counter that never counts.
+Work through the steps below in order. Each one builds on the previous.
 
-  **`GET /`**
-  - Response: `{"status":"ok"}`
-  - Format: JSON, written by hand with `fmt.Fprintf` or `w.Write`, a two-key object doesn't need `encoding/json`.
-  - Side effect: increments the shared Counter (`counter.Inc()`), and observes its own response time into the shared Histogram (`time.Now()` when the request comes in, `histogram.Observe(time.Since(start).Seconds())` right before responding, or wrap the whole handler body in `defer` to guarantee the observation runs even on an early return).
+### Step 1: `go.mod`
 
-  **`GET /metrics`**
-  - Response: the current value of both metrics created in Setup, `request_count_total` and `request_duration_seconds`, rendered in Prometheus's plain-text exposition format, not JSON. Example output for those two metrics:
-    ```
-    # TYPE request_count_total counter
-    request_count_total 42
-    # TYPE request_duration_seconds histogram
-    request_duration_seconds_bucket{le="0.005"} 10
-    request_duration_seconds_bucket{le="0.01"} 18
-    request_duration_seconds_bucket{le="0.025"} 25
-    request_duration_seconds_bucket{le="0.05"} 30
-    request_duration_seconds_bucket{le="0.1"} 35
-    request_duration_seconds_bucket{le="0.25"} 40
-    request_duration_seconds_bucket{le="0.5"} 42
-    request_duration_seconds_bucket{le="+Inf"} 42
-    request_duration_seconds_sum 3.1
-    request_duration_seconds_count 42
-    ```
-    Notice the Histogram alone takes ten lines: one per bucket boundary from Setup (seven), plus `+Inf`, plus `_sum` and `_count`. There is no single field or single JSON value that represents it.
-  - Don't write this text by hand: `promhttp.Handler()` already renders the whole registry in this exact format. Register it directly as your route's handler: `http.Handle("/metrics", promhttp.Handler())`. This is the one route where you're not writing the handler body yourself, the library owns the format because the format is a contract Prometheus's scraper depends on, not something worth re-deriving.
+- [ ] `go mod init hello-metrics`, then `go get github.com/prometheus/client_golang/prometheus` and `go get github.com/prometheus/client_golang/prometheus/promhttp`, the standard Go Prometheus client. No web framework: `net/http`, the standard library's own HTTP server, is enough for two routes.
 
-**The full pipeline:** your Go service registers and updates the two metrics → they render as text at `/metrics` → the `ServiceMonitor` (below) tells Prometheus to scrape that text every 15s and store it as a time series → Grafana panels (later in this unit) query Prometheus (never your Go service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
-- [ ] `Dockerfile`: multi-stage build:
+### Step 2: create and register the two metrics
+
+- [ ] In `main.go`, declare two package-level variables, created exactly once:
+  - a Counter named `request_count_total`, via `prometheus.NewCounter`
+  - a Histogram named `request_duration_seconds`, via `prometheus.NewHistogram`, with seven bucket boundaries spanning roughly 5ms to 500ms (`0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5`, passed as `prometheus.HistogramOpts.Buckets`)
+- [ ] Register both with `prometheus.MustRegister`, in an `init()` function or at the top of `main()`.
+
+Registration is what makes a metric visible at `/metrics`. An unregistered metric still counts correctly in memory and is simply never exposed.
+
+Never construct a Counter or Histogram inside a handler. A fresh object on every request starts at zero, so nothing accumulates, and the failure is silent: no error, no panic, just a `/metrics` endpoint that always reads zero.
+
+### Step 3: the `GET /` handler
+
+- [ ] Response body: `{"status":"ok"}`, written by hand with `fmt.Fprintf` or `w.Write`. A two-key object doesn't need `encoding/json`.
+- [ ] The handler does four things, in this order:
+
+  1. `start := time.Now()` as the first line.
+  2. `defer func() { requestDuration.Observe(time.Since(start).Seconds()) }()` as the second line. Using `defer` here means the observation still happens if the handler returns early.
+  3. `requestCount.Inc()`.
+  4. Write the response body.
+
+  `Observe` takes a `float64`. Use `.Seconds()`, not `.Milliseconds()`: [Prometheus naming conventions](https://prometheus.io/docs/practices/naming/#base-units) call for base units, which is what the `_seconds` suffix declares.
+
+### Step 4: the `GET /metrics` handler
+
+- [ ] `http.Handle("/metrics", promhttp.Handler())`. No handler body of your own.
+
+From the [`promhttp` godoc](https://pkg.go.dev/github.com/prometheus/client_golang/prometheus/promhttp#Handler):
+
+> Handler returns an http.Handler for the prometheus.DefaultGatherer, using default HandlerOpts [...] This function is meant to cover the bulk of basic use cases. If you are doing anything that requires more customization (including using a non-default Gatherer, different instrumentation, and non-default HandlerOpts), use the HandlerFor function.
+
+`prometheus.MustRegister` in Step 2 registers into the default registry that `prometheus.DefaultGatherer` reads, so the default case applies here.
+
+**Response**
+
+- Content-Type: `text/plain`, in the [Prometheus text-based exposition format](https://prometheus.io/docs/instrumenting/exposition_formats/)
+- Body, filtered to your two metrics:
+
+```
+# HELP request_count_total Total number of requests served by GET /.
+# TYPE request_count_total counter
+request_count_total 42
+# HELP request_duration_seconds Wall-clock time spent in the GET / handler.
+# TYPE request_duration_seconds histogram
+request_duration_seconds_bucket{le="0.005"} 40
+request_duration_seconds_bucket{le="0.01"} 41
+request_duration_seconds_bucket{le="0.025"} 42
+request_duration_seconds_bucket{le="0.05"} 42
+request_duration_seconds_bucket{le="0.1"} 42
+request_duration_seconds_bucket{le="0.25"} 42
+request_duration_seconds_bucket{le="0.5"} 42
+request_duration_seconds_bucket{le="+Inf"} 42
+request_duration_seconds_sum 0.21
+request_duration_seconds_count 42
+```
+
+The full response is longer: the default registry also carries the Go runtime and process collectors, so `go_*` and `process_*` series appear alongside yours.
+
+On the ten lines the histogram occupies, from the [Prometheus metric types documentation](https://prometheus.io/docs/concepts/metric_types/#histogram):
+
+> A classic histogram with a base metric name of `<basename>` results in the following time series:
+> - cumulative counters for the observation buckets, exposed as `<basename>_bucket{le="<upper inclusive bound>"}`
+> - the **total sum** of all observed values, exposed as `<basename>_sum`
+> - the **count** of events that have been observed, exposed as `<basename>_count`
+
+### Step 5: `main()`
+
+- [ ] Register both routes and start the server on `:8080` with `http.ListenAndServe`.
+
+### Step 6: `Dockerfile`
+
+- [ ] Multi-stage build:
   ```dockerfile
   FROM golang:1.26 AS builder
   WORKDIR /app
@@ -110,48 +159,114 @@ A minimal Go HTTP service that exposes Prometheus metrics, deployed to kind. Thi
   EXPOSE 8080
   ENTRYPOINT ["/hello-metrics"]
   ```
-  A statically linked Go binary needs nothing at runtime, not even a C library, which is why `distroless/static` works as the final stage: no shell, no package manager, just the binary. This is the smallest, simplest deployment image in the whole curriculum.
-- [ ] `k8s/deployment.yaml`: `Deployment` (1 replica, image `hello-metrics:latest`, imagePullPolicy: Never) + `Service` (ClusterIP, port 8080)
-- [ ] `k8s/service-monitor.yaml`: `ServiceMonitor` resource (so Prometheus scrapes `/metrics` every 15s)
-- [ ] Build and deploy:
-  ```bash
+
+### Step 7: Kubernetes manifests
+
+**The full pipeline, before you write these:** your Go service registers and updates the two metrics, they render as text at `/metrics`, the `ServiceMonitor` tells Prometheus to scrape that text every 15s and store it as a time series, and Grafana panels query Prometheus (never your Go service, never `/metrics` directly) to draw graphs. Nothing "goes into" Grafana; it only reads what Prometheus already collected.
+
+- [ ] `k8s/deployment.yaml`: a `Deployment` (1 replica, image `hello-metrics:latest`, `imagePullPolicy: Never` so kubelet uses the image you side-loaded into kind rather than trying to pull it) plus a `Service`. The Service needs two things the `ServiceMonitor` depends on:
+  ```yaml
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: hello-metrics
+    labels:
+      app: hello-metrics      # the ServiceMonitor selects on this
+  spec:
+    type: ClusterIP
+    selector:
+      app: hello-metrics      # this one selects pods, a different job
+    ports:
+      - name: http            # the ServiceMonitor references this name
+        port: 8080
+        targetPort: 8080
+  ```
+  An unnamed port is the most common reason a `ServiceMonitor` produces no target at all.
+
+- [ ] `k8s/service-monitor.yaml`:
+  ```yaml
+  apiVersion: monitoring.coreos.com/v1
+  kind: ServiceMonitor
+  metadata:
+    name: hello-metrics
+    namespace: default
+    labels:
+      release: monitoring     # must match your Helm release name
+  spec:
+    selector:
+      matchLabels:
+        app: hello-metrics    # matches the Service's labels, not the pods'
+    namespaceSelector:
+      matchNames:
+        - default
+    endpoints:
+      - port: http            # the Service port's *name*, not its number
+        path: /metrics
+        interval: 15s
+  ```
+
+  Three details decide whether this works, and none of them produce an error message when wrong:
+
+  - **`labels.release: monitoring`.** kube-prometheus-stack configures its Prometheus to pick up only ServiceMonitors labelled with the Helm release name. Without this label your resource is created successfully, sits in the cluster, and is ignored. Confirm what your Prometheus is actually selecting with:
+    ```bash
+    kubectl get prometheus -n monitoring -o jsonpath='{.items[0].spec.serviceMonitorSelector}'
+    ```
+  - **`spec.selector` matches the Service, not the Deployment.** A `ServiceMonitor` selects Services; the Service selects pods. Pointing the ServiceMonitor at pod labels is a common miss, and it only shows up as a missing target.
+  - **`endpoints[].port` is the port name.** Numbers go in `targetPort` if you need them.
+
+### Step 8: build and deploy
+
+- [ ] ```bash
   docker build -t hello-metrics:latest .
   kind load docker-image hello-metrics:latest --name pd-systems
   kubectl apply -f k8s/
   ```
-- [ ] Verify: port-forward the service, send 20 requests with `curl`, query `request_count_total` in Prometheus, and see the counter. Also query `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`; confirm it returns a real number, not an empty result. An empty result means the Histogram's observe call is never actually being reached.
+
+---
+
+## Verify
+
+- [ ] Port-forward the service in one terminal:
+  ```bash
+  kubectl port-forward svc/hello-metrics 8080:8080
+  ```
+- [ ] In a second terminal, send 20 requests sequentially. Concurrency is not the point here; you are checking that the counter moves, not measuring throughput.
+  ```bash
+  for i in $(seq 1 20); do curl -s localhost:8080/ > /dev/null; done
+  ```
+- [ ] Confirm the target is healthy at `localhost:9090/targets` before querying anything. A missing or `DOWN` target explains every empty result below, and checking it first saves you from debugging a query that was never the problem.
+- [ ] Query `request_count_total` in Prometheus. It should read 20, possibly after up to 15 seconds of waiting for the next scrape.
+- [ ] Now generate continuous traffic for about two minutes, leaving it running:
+  ```bash
+  while true; do curl -s localhost:8080/ > /dev/null; sleep 0.2; done
+  ```
+  `rate()` over a 1m window needs at least two scrapes inside that window to return anything. Twenty requests fired in one second land in a single scrape, so `rate(request_count_total[1m])` will be empty or flat even though the counter is clearly moving. This is not a bug in your setup and it is worth seeing once.
+- [ ] With traffic still flowing, query `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`. Confirm it returns a real number rather than an empty result. An empty result means the `Observe` call is never reached.
+
+  Expect roughly 0.005 or below. A handler that writes fifteen bytes finishes in microseconds, so every observation falls in the first bucket and `histogram_quantile` interpolates inside it. The number you get is a property of your bucket boundaries, not a measurement of your handler. Real latency numbers arrive in W15, when the buckets are chosen against a workload that actually spends time.
 - [ ] In Grafana, create two panels: `rate(request_count_total[1m])` and `histogram_quantile(0.95, rate(request_duration_seconds_bucket[1m]))`. Save the dashboard.
 
 **Minimum bar:** the kind cluster is up, `hello-metrics` is deployed to it, Prometheus is scraping its `/metrics`, and one Grafana panel shows a number that moves when you hit the service. The rest of this unit is setup you can finish later; that loop is what every subsequent unit assumes.
 
-**Break it, then decide:**
-- [ ] Point `k8s/service-monitor.yaml` at the wrong port on purpose (`8081` instead of `8080`), reapply, and check Prometheus's Targets page at `localhost:9090/targets`. Confirm it shows the target as `DOWN` with a connection-refused error, not just silently missing from your dashboard. That's the actual failure mode a misconfigured ServiceMonitor produces in production: nothing crashes, the panel just quietly has nothing to show. Fix the port and confirm the target goes healthy again.
-- [ ] The histogram buckets given above (5ms-500ms) assume a fast, hot-path endpoint. If `hello-metrics` were instead a batch endpoint you expected to occasionally take 2-3 seconds, would you add buckets at the high end, switch to fewer and wider exponential buckets, or leave the existing ones and let the `+Inf` bucket absorb the outliers? Pick one, change `HistogramOpts.Buckets` to match your answer, and be ready to defend the choice in Reflect below.
+---
+
+## Break it, then decide
+
+- [ ] **Two scrape failures, two different symptoms.** In `k8s/service-monitor.yaml`, replace `port: http` with `targetPort: 8081`, reapply, and watch `localhost:9090/targets`. The target appears and goes `DOWN` with a connection-refused error, because Prometheus resolved an endpoint and found nothing listening on that port. Now revert that and instead break the *name*, `port: httpx`. The target does not go `DOWN`; it disappears from the page entirely, because no endpoint was ever resolved. Restore the working config and confirm the target is healthy again.
+
+  Both are real production failure modes and neither crashes anything. Note which page you would have to be looking at to catch each one, because your Grafana panel looks identical in both cases: empty.
+- [ ] **Bucket boundaries.** The buckets above (5ms to 500ms) assume a fast, hot-path endpoint. If `hello-metrics` were instead a batch endpoint you expected to occasionally take 2 to 3 seconds, would you add buckets at the high end, switch to fewer and wider exponential buckets, or leave the existing ones and let the `+Inf` bucket absorb the outliers? Pick one, change `HistogramOpts.Buckets` to match, and be ready to defend the choice below. Note what each option costs: every boundary is an extra time series, stored for every label combination.
 
 ---
 
 ## Reflect
 
-
-**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
-
-| Quantity | Predicted | Measured | Which term I got wrong |
-|----------|-----------|----------|------------------------|
-| | | | |
-
-Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
+The prediction versus measurement table starts in W01; this unit installs rather than measures. Record anything from the verification steps that surprised you in [MEASUREMENTS.md](../MEASUREMENTS.md).
 
 **What a ServiceMonitor is and why it exists instead of editing prometheus.yaml directly:**
 
 **What Helm does that raw kubectl apply doesn't:**
 
+**Why the `/metrics` route needs no handler code of your own, and what would change if you used a custom registry:**
+
 **What metrics you'd expose on a real distributed system component (you'll instrument one for real in W15):**
-
----
-
-## Review and articulate
-
-Two steps that exist because self-study has no examiner. Do them at the end of every unit, before marking it done.
-
-- [ ] **Adversarial review.** Hand over three things separately: the number you predicted, the number you measured, and the conclusion you drew. Then ask for the strongest case that the conclusion is *not* supported by the measurement. Do not ask whether you are right; ask what would falsify this. An assistant asked to check your work will tend to find support for your framing, so the prompt has to be adversarial by construction or the exercise is theatre.
-- [ ] **Ninety seconds, out loud, timed.** Explain this unit's finding as you would to someone in an interview or a design review: what you measured, what surprised you, and what decision it would change. Articulation under time pressure is a separate skill from understanding, and it is the one that gets tested. If you cannot do it in ninety seconds you do not have the finding yet, you have notes.
