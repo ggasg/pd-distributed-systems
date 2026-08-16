@@ -148,7 +148,7 @@ Every unit has:
 
 **Every unit has a Minimum bar.** It names the smallest thing that counts as having done it, and everything past it is explicitly optional. When a unit runs long, drop from the bottom and hit the bar rather than half-finishing the whole thing; the bar is chosen so the next unit still works.
 
-**Under 3 hours some weeks?** (Calendar weeks, this time.) That will happen, and the plan expects it. Do the Read and the Reflect, hit the Minimum bar if you can, skip the rest without guilt. If you have to skip units entirely, the load-bearing ones are W03, W05, W09, and W12: the shuffle and the allreduce are the two data-movement patterns nearly everything else is built from, and W03's failure detection is the idea five later units keep returning to.
+**Under 3 hours some weeks?** That will happen, and the plan expects it. Do the Read and the Reflect, hit the Minimum bar if you can, skip the rest without guilt. If you have to skip units entirely, the load-bearing ones are W03, W05, W09, and W12: the shuffle and the allreduce are the two data-movement patterns nearly everything else is built from, and W03's failure detection is the idea five later units keep returning to.
 
 **Skip the infrastructure arc?** W00, W14, and W15 are independent. You can complete W01 through W13 without touching Kubernetes and come back to them when it's relevant to your work.
 
@@ -159,8 +159,6 @@ Every unit has:
 **Why these languages?** One rule decides all of them: **each system is driven in the language that system is actually written and used in**, and the hand-built units pick whichever language makes the mechanism clearest.
 
 That gives **Python** the largest share: it is what Spark is driven with (W02, W05 Part 2, W07, W14), what DuckDB is driven with (W06, W08), and what the entire ML arc runs on (W08 to W12, W16). **Java** covers two situations: W04 Part 1, where Flink ships no alternative, and the units where you author a mechanism and sealed interfaces plus record patterns do real work (W04 Part 2, W05 Part 1, W13, W15). **Go** carries W00, W01, W03, and the secondary tooling, with a footprint large enough to make W14's operator reading legible rather than token.
-
-Three languages, no fourth. Deeper functional-programming work is a separate plan, not this one.
 
 Substitutions: if you don't have a Java background the way this plan assumes, the hand-built Java units could run in Go instead (the two are close in scope for these exercises), though the engine-driving units would then need PySpark and PyFlink; the Python units could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
 

@@ -205,7 +205,7 @@ On the ten lines the histogram occupies, from the [Prometheus metric types docum
         interval: 15s
   ```
 
-  Three details decide whether this works, and none of them produce an error message when wrong:
+  Each of the following fails silently when wrong, with no error message anywhere:
 
   - **`labels.release: monitoring`.** kube-prometheus-stack configures its Prometheus to pick up only ServiceMonitors labelled with the Helm release name. Without this label your resource is created successfully, sits in the cluster, and is ignored. Confirm what your Prometheus is actually selecting with:
     ```bash
@@ -252,7 +252,7 @@ On the ten lines the histogram occupies, from the [Prometheus metric types docum
 
 ## Break it, then decide
 
-- [ ] **Two scrape failures, two different symptoms.** In `k8s/service-monitor.yaml`, replace `port: http` with `targetPort: 8081`, reapply, and watch `localhost:9090/targets`. The target appears and goes `DOWN` with a connection-refused error, because Prometheus resolved an endpoint and found nothing listening on that port. Now revert that and instead break the *name*, `port: httpx`. The target does not go `DOWN`; it disappears from the page entirely, because no endpoint was ever resolved. Restore the working config and confirm the target is healthy again.
+- [ ] **Break the scrape, and watch the Targets page.** In `k8s/service-monitor.yaml`, replace `port: http` with `targetPort: 8081`, reapply, and watch `localhost:9090/targets`. The target appears and goes `DOWN` with a connection-refused error, because Prometheus resolved an endpoint and found nothing listening on that port. Now revert that and instead break the *name*, `port: httpx`. The target does not go `DOWN`; it disappears from the page entirely, because no endpoint was ever resolved. Restore the working config and confirm the target is healthy again.
 
   Both are real production failure modes and neither crashes anything. Note which page you would have to be looking at to catch each one, because your Grafana panel looks identical in both cases: empty.
 - [ ] **Bucket boundaries.** The buckets above (5ms to 500ms) assume a fast, hot-path endpoint. If `hello-metrics` were instead a batch endpoint you expected to occasionally take 2 to 3 seconds, would you add buckets at the high end, switch to fewer and wider exponential buckets, or leave the existing ones and let the `+Inf` bucket absorb the outliers? Pick one, change `HistogramOpts.Buckets` to match, and be ready to defend the choice below. Note what each option costs: every boundary is an extra time series, stored for every label combination.
