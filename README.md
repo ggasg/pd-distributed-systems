@@ -154,7 +154,7 @@ Every unit has:
 
 **Add your own unit?** Copy `Templates/week-template.md`, set `week_number` in frontmatter, and it appears in the Home.md dashboard automatically. Keep the `week` naming in filenames and frontmatter: Home.md's queries depend on it.
 
-**Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers, merging `main` into `progress` but never the reverse. That works cleanly as long as answers go on the blank line *below* each Reflect question rather than on the question line, so curriculum edits and progress edits never touch the same line.
+**Tracking progress separately from curriculum edits?** Keep `main` for curriculum changes and a separate `progress` branch for checked-off tasks and Reflect answers, merging `main` into `progress` but never the reverse. See [Branch Workflow](#branch-workflow) for the merge procedure and how to handle conflicts.
 
 **Why these languages?** One rule decides all of them: **each system is driven in the language that system is actually written and used in**, and the hand-built units pick whichever language makes the mechanism clearest.
 
@@ -163,6 +163,82 @@ That gives **Python** the largest share: it is what Spark is driven with (W02, W
 Three languages, no fourth. Deeper functional-programming work is a separate plan, not this one.
 
 Substitutions: if you don't have a Java background the way this plan assumes, the hand-built Java units could run in Go instead (the two are close in scope for these exercises), though the engine-driving units would then need PySpark and PyFlink; the Python units could be Julia. The language choices are justified in the Language Map above, but they're not sacred.
+
+---
+
+## Branch Workflow
+
+`main` holds the curriculum. `progress` holds your ticks, your Reflect answers, and your `Current State` updates. `main` merges into `progress`, never the reverse.
+
+### Before any merge
+
+```bash
+git add -A && git commit -m "progress: W00"
+git push origin progress
+git fetch origin
+git merge origin/main
+```
+
+Committing first is what makes everything below safe, because git never discards committed work. Pushing means the branch survives the machine as well.
+
+### When it stops
+
+Conflicts happen on lines both branches changed. In practice that means step lines you have ticked, because a curriculum revision rewords the same line your `x` sits on. Answers written on the blank line below a question rarely conflict.
+
+```bash
+git diff --name-only --diff-filter=U     # which files
+```
+
+A conflict looks like this, where `HEAD` is your `progress` branch and the lower half is the incoming curriculum:
+
+```
+<<<<<<< HEAD
+- [x] `main.go`: `http.HandleFunc` for two routes, plus two metric objects
+=======
+- [ ] In `main.go`, declare two package-level variables, created exactly once:
+>>>>>>> origin/main
+```
+
+**Path A, resolve in place.** Edit the file: keep the incoming wording, put your `x` back, keep your answer lines. Then:
+
+```bash
+git add weeks/W00-setup.md
+git commit
+```
+
+During a merge, `--ours` means `progress` and `--theirs` means `main`:
+
+```bash
+git checkout --theirs weeks/W00-setup.md   # take main's whole file, drop your ticks in it
+git checkout --ours   weeks/W00-setup.md   # keep yours, drop the curriculum update
+git checkout -m       weeks/W00-setup.md   # restore the conflict markers if you mangled the file
+git merge --abort                          # back out entirely, nothing changed
+```
+
+**Path B, take the new file and re-apply your marks.** For a heavily rewritten unit, resolving hunk by hunk is worse than starting from the new text. Take `main`'s version wholesale, then diff it against your pre-merge copy:
+
+```bash
+git checkout --theirs weeks/W00-setup.md
+git add weeks/W00-setup.md
+git commit
+
+git show ORIG_HEAD:weeks/W00-setup.md > ~/W00-setup.mine.md
+diff ~/W00-setup.mine.md weeks/W00-setup.md
+```
+
+`ORIG_HEAD` is your `progress` commit from immediately before the merge, so there is no need to copy the file beforehand. Re-tick and re-paste your answers from the diff, commit again, then delete the scratch copy.
+
+Keep that copy outside the repo. A `weeks/W00-setup.old.md` inside the vault carries `week_number` frontmatter and would appear as a second W00 row in the Home.md dashboard.
+
+Path B discards your ticks and answers in that one file and you re-apply them from the diff. That is the cost of taking a cleanly rewritten unit.
+
+### If the merge goes wrong after it has committed
+
+```bash
+git reset --hard ORIG_HEAD
+```
+
+`git reflog` finds anything else.
 
 ---
 
