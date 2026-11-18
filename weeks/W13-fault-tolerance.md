@@ -1,118 +1,27 @@
 ---
-week_number: 13
+week_number: 9
+track: core
+title: "Snapshots and replay"
 status: not-started
 ---
 
-# W13: Fault Tolerance and Snapshots
+# Snapshots and replay
 
-> **Arc:** Distributed ML Systems · **Language:** Java
-> **Budget:** about 10 hours. The Minimum bar is what a bad week looks like, not the target.
+**Budget:** 10 hours across four study sessions. Shift the sessions to fit your week.
 
-## What you'll build
-
-Chandy-Lamport distributed snapshot in Java: 3 simulated nodes with FIFO channels, one node triggers a snapshot, all nodes record their local state and in-flight channel contents. Assert the recorded global state is consistent.
-
-**Scenario:** an incident report reads "we took a snapshot for disaster recovery and the restored state doesn't balance, some money appears out of nowhere." The algorithm is provably correct under one assumption, FIFO channels, and the exercise below is where you watch the proof stop applying the moment that assumption doesn't hold.
-
----
+**Start with:** The streaming trace and state transitions, plus the message harness from clocks and replication.
 
 ## Read
 
-- [ ] [Distributed Snapshots: Determining Global States of Distributed Systems](https://dl.acm.org/doi/10.1145/214451.214456) (Chandy & Lamport, 1985): 10 pages. Read all of it. The algorithm is in Section 3. A "marker" is just a special message; that's the whole trick.
-- [ ] **DDIA Chapter 6** (2nd ed.), Replication. Keeping more than one copy of data is the primary way real systems tolerate the faults this unit is named after. Read the sections on replication lag and on failover. Failover requires deciding that a leader is dead, which is the crashed-or-slow ambiguity you built a detector for in W03, except that here getting it wrong costs writes rather than a false alarm. Chandy-Lamport records a consistent state; replication is what there is more than one of.
-- [ ] Optional: **Burns, *Designing Distributed Systems*, 2nd ed., Chapter 16** (Common Failure Patterns). A catalogue rather than an argument, and worth a skim here because three of its entries are failures this curriculum has you cause deliberately: "The Absence of Errors Is an Error" is W07's silent broadcast regression, "Processing Obsolete Work" is W03's late retry after a false suspicion, and "The Thundering Herd" is what happens to a parameter server when every worker retries at once.
-- [ ] Optional: [Lightweight Asynchronous Snapshots for Distributed Dataflows](https://arxiv.org/abs/1506.08603) (Carbone et al., 2015): Flink's ABS algorithm. Read Sections 1–4. Understand how they extend Chandy-Lamport for cyclic dataflow graphs with barriers.
-- [ ] Optional, context: **DDIA Chapter 10** (2nd ed.), Consistency and Consensus, specifically the section on linearizability. Chandy-Lamport doesn't give you linearizability, it gives you a *consistent cut* (a recorded state that could have occurred at one instant, even if it never literally did); the chapter is useful precisely because it draws that distinction sharply, so you don't walk away from this unit conflating "consistent snapshot" with the stronger guarantees Ch. 10 covers.
-- [ ] [In Search of an Understandable Consensus Algorithm](https://raft.github.io/raft.pdf) (Ongaro & Ousterhout, USENIX ATC 2014, **free PDF**): the Raft paper. You read it here and watch it run in W14 rather than implementing it. Raft is the algorithm underneath etcd, which is what holds the Kubernetes control plane consistent, including the cluster you deploy to in W14. Read Sections 1–5 (the formal proof in Section 9 is skippable). It answers a different question than Chandy-Lamport does: Chandy-Lamport gives you a consistent snapshot of state that already exists; Raft is how a cluster agrees on what that state *is* in the first place. You'll watch this algorithm run directly in W14.
+Read [Chandy and Lamport](https://lamport.azurewebsites.net/pubs/chandy.pdf) on consistent cuts and FIFO channels. Read *Streaming Systems* Ch. 5 on sources, sinks, and side effects. Skim [MillWheel](https://research.google/pubs/millwheel-fault-tolerant-stream-processing-at-internet-scale/) for persistent state.
 
-**Depth: study Chandy-Lamport.** Ten pages, you implement the algorithm, and the correctness argument is the point. DDIA Ch.6 and the Raft paper (Sections 1 to 5) are reads; you will watch Raft run in W14 rather than build it. Flink's ABS paper and DDIA Ch.10 are skims.
+## Sessions
 
-**Key question:** Chandy-Lamport requires FIFO channels. What breaks if channels can reorder messages? How does Flink's barrier approach handle this?
+1. [ ] **Draw the failure.** Mark input progress, operator state and output commits on the trace. Predict the two crash cases around publishing a result.
+2. [ ] **Snapshot the graph.** Add markers to the simulator and record local state and in-flight messages on FIFO channels. Exercise a trace with an in-flight event.
+3. [ ] **Recover the stream.** Checkpoint input progress and operator state on a single worker. Force a crash after publishing a count but before checkpointing progress. Replay into a sink that replaces a keyed result by deterministic update version.
+4. [ ] **Verify the boundary.** Compare recovered and uninterrupted final tables. Explain the FIFO assumption in the simulator and which sink assumption makes this replay safe.
 
-**Second key question, from DDIA Ch.6:** a leader fails and a follower is promoted, but the follower had not yet received the last few writes. Name what the system can do about those writes. Then say which of your options is available to Chandy-Lamport's snapshot and which is not, and why that difference is about what each mechanism is for rather than about how good it is.
+**Minimum deliverable:** A consistent-cut test and a restart test that preserves the expected final table.
 
----
-
-## Code
-
-Project: `code/snapshot/` (Java 21, Maven)
-
-### Step 1: `Channel.java`
-
-- [ ] A FIFO channel between two nodes. `LinkedBlockingQueue` already gives you thread-safe FIFO delivery with no extra locking, so do not reinvent it.
-- [ ] Wrap it in a small `Channel` type only if you need to intercept messages for the snapshot-recording logic, which records what arrives after a marker but before that channel's own marker.
-
-### Step 2: `Message.java`
-
-- [ ] A sealed sum type over the two message kinds:
-
-```java
-sealed interface Message permits DataMessage, Marker {}
-record DataMessage(String fromNode, String toNode, int value) implements Message {}
-record Marker(String fromNode, String toNode, int snapshotId) implements Message {}
-```
-
-- [ ] Dispatch with an exhaustive `switch`, using [record patterns](https://openjdk.org/jeps/440) to deconstruct in the case label rather than binding the object and calling accessors afterwards:
-
-```java
-switch (msg) {
-    case DataMessage(var from, var to, var value) -> handleData(from, to, value);
-    case Marker(var from, var to, var snapshotId) -> handleMarker(from, to, snapshotId);
-}
-```
-
-Because `Message` is sealed over exactly these two types, the compiler requires the switch to cover both, with no `default`. Add a third message type later and every switch over `Message` fails to compile until you handle it.
-
-### Step 3: `Node.java`
-
-- [ ] Each node runs on its own virtual thread, holding a running integer sum incremented by each incoming `DataMessage.value()`.
-- [ ] On the *first* `Marker` to arrive: record local state and start recording every other incoming channel.
-- [ ] Once markers have arrived on all other channels: finalize the snapshot by recording those channel states.
-- [ ] When initiating a snapshot: record own state, then send markers on all outgoing channels.
-
-### Step 4: `Coordinator.java`
-
-- [ ] Wire 3 nodes in a ring (0 → 1 → 2 → 0), one virtual thread each, inject a sequence of data messages, then trigger a snapshot from node 0.
-- [ ] Wait for all nodes to report their recorded states, via a `CountDownLatch` or by joining the virtual threads.
-
-### Step 5: `SnapshotTest.java`
-
-- [ ] JUnit 5. Inject 10 data messages summing to 55, trigger a snapshot mid-stream, and assert that the sum of all recorded local states plus all in-flight channel states equals the total sent so far, and that the snapshot completes without deadlock.
-- [ ] Java has no equivalent of `go test -race`. Immutable record messages and a concurrent queue remove most of that bug class by construction rather than detecting it afterwards.
-
-**Constraints:** no third-party concurrency libraries: `java.util.concurrent` (`BlockingQueue`, virtual threads, `CountDownLatch`) is enough for this. Focus on correctness of the marker protocol, not performance.
-
-**Minimum bar:** a 3-node run records a consistent cut that your assertions accept, and you have demonstrated concretely what breaks when the FIFO channel assumption is removed. Flink's barrier variant is reading, not building.
-
----
-
-## Break it, then decide
-
-- [ ] Add a way to deliberately violate FIFO on one channel: buffer two consecutive `DataMessage`s and enqueue them in swapped order instead of send order. Trigger a snapshot spanning that reordering and check `SnapshotTest.java`'s consistency assertion (sum of recorded states plus in-flight channel states should equal total messages sent so far). Confirm it now fails, or worse, silently produces a "consistent" snapshot that doesn't actually match any state the system was ever really in. This is the concrete cost of the FIFO assumption the Key Question above asks about abstractly; here you're looking at the actual broken invariant.
-- [ ] `LinkedBlockingQueue` gives you FIFO for free as long as everything goes through one queue per channel, which is true in this simulation but not guaranteed on a real network (packets can take different routes, retries can reorder). Would you defend against that by having each message carry a per-channel sequence number and having the receiver detect and reject out-of-order delivery (extra bookkeeping, but catches the problem explicitly), or by relying on the transport layer to guarantee FIFO per connection the way TCP already does (no extra code, but now Chandy-Lamport's correctness is silently resting on a property of a layer underneath it that this exercise never touches)? Say which you'd pick for a real system and why.
-
-## Reflect
-
-**Prediction versus measurement.** Fill the predictions in *before* you run anything, and do not edit them afterwards. The gap is where calibration comes from.
-
-| Quantity | Predicted | Measured | Which term I got wrong |
-|----------|-----------|----------|------------------------|
-| | | | |
-
-Copy anything worth carrying into [MEASUREMENTS.md](../MEASUREMENTS.md).
-
-**What clicked:**
-
-**What surprised me:**
-
-**What "consistent global state" actually means and why it's useful:**
-
-**What actually happened to the consistency assertion when you broke FIFO ordering, and sequence numbers vs. trusting the transport, which did you pick (from Break it, then decide above)?**
-
-**How fault tolerance is handled in a system you know (checkpointing vs replay vs idempotency):**
-
-**Now that `Message` is a sealed interface with exhaustive `switch`, try commenting out the `Marker` case and rebuilding. What does the compiler do, and how does that compare to what would have happened in a language without sum types?**
-
-**What did deconstructing `DataMessage`/`Marker` directly in the switch's case labels (record patterns) save you from writing, compared to binding the whole object and calling accessors?**
-
-**What I'd do differently:**
+**Handoff:** W08 takes the recovered keyed updates and publishes explicit table versions.

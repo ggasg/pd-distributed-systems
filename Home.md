@@ -1,82 +1,31 @@
-# PD Home
+# Distributed Data Systems
 
-## Schedule
-
-```dataviewjs
-const config = dv.page("config");
-if (!config || !config.start_date) {
-  dv.paragraph("⚠️ config.md not found or missing start_date.");
-} else {
-  // config.start_date may be a Dataview date object or a string; handle both
-  const raw = config.start_date;
-  const w01Start = typeof raw === "string"
-    ? dv.luxon.DateTime.fromISO(raw)
-    : dv.luxon.DateTime.fromISO(raw.toISODate ? raw.toISODate() : String(raw));
-
-  const today = dv.luxon.DateTime.now().startOf("day");
-
-  const pages = dv.pages('"weeks"')
-    .filter(p => p.week_number !== undefined)
-    .sort(p => p.week_number);
-
-  let currentLink = null;
-
-  const rows = pages.map(p => {
-    const offset = p.week_number === 0 ? -7 : (p.week_number - 1) * 7;
-    const weekStart = w01Start.plus({ days: offset });
-    const weekEnd   = weekStart.plus({ days: 6 });
-
-    const isCurrent = today >= weekStart && today <= weekEnd;
-    const isPast    = today > weekEnd;
-
-    const completed = p.file.tasks.where(t => t.completed).length;
-    const total     = p.file.tasks.length;
-    const progress  = total > 0 ? `${completed} / ${total}` : "-";
-    const status    = isCurrent ? "👉 now"
-                    : isPast    ? "✓ past"
-                    :             (p.status ?? "-");
-
-    if (isCurrent) currentLink = p.file.link;
-
-    return [p.file.link, weekStart.toFormat("MMM d"), weekEnd.toFormat("MMM d"), progress, status];
-  });
-
-  if (currentLink) dv.paragraph("**Current week:** " + currentLink);
-
-  dv.table(["Week", "Start", "End", "Tasks", "Status"], rows);
-}
-```
-
----
-
-## Open Tasks This Week
+[Study order](README.md) · [Setup](SETUP.md) · [Resources](RESOURCES.md) · [Measurements](MEASUREMENTS.md)
 
 ```dataviewjs
-const config = dv.page("config");
-if (config && config.start_date) {
-  const raw = config.start_date;
-  const w01Start = typeof raw === "string"
-    ? dv.luxon.DateTime.fromISO(raw)
-    : dv.luxon.DateTime.fromISO(raw.toISODate ? raw.toISODate() : String(raw));
-
-  const today = dv.luxon.DateTime.now().startOf("day");
-
-  const current = dv.pages('"weeks"')
-    .filter(p => p.week_number !== undefined)
-    .sort(p => p.week_number)
-    .find(p => {
-      const offset = p.week_number === 0 ? -7 : (p.week_number - 1) * 7;
-      const s = w01Start.plus({ days: offset });
-      const e = s.plus({ days: 6 });
-      return today >= s && today <= e;
-    });
-
-  if (current) {
-    const open = current.file.tasks.where(t => !t.completed);
-    dv.paragraph("**" + current.file.name + "**: " + open.length + " open tasks");
-    dv.taskList(open, false);
-  } else {
-    dv.paragraph("No active week. Check `start_date` in [[config]].");
-  }
+const raw = dv.page("config")?.start_date;
+const iso = typeof raw === "string" ? raw : raw?.toISODate?.();
+const start = iso ? dv.luxon.DateTime.fromISO(iso) : null;
+const pages = dv.pages('"weeks"').where(p => Number.isInteger(p.week_number));
+const core = pages.where(p => p.track === "core").sort(p => p.week_number);
+const extension = pages.where(p => p.track === "extension").sort(p => p.week_number);
+const progress = p => {
+  const tasks = p.file.tasks;
+  return tasks.length ? `${tasks.where(t => t.completed).length} / ${tasks.length}` : "–";
+};
+dv.header(2, "Core");
+dv.table(["Slot", "Unit", "Suggested start", "Sessions"], core.map(p => [
+  p.week_number === 0 ? "Setup" : p.week_number,
+  dv.fileLink(p.file.path, false, p.title ?? p.file.name),
+  start?.isValid ? start.plus({ days: (p.week_number - 1) * 7 }).toFormat("MMM d, yyyy") : "–",
+  progress(p),
+]));
+const next = core.find(p => p.file.tasks.some(t => !t.completed));
+if (next) {
+  dv.header(3, "First unfinished core unit");
+  dv.paragraph(next.file.link);
+  dv.taskList(next.file.tasks.where(t => !t.completed), false);
 }
+dv.header(2, "ML extension");
+dv.table(["Slot", "Unit", "Sessions"], extension.map(p => [p.week_number, dv.fileLink(p.file.path, false, p.title ?? p.file.name), progress(p)]));
 ```
