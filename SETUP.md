@@ -3,7 +3,7 @@
 ## Start here
 
 1. Open this directory as a local vault in Obsidian. Enable Dataview and its JavaScript queries for the [Home dashboard](Home.md). The [README study order](README.md) also works as a plain Markdown index.
-2. Install a JDK and [sbt](https://www.scala-sbt.org/1.x/docs/Setup.html). Use JDK 21 for the Scala project. Run `java -version` and check that `sbt test` launches in your project. Pin your Scala 3 and sbt versions in the build and record the JDK.
+2. Install JDK 21 and Maven. Check `java -version` and `mvn -version`. Configure the project compiler release to 21 and pin the build and test dependencies. From `code/query-engine/`, use `mvn test`. Set up the Python and SQL comparisons independently of the Java build.
 3. Set a first-study-week date in [config](config.md) when you want the calendar view. The date is independent of task completion.
 4. Open the [setup unit](weeks/W00-setup.md) and create the fixture and test project.
 

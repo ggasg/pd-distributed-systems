@@ -1,12 +1,12 @@
 # Distributed Data Systems
 
-A self-study curriculum in distributed query engines. Build one Scala project from a local scan to a query that shuffles data across worker processes. Use Python and SQL to compare with Spark and DuckDB. The optional Python ML extension applies the same ideas to feature pipelines, training and serving.
+A self-study curriculum in distributed query engines. Build one Java 21 project from a local scan to a query that shuffles data across worker processes. Use Python and SQL to compare with Spark and DuckDB. Apply functional design through immutable plans, pure rewrites and deterministic state transitions. The planning unit includes a small optional Scala 3 comparison. The optional Python ML extension applies the same ideas to feature pipelines, training and serving.
 
 Open [Home](Home.md) in Obsidian and follow [SETUP](SETUP.md). Each unit has four study sessions and an artifact that a later unit uses. Budget about ten hours per core unit, with a shorter setup. A unit can span more than one calendar week.
 
 | Slot | Core unit | Deliverable |
 |---|---|---|
-| Setup | [Scala project](weeks/W00-setup.md) | Runnable test and fixture |
+| Setup | [Java 21 project](weeks/W00-setup.md) | Runnable test and fixture |
 | 1 | [Storage](weeks/W01-storage-engines.md) | Scan and write benchmark |
 | 2 | [Clocks and failure detection](weeks/W03-clocks.md) | Deterministic message harness |
 | 3 | [Replication and failover](weeks/replication-and-failover.md) | Lag and acknowledged-write tests |

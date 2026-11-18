@@ -15,6 +15,8 @@ status: not-started
 
 ## Sessions
 
+For each session, describe the starting artifact, the expected interface or output, and the check that completes the exercise.
+
 1. [ ] Read and predict.
 2. [ ] Build the baseline.
 3. [ ] Run a controlled comparison or failure.
