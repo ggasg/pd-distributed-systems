@@ -3,11 +3,13 @@
 ## Start here
 
 1. Open this directory as a local vault in Obsidian. Enable Dataview and its JavaScript queries for the [Home dashboard](Home.md). The [README study order](README.md) also works as a plain Markdown index.
-2. Install JDK 21 and Maven. Check `java -version` and `mvn -version`. Configure the project compiler release to 21 and pin the build and test dependencies. From `code/query-engine/`, use `mvn test`. Set up the Python and SQL comparisons independently of the Java build.
+2. Install [Azul Zulu 21 Community Availability (CA)](https://www.azul.com/downloads/) for your OS and architecture, plus Maven. Use Zulu 21 CA for local development, CI if configured, and worker containers. Run `java -version` and `mvn -version`. Both should report Java 21, and Maven should report Azul as the vendor. If Maven picks another JDK, set `JAVA_HOME` to the Zulu installation and put its `bin` directory first on `PATH`, then recheck. Configure the project compiler release to 21 and pin the build and test dependencies. From `code/query-engine/`, use `mvn test`. Set up the Python and SQL comparisons independently of the Java build.
 3. Set a first-study-week date in [config](config.md) when you want the calendar view. The date is independent of task completion.
 4. Open the [setup unit](weeks/W00-setup.md) and create the fixture and test project.
 
 ## Install when the unit needs it
+
+Zulu 21 is the standalone engine runtime. Before deploying a Databricks JAR or a Beam job to Dataflow, check the target compute or service and Beam SDK version. Use the supported JDK and compiler target for that exercise in a separate build. See [Databricks JAR compatibility](https://docs.databricks.com/gcp/en/jobs/tasks/jar-create) and [Beam runtime dependencies](https://beam.apache.org/documentation/sdks/java-dependencies/).
 
 - **Batch and planning.** In a Python virtual environment, install a PySpark release and record its version. Check its [installation requirements](https://spark.apache.org/docs/latest/api/python/getting_started/install.html) for the compatible Python and Java versions. Run local mode and confirm the Spark UI is reachable while the process runs.
 - **Query execution and tables.** Add DuckDB and PyArrow to the relevant experiment environment. For the table lab use the [Python Delta Lake API](https://delta-io.github.io/delta-rs/), and record the version alongside your fixture.

@@ -17,9 +17,9 @@ Skim DDIA 2e Ch. 1 for operational versus analytical workloads and Ch. 2 for rel
 
 ## Sessions
 
-1. [ ] **Set up the tools.** Use [SETUP](../SETUP.md) to install a JDK 21 and Maven. Create the project structure described in the [code map](../code/README.md).
+1. [ ] **Set up the tools.** Use [SETUP](../SETUP.md) to install Zulu 21 CA and Maven. Create the project structure described in the [code map](../code/README.md).
 
-   Create a Maven project with compiler release 21, UTF-8, and JUnit 5 test discovery. Run `mvn test` from `code/query-engine/` and confirm at least one test ran. Record `java -version` and `mvn -version`.
+   Create a Maven project with compiler release 21, UTF-8, and JUnit 5 test discovery. Run `mvn test` from `code/query-engine/` and confirm at least one test ran. Record `java -version` and `mvn -version`, and confirm Maven is using Zulu 21.
 2. [ ] **Write a fixture.** Check in a tiny synthetic commerce event file and its expected grouped result. Use integer cents in order records.
 
    Create `events.csv` with the shared header and three rows: customer 10 has two purchases, customer 20 has one view. Use positive unique event IDs and UTC epoch milliseconds. Save `expected-counts.csv` with the single purchase count `10,2`.
