@@ -33,3 +33,22 @@ Read *Streaming Systems* Ch. 1 on event time and processing time and Ch. 2 on wi
 **Minimum deliverable:** One deterministic trace with tested initial counts, corrections and expiry, plus a matching batch reference.
 
 **Handoff:** W13 injects a restart into this exact trace and checks whether the published counts still match.
+
+## Beam and Dataflow comparison (optional, 90–120 minutes locally)
+
+Finish the Java trace first. Beam calls each emission for a window a *pane*. With accumulating panes, a correction includes the previous count plus the newly accepted events.
+
+- [ ] **Replay a late event with Beam Java.**
+
+   1. Create a separate Maven test project from the [Beam Java quickstart](https://beam.apache.org/get-started/quickstart-java/). Use matching versions of the Beam Java SDK and Direct Runner. Run a simple local pipeline before adding windowing. You can finish the local exercise without Google Cloud credentials.
+   2. Use [TestStream](https://beam.apache.org/blog/test-stream/) to replay the Java trace. If you need a starting fixture, use one customer, a ten-second window starting at time zero, and five seconds of allowed lateness. Add purchases with event times 1 s and 4 s. Advance the watermark to 10 s, then add a purchase with event time 3 s. Advance to 16 s, then add another purchase with event time 2 s. Finish by advancing the watermark to infinity. Every timestamp here is relative to the same fixed epoch.
+   3. Filter purchases, key by customer, apply fixed windows, and count per key. Configure a watermark trigger with a late firing after one element, allowed lateness of five seconds, and accumulating panes. Use `PAssert` to check the emitted counts for the example. Label each output with its pane timing and window. Expect an on-time count of `2` and a late correction to `3`. Assert that no pane has count `4`. Compare by customer and window rather than by arrival order. A final pane may repeat a value.
+   4. If you get only one result, check that the on-time watermark advance happens before the late purchase, a late trigger is configured, and the panes accumulate. Save the input schedule and expected outputs as a runnable test.
+
+- [ ] **Follow the graph into a runner.**
+
+   1. Read the [Beam Runner API guide](https://beam.apache.org/contribute/runner-guide/) and [Dataflow pipeline lifecycle](https://docs.cloud.google.com/dataflow/docs/pipeline-lifecycle). Sketch the source, purchase filter, keyed count and sink. Mark where records must be brought together by key and where adjacent transforms might run in one stage.
+   2. For a managed run, use a small bounded file and a GCP project with billing enabled. Replace `TestStream` with a file source and keep the purchase filter, event timestamps, window size and keyed count. Compute expected results over every row in that file. Follow the [Dataflow Runner setup](https://beam.apache.org/documentation/runners/dataflow/) to submit it. In the job's execution details, save the stage graph and note one fused group or grouping boundary. Confirm the job finished, the output matches the bounded reference, and you have removed any temporary cloud files you created for the lab.
+   3. If you are working locally, annotate the sketch with your predicted stages using the lifecycle guide. Use the Direct Runner test as evidence for lateness behavior. Label the stage sketch as a prediction until you have a managed execution graph to compare.
+
+   **Done when:** You have a passing local trace and an annotated graph. If you ran Dataflow, also save the executed stages and the comparison with the bounded reference.
